@@ -1,0 +1,19 @@
+{
+  "name": "sistema-gs",
+  "private": true,
+  "description": "Sistema de gestão GS Soluções Técnicas",
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "dev:webpack": "npm run dev:webpack -w web",
+    "build": "npm run build -w web",
+    "start": "npm run start -w web",
+    "lint": "npm run lint -w web"
+  },
+  "engines": {
+    "node": ">=20.18.0"
+  }
+}
