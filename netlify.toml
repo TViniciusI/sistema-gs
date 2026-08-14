@@ -2,12 +2,12 @@
 # No painel da Netlify:
 #   Base directory     → deixe vazio (raiz do repo)
 #   Package directory  → apps/web
+#   Framework          → Next.js
 # Não preencha NEXT_PUBLIC_SUPABASE_* — a demo não usa banco.
 
 [build]
   command = "npm run build"
   publish = "apps/web/.next"
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- apps/web packages package.json package-lock.json netlify.toml .nvmrc .npmrc"
 
 [build.environment]
   NODE_VERSION = "22"
