@@ -92,18 +92,58 @@ List<CalibrationBundleLocationGroup> groupJobsForCertificateBundle(
   final prepared = [
     for (final job in jobs) prepareJobForCertificateBundle(job),
   ];
-  final byLocation = <String, CalibrationBundleLocationGroup>{};
+
+  // 1ª passagem: resolve local de cada certificado.
+  final resolvedJobs = <CalibrationJob>[];
+  final presetToLocal = <String, String>{};
   for (final job in prepared) {
     final client = ClientStore.instance.byId(job.clientId) ??
         ClientStore.instance.findMatch(
           cnpj: job.clientCnpj,
           name: job.clientName,
         );
-    // Re-resolve com o cadastro: job pode ter vindo com BASPA/vazio e o
-    // prepare já ter falhado se o ClientStore ainda não tinha as ilhas.
-    final resolved = resolveCertificateInstallLocation(job, client: client);
+    var resolved = resolveCertificateInstallLocation(job, client: client);
+    if (resolved.isEmpty) {
+      final slot = slotLinkedToCalibrationJob(job);
+      final slotLocal = slot?.installLocation.trim() ?? '';
+      if (isUsefulSystemLocal(
+            slotLocal,
+            site: job.site,
+            client: client,
+            clientName: job.clientName,
+            serviceRequester: job.serviceRequester,
+          ) &&
+          !installLocationLooksLikePresetTag(job, slotLocal)) {
+        resolved = normalizeInstallLocationLabel(slotLocal);
+      }
+    }
     final withLocal = resolved.isNotEmpty
         ? job.copyWith(installLocation: resolved)
+        : job;
+    resolvedJobs.add(withLocal);
+    final preset = calibrationIdentityKey(withLocal.presetTag);
+    if (preset.isNotEmpty &&
+        resolved.isNotEmpty &&
+        resolved != 'Sem local do sistema') {
+      presetToLocal.putIfAbsent(preset, () => resolved);
+    }
+  }
+
+  // 2ª passagem: mesmo preset herda a ilha já resolvida (vol/temp/dens juntos).
+  final byLocation = <String, CalibrationBundleLocationGroup>{};
+  for (final job in resolvedJobs) {
+    final client = ClientStore.instance.byId(job.clientId) ??
+        ClientStore.instance.findMatch(
+          cnpj: job.clientCnpj,
+          name: job.clientName,
+        );
+    var local = calibrationSystemLocal(job, client: client);
+    if (local.isEmpty) {
+      final preset = calibrationIdentityKey(job.presetTag);
+      local = presetToLocal[preset] ?? '';
+    }
+    final withLocal = local.isNotEmpty
+        ? job.copyWith(installLocation: local)
         : job;
     final location = calibrationBundleLocationLabel(withLocal, client: client);
     final groupKey = calibrationIdentityKey(location);
@@ -530,7 +570,8 @@ Future<Uint8List> buildCalibrationCertificateBundle({
     if (matchId.isNotEmpty) clientIds.add(matchId);
   }
   for (final id in clientIds) {
-    await ClientStore.instance.ensureFull(id);
+    // force: stub local sem ilhas não pode bloquear o download do cadastro.
+    await ClientStore.instance.ensureFull(id, force: true);
   }
   final issued = DateFormat('dd/MM/yyyy').format(issuedAt ?? DateTime.now());
   final requester = requesterName.trim().isNotEmpty
