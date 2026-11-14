@@ -50,8 +50,11 @@ String calibrationBundleKindTitle(CalibrationKind kind) {
 }
 
 /// Local do cadastro (plataforma/ilha). Nunca endereço nem "In Loco".
-String calibrationBundleLocationLabel(CalibrationJob job) {
-  final local = calibrationSystemLocal(job);
+String calibrationBundleLocationLabel(
+  CalibrationJob job, {
+  SavedClient? client,
+}) {
+  final local = calibrationSystemLocal(job, client: client);
   if (local.isNotEmpty) return local;
   return 'Sem local do sistema';
 }
@@ -91,12 +94,24 @@ List<CalibrationBundleLocationGroup> groupJobsForCertificateBundle(
   ];
   final byLocation = <String, CalibrationBundleLocationGroup>{};
   for (final job in prepared) {
-    final location = calibrationBundleLocationLabel(job);
+    final client = ClientStore.instance.byId(job.clientId) ??
+        ClientStore.instance.findMatch(
+          cnpj: job.clientCnpj,
+          name: job.clientName,
+        );
+    // Re-resolve com o cadastro: job pode ter vindo com BASPA/vazio e o
+    // prepare já ter falhado se o ClientStore ainda não tinha as ilhas.
+    final resolved = resolveCertificateInstallLocation(job, client: client);
+    final withLocal = resolved.isNotEmpty
+        ? job.copyWith(installLocation: resolved)
+        : job;
+    final location = calibrationBundleLocationLabel(withLocal, client: client);
+    final groupKey = calibrationIdentityKey(location);
     final group = byLocation.putIfAbsent(
-      location.toLowerCase(),
+      groupKey,
       () => CalibrationBundleLocationGroup(location),
     );
-    group.byKind.putIfAbsent(job.kind, () => []).add(job);
+    group.byKind.putIfAbsent(withLocal.kind, () => []).add(withLocal);
   }
 
   int certOrder(String raw) {
@@ -105,12 +120,7 @@ List<CalibrationBundleLocationGroup> groupJobsForCertificateBundle(
   }
 
   final groups = byLocation.values.toList()
-    ..sort((a, b) {
-      final aEmpty = a.location == 'Sem local do sistema';
-      final bEmpty = b.location == 'Sem local do sistema';
-      if (aEmpty != bEmpty) return aEmpty ? 1 : -1;
-      return a.location.toLowerCase().compareTo(b.location.toLowerCase());
-    });
+    ..sort((a, b) => compareInstallLocationLabels(a.location, b.location));
 
   for (final group in groups) {
     for (final entry in group.byKind.entries) {
@@ -506,6 +516,7 @@ Future<Uint8List> buildCalibrationCertificateBundle({
 
   await ClientStore.instance.load();
   // Cadastro completo (ilhas/sistemas) — stub da lista não resolve LOCAL no book.
+  // FieldStore já deve estar carregado na sessão (OS/hub); o prepare usa os slots.
   final clientIds = <String>{};
   for (final job in jobs) {
     final id = job.clientId.trim();

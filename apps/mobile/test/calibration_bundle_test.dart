@@ -126,6 +126,152 @@ void main() {
     ]);
   });
 
+  test('N/S com espaço extra e BASPA no job separam ILHA 3A/5B no book', () {
+    final client = SavedClient(
+      id: 'baspa',
+      name: 'VIBRA ENERGIA S.A - BASPA',
+      requester: 'VIBRA - BASPA',
+      sites: const ['BASPA'],
+      updatedAt: DateTime(2026, 11, 14),
+      systems: const [
+        ClientSystem(
+          id: 'sys-3a',
+          systemType: 'Sistema de Descarregamento',
+          installLocation: 'ILHA 3A',
+          assemblyTag: 'FIQ 3A',
+          kind: ClientAssemblyKind.preset,
+          instruments: [
+            ClientInstrument(
+              id: 'm3',
+              role: ClientInstrumentRole.meter,
+              tag: 'FT 3A',
+              serialNumber: '1407E10100',
+            ),
+            ClientInstrument(
+              id: 't3',
+              role: ClientInstrumentRole.pt100,
+              tag: 'TE 3A',
+              // Planilha real: dois espaços antes do 3A.
+              serialNumber: 'PLACT - ILHA  3A',
+            ),
+          ],
+        ),
+        ClientSystem(
+          id: 'sys-5b',
+          systemType: 'Sistema de Descarregamento',
+          installLocation: 'ILHA 5B',
+          assemblyTag: 'FIQ 5B',
+          kind: ClientAssemblyKind.preset,
+          instruments: [
+            ClientInstrument(
+              id: 'm5',
+              role: ClientInstrumentRole.meter,
+              tag: 'FT 5B',
+              serialNumber: '1346E10136',
+            ),
+            ClientInstrument(
+              id: 't5',
+              role: ClientInstrumentRole.pt100,
+              tag: 'TE 5B',
+              serialNumber: 'PLACT - ILHA  5B',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    // Ordem de envio da OS (5B depois 3A misturados) — o book deve separar.
+    final jobs = [
+      CalibrationJob(
+        id: 't5',
+        number: 'GS-TEMP-2026-0005',
+        kind: CalibrationKind.temperature,
+        createdAt: DateTime(2026, 11, 14),
+        clientId: client.id,
+        clientName: client.name,
+        site: 'Avenida Almirante Delamare, 1335',
+        installLocation: 'BASPA', // site da OS, não a ilha
+        presetTag: 'FIQ 5B',
+        equipmentTag: 'TE 5B',
+        // Técnico / sync normalizou o espaço — ainda tem que achar a ilha.
+        serialNumber: 'PLACT - ILHA 5B',
+      ),
+      CalibrationJob(
+        id: 'v3',
+        number: 'GS-VOL-2026-0003',
+        kind: CalibrationKind.volumetric,
+        createdAt: DateTime(2026, 11, 14),
+        clientId: client.id,
+        clientName: client.name,
+        site: 'Avenida Almirante Delamare, 1335',
+        installLocation: 'BASPA',
+        presetTag: 'FIQ 3A',
+        equipmentTag: 'FT 3A',
+        serialNumber: '1407E10100',
+      ),
+      CalibrationJob(
+        id: 't3',
+        number: 'GS-TEMP-2026-0003',
+        kind: CalibrationKind.temperature,
+        createdAt: DateTime(2026, 11, 14),
+        clientId: client.id,
+        clientName: client.name,
+        site: 'Avenida Almirante Delamare, 1335',
+        installLocation: '',
+        presetTag: 'FIQ 3A',
+        equipmentTag: 'TE 3A',
+        serialNumber: 'PLACT - ILHA 3A',
+      ),
+      CalibrationJob(
+        id: 'v5',
+        number: 'GS-VOL-2026-0005',
+        kind: CalibrationKind.volumetric,
+        createdAt: DateTime(2026, 11, 14),
+        clientId: client.id,
+        clientName: client.name,
+        site: 'Avenida Almirante Delamare, 1335',
+        installLocation: 'In Loco',
+        presetTag: 'FIQ 5B',
+        equipmentTag: 'FT 5B',
+        serialNumber: '1346E10136',
+      ),
+    ];
+
+    expect(
+      resolveCertificateInstallLocation(jobs[0], client: client),
+      'ILHA 5B',
+    );
+    expect(
+      resolveCertificateInstallLocation(jobs[1], client: client),
+      'ILHA 3A',
+    );
+    expect(
+      resolveCertificateInstallLocation(jobs[2], client: client),
+      'ILHA 3A',
+    );
+    expect(
+      resolveCertificateInstallLocation(jobs[3], client: client),
+      'ILHA 5B',
+    );
+
+    final prepared = [
+      for (final job in jobs)
+        job.copyWith(
+          installLocation: resolveCertificateInstallLocation(job, client: client),
+        ),
+    ];
+    final groups = groupJobsForCertificateBundle(prepared);
+    expect(groups.map((g) => g.location).toList(), ['ILHA 3A', 'ILHA 5B']);
+    expect(
+      groups.first.byKind[CalibrationKind.volumetric]!.map((j) => j.number),
+      ['GS-VOL-2026-0003'],
+    );
+    expect(
+      groups.last.byKind[CalibrationKind.volumetric]!.map((j) => j.number),
+      ['GS-VOL-2026-0005'],
+    );
+  });
+
   test('local do book vem do cadastro do sistema, não do preset', () {
     final client = SavedClient(
       id: 'baspa',

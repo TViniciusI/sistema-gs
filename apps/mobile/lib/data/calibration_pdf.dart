@@ -903,17 +903,36 @@ CalibrationJob prepareCertificateJob(CalibrationJob job) {
       equipment: equipment,
     );
     systemLocal = system?.installLocation.trim() ?? '';
-    final serialKey = next.serialNumber.trim().toLowerCase();
+    final serialKey = calibrationIdentityKey(next.serialNumber);
     if (serialKey.isNotEmpty) {
       for (final item in equipment) {
-        if (item.serialNumber.trim().toLowerCase() != serialKey) continue;
+        if (calibrationIdentityKey(item.serialNumber) != serialKey) continue;
         final loc = item.installLocation.trim();
-        if (isUsefulSystemLocal(loc, site: next.site) &&
+        if (isUsefulSystemLocal(
+              loc,
+              site: next.site,
+              client: client,
+              clientName: next.clientName,
+              serviceRequester: next.serviceRequester,
+            ) &&
             !installLocationLooksLikePresetTag(next, loc)) {
           equipmentLocal = loc;
           break;
         }
       }
+    }
+    // Slot da OS: se o Excel já trouxe ILHA 3A e o job ficou com BASPA/vazio.
+    final slotLocal = slot?.installLocation.trim() ?? '';
+    if (systemLocal.isEmpty &&
+        isUsefulSystemLocal(
+          slotLocal,
+          site: next.site,
+          client: client,
+          clientName: next.clientName,
+          serviceRequester: next.serviceRequester,
+        ) &&
+        !installLocationLooksLikePresetTag(next, slotLocal)) {
+      systemLocal = slotLocal;
     }
   }
   final local = resolveCertificateInstallLocation(
@@ -924,7 +943,13 @@ CalibrationJob prepareCertificateJob(CalibrationJob job) {
   );
   if (local.isNotEmpty) {
     next = next.copyWith(installLocation: local);
-  } else if (!isUsefulSystemLocal(next.installLocation, site: next.site) ||
+  } else if (!isUsefulSystemLocal(
+        next.installLocation,
+        site: next.site,
+        client: client,
+        clientName: next.clientName,
+        serviceRequester: next.serviceRequester,
+      ) ||
       installLocationLooksLikePresetTag(next)) {
     next = next.copyWith(installLocation: '');
   }
@@ -932,8 +957,8 @@ CalibrationJob prepareCertificateJob(CalibrationJob job) {
 }
 
 bool _sameKey(String a, String b) {
-  final left = a.trim().toLowerCase();
-  final right = b.trim().toLowerCase();
+  final left = calibrationIdentityKey(a);
+  final right = calibrationIdentityKey(b);
   return left.isNotEmpty && left == right;
 }
 
@@ -953,9 +978,9 @@ ClientSystem? systemForCertificate(
   required List<ClientSystem> systems,
   required List<ClientEquipment> equipment,
 }) {
-  final serial = job.serialNumber.trim().toLowerCase();
-  final tag = job.equipmentTag.trim().toLowerCase();
-  final preset = job.presetTag.trim().toLowerCase();
+  final serial = calibrationIdentityKey(job.serialNumber);
+  final tag = calibrationIdentityKey(job.equipmentTag);
+  final preset = calibrationIdentityKey(job.presetTag);
 
   ClientSystem? only(Iterable<ClientSystem> hits) {
     ClientSystem? found;
@@ -969,11 +994,13 @@ ClientSystem? systemForCertificate(
   // N/S e TAG separados: TAG repetida entre ilhas (FT em 3A e 5B) não pode
   // anular o N/S único no mesmo `only()` com OR.
   // Inclui medidor, PT100 e densímetro (temp/dens caíam em "Sem local").
+  // Espaços extras no N/S da planilha (PLACT - ILHA  3A) não podem falhar o match.
   bool hasSerial(ClientSystem system) => system.instruments.any(
-        (item) => item.serialNumber.trim().toLowerCase() == serial,
+        (item) => calibrationIdentityKey(item.serialNumber) == serial,
       );
-  bool hasTag(ClientSystem system) =>
-      system.instruments.any((item) => item.tag.trim().toLowerCase() == tag);
+  bool hasTag(ClientSystem system) => system.instruments.any(
+        (item) => calibrationIdentityKey(item.tag) == tag,
+      );
 
   if (serial.isNotEmpty) {
     final bySerial = only([
@@ -993,7 +1020,8 @@ ClientSystem? systemForCertificate(
   if (preset.isNotEmpty) {
     final byPreset = only([
       for (final system in systems)
-        if (_sameKey(system.assemblyTag, preset) || _sameKey(system.tag, preset))
+        if (calibrationIdentityKey(system.assemblyTag) == preset ||
+            calibrationIdentityKey(system.tag) == preset)
           system,
     ]);
     if (byPreset != null) return byPreset;
@@ -1002,7 +1030,7 @@ ClientSystem? systemForCertificate(
   ClientEquipment? matched;
   if (serial.isNotEmpty) {
     for (final item in equipment) {
-      if (item.serialNumber.trim().toLowerCase() == serial) {
+      if (calibrationIdentityKey(item.serialNumber) == serial) {
         matched = item;
         break;
       }
@@ -1011,7 +1039,7 @@ ClientSystem? systemForCertificate(
   if (matched == null && tag.isNotEmpty) {
     ClientEquipment? onlyTag;
     for (final item in equipment) {
-      if (item.tag.trim().toLowerCase() != tag) continue;
+      if (calibrationIdentityKey(item.tag) != tag) continue;
       if (onlyTag != null &&
           onlyTag.systemId.trim() != item.systemId.trim()) {
         onlyTag = null;
@@ -1026,15 +1054,30 @@ ClientSystem? systemForCertificate(
 
   final stored = _systemById(systems, job.systemId);
   if (stored != null) {
-    final assembly = stored.assemblyTag.trim().toLowerCase();
+    final assembly = calibrationIdentityKey(stored.assemblyTag);
     if (preset.isEmpty || assembly.isEmpty || assembly == preset) return stored;
   }
 
-  final local = calibrationSystemLocal(job).toLowerCase();
+  // Token de ilha no preset/TAG (FIQ 3A) → sistema único com esse sufixo.
+  final token = islandTokenFromLabel(job.presetTag) ??
+      islandTokenFromLabel(job.equipmentTag) ??
+      islandTokenFromLabel(job.serialNumber);
+  if (token != null) {
+    final byToken = only([
+      for (final system in systems)
+        if (islandTokenFromLabel(system.installLocation) == token ||
+            islandTokenFromLabel(system.assemblyTag) == token ||
+            islandTokenFromLabel(system.tag) == token)
+          system,
+    ]);
+    if (byToken != null) return byToken;
+  }
+
+  final local = calibrationIdentityKey(calibrationSystemLocal(job));
   if (local.isNotEmpty) {
     final atPlace = [
       for (final system in systems)
-        if (system.installLocation.trim().toLowerCase() == local) system,
+        if (calibrationIdentityKey(system.installLocation) == local) system,
     ];
     if (atPlace.length == 1) return atPlace.first;
   }

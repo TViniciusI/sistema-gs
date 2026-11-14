@@ -2182,12 +2182,17 @@ CalibrationJob jobFromOsCalibrationSlot({
 
 String _nonEmpty(String a, String b) => a.trim().isNotEmpty ? a : b;
 
+/// Chave de identidade (TAG/N/S/preset): ignora maiúsculas e espaços extras.
+/// Ex.: "PLACT - ILHA  3A" == "PLACT - ILHA 3A".
+String calibrationIdentityKey(String value) =>
+    value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
 /// Endereço da base/cliente — não é o "local do sistema" do certificado.
 bool looksLikePostalAddress(String value, {String site = ''}) {
   final t = value.trim();
   if (t.isEmpty) return false;
-  final siteKey = site.trim().toLowerCase();
-  if (siteKey.isNotEmpty && t.toLowerCase() == siteKey) return true;
+  final siteKey = calibrationIdentityKey(site);
+  if (siteKey.isNotEmpty && calibrationIdentityKey(t) == siteKey) return true;
   if (RegExp(r'\bCEP\b', caseSensitive: false).hasMatch(t)) return true;
   if (RegExp(r'\d{5}-?\d{3}').hasMatch(t) && t.contains(',')) return true;
   return false;
@@ -2195,12 +2200,9 @@ bool looksLikePostalAddress(String value, {String site = ''}) {
 
 /// "In Loco" / laboratório = modo do serviço, não local do sistema (ex.: Plataforma 1).
 bool isGenericServicePlace(String value) {
-  final n = value
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[\s_\-]+'), ' ')
-      .trim();
-  if (n.isEmpty) return true;
+  final n = calibrationIdentityKey(value).replaceAll('_', ' ').replaceAll('-', ' ');
+  final compact = n.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (compact.isEmpty) return true;
   const bad = {
     'in loco',
     'inloco',
@@ -2218,25 +2220,128 @@ bool isGenericServicePlace(String value) {
     'n/a',
     'na',
   };
-  return bad.contains(n);
+  return bad.contains(compact);
 }
 
-bool isUsefulSystemLocal(String value, {String site = ''}) {
+/// Nome da base (BASPA) / site da OS — não é ilha/plataforma do cadastro.
+bool looksLikeClientBaseAlias(
+  String value, {
+  String site = '',
+  SavedClient? client,
+  String clientName = '',
+  String serviceRequester = '',
+}) {
+  final t = calibrationIdentityKey(value);
+  if (t.isEmpty) return false;
+  if (looksLikePostalAddress(value, site: site)) return true;
+
+  bool matchesAliasSource(String raw) {
+    for (final part in raw.split(RegExp(r'[-–|/]'))) {
+      final p = calibrationIdentityKey(part);
+      if (p.length >= 3 && p == t) return true;
+    }
+    return calibrationIdentityKey(raw) == t;
+  }
+
+  if (client != null) {
+    for (final s in client.sites) {
+      if (calibrationIdentityKey(s) == t) return true;
+    }
+    if (matchesAliasSource(client.name)) return true;
+    if (client.requester.trim().isNotEmpty &&
+        matchesAliasSource(client.requester)) {
+      return true;
+    }
+  }
+  // Mesmo sem SavedClient: nome/solicitante no job (ex.: "VIBRA … - BASPA").
+  if (clientName.trim().isNotEmpty && matchesAliasSource(clientName)) {
+    return true;
+  }
+  if (serviceRequester.trim().isNotEmpty &&
+      matchesAliasSource(serviceRequester)) {
+    return true;
+  }
+  return false;
+}
+
+bool isUsefulSystemLocal(
+  String value, {
+  String site = '',
+  SavedClient? client,
+  String clientName = '',
+  String serviceRequester = '',
+}) {
   final t = value.trim();
   if (t.isEmpty) return false;
   if (looksLikePostalAddress(t, site: site)) return false;
   if (isGenericServicePlace(t)) return false;
+  if (looksLikeClientBaseAlias(
+    t,
+    site: site,
+    client: client,
+    clientName: clientName,
+    serviceRequester: serviceRequester,
+  )) {
+    return false;
+  }
   return true;
 }
 
 /// True quando o "local" gravado no certificado é na verdade a tag do preset
 /// (ex.: FIQ 5B no lugar de ILHA 5B).
 bool installLocationLooksLikePresetTag(CalibrationJob job, [String? raw]) {
-  final loc = (raw ?? job.installLocation).trim().toLowerCase();
+  final loc = calibrationIdentityKey(raw ?? job.installLocation);
   if (loc.isEmpty) return false;
-  final preset = job.presetTag.trim().toLowerCase();
+  final preset = calibrationIdentityKey(job.presetTag);
   if (preset.isNotEmpty && loc == preset) return true;
+  final tag = calibrationIdentityKey(job.equipmentTag);
+  if (tag.isNotEmpty && loc == tag) return true;
   return false;
+}
+
+/// Token de ilha/plataforma em TAG/preset/N/S (ex.: "3A", "5B").
+String? islandTokenFromLabel(String raw) {
+  final text = calibrationIdentityKey(raw);
+  if (text.isEmpty) return null;
+  final ilha = RegExp(r'\bilha\s*([0-9]+[a-z]?)\b').firstMatch(text);
+  if (ilha != null) return ilha.group(1);
+  // FIQ 3A / FT 5B / TE 4A / DE 5A — sufixo típico de ilha.
+  final suffix = RegExp(
+    r'\b(?:fiq|ft|te|de|tt|ti|pt)\s*([0-9]+[a-z]?)\b',
+  ).firstMatch(text);
+  if (suffix != null) return suffix.group(1);
+  return null;
+}
+
+/// Normaliza rótulo de local ("ILHA  3A" → "ILHA 3A").
+String normalizeInstallLocationLabel(String raw) {
+  var t = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+  t = t.replaceAllMapped(
+    RegExp(r'\bilha\s*([0-9]+[a-z]?)\b', caseSensitive: false),
+    (m) => 'ILHA ${m.group(1)!.toUpperCase()}',
+  );
+  return t;
+}
+
+/// Ordem natural de locais (ILHA 3A → 4A → 5A → 5B).
+int compareInstallLocationLabels(String a, String b) {
+  final aEmpty = a == 'Sem local do sistema';
+  final bEmpty = b == 'Sem local do sistema';
+  if (aEmpty != bEmpty) return aEmpty ? 1 : -1;
+  final ta = islandTokenFromLabel(a);
+  final tb = islandTokenFromLabel(b);
+  if (ta != null && tb != null) {
+    final na = int.tryParse(RegExp(r'\d+').firstMatch(ta)?.group(0) ?? '') ?? 0;
+    final nb = int.tryParse(RegExp(r'\d+').firstMatch(tb)?.group(0) ?? '') ?? 0;
+    if (na != nb) return na.compareTo(nb);
+    final la = ta.replaceAll(RegExp(r'\d+'), '');
+    final lb = tb.replaceAll(RegExp(r'\d+'), '');
+    final byLetter = la.compareTo(lb);
+    if (byLetter != 0) return byLetter;
+  } else if (ta != null || tb != null) {
+    return ta != null ? -1 : 1;
+  }
+  return a.toLowerCase().compareTo(b.toLowerCase());
 }
 
 /// Local da instalação do sistema no cadastro (nunca tag do preset).
@@ -2259,52 +2364,68 @@ String? catalogSystemInstallLocation(
 
   bool useful(ClientSystem? system) =>
       system != null &&
-      isUsefulSystemLocal(system.installLocation, site: job.site) &&
+      isUsefulSystemLocal(
+        system.installLocation,
+        site: job.site,
+        client: client,
+        clientName: job.clientName,
+        serviceRequester: job.serviceRequester,
+      ) &&
       !installLocationLooksLikePresetTag(job, system.installLocation);
+
+  String? labelOf(ClientSystem? system) {
+    if (!useful(system)) return null;
+    return normalizeInstallLocationLabel(system!.installLocation);
+  }
 
   final byId = job.systemId.trim();
   if (byId.isNotEmpty) {
     for (final system in systems) {
-      if (system.id == byId && useful(system)) {
-        return system.installLocation.trim();
+      if (system.id == byId) {
+        final label = labelOf(system);
+        if (label != null) return label;
       }
     }
   }
 
-  final preset = job.presetTag.trim().toLowerCase();
+  final preset = calibrationIdentityKey(job.presetTag);
   if (preset.isNotEmpty) {
     final byPreset = only([
       for (final system in systems)
-        if (system.assemblyTag.trim().toLowerCase() == preset ||
-            system.tag.trim().toLowerCase() == preset)
+        if (calibrationIdentityKey(system.assemblyTag) == preset ||
+            calibrationIdentityKey(system.tag) == preset)
           system,
     ]);
-    if (useful(byPreset)) return byPreset!.installLocation.trim();
+    final label = labelOf(byPreset);
+    if (label != null) return label;
   }
 
-  final serial = job.serialNumber.trim().toLowerCase();
-  final tag = job.equipmentTag.trim().toLowerCase();
+  final serial = calibrationIdentityKey(job.serialNumber);
+  final tag = calibrationIdentityKey(job.equipmentTag);
   // N/S único: seguro. TAG sozinha se repete entre ilhas — só aceita se for 1.
   // Medidor + PT100 + densímetro (não só meters).
+  // Compara com espaços normalizados (planilha VIBRA: "PLACT - ILHA  3A").
   if (serial.isNotEmpty) {
     final bySerial = only([
       for (final system in systems)
         if (system.instruments.any(
-          (item) => item.serialNumber.trim().toLowerCase() == serial,
+          (item) => calibrationIdentityKey(item.serialNumber) == serial,
         ))
           system,
     ]);
-    if (useful(bySerial)) return bySerial!.installLocation.trim();
+    final label = labelOf(bySerial);
+    if (label != null) return label;
   }
   if (tag.isNotEmpty) {
     final byTag = only([
       for (final system in systems)
         if (system.instruments.any(
-          (item) => item.tag.trim().toLowerCase() == tag,
+          (item) => calibrationIdentityKey(item.tag) == tag,
         ))
           system,
     ]);
-    if (useful(byTag)) return byTag!.installLocation.trim();
+    final label = labelOf(byTag);
+    if (label != null) return label;
   }
 
   // Lista plana: só N/S único; TAG ambígua entre ilhas não escolhe a primeira.
@@ -2312,7 +2433,7 @@ String? catalogSystemInstallLocation(
     final fromSystems = <ClientSystem>[];
     final seen = <String>{};
     for (final item in client.equipment) {
-      if (item.serialNumber.trim().toLowerCase() != serial) continue;
+      if (calibrationIdentityKey(item.serialNumber) != serial) continue;
       final sid = item.systemId.trim();
       if (sid.isEmpty || !seen.add(sid)) continue;
       for (final system in systems) {
@@ -2320,23 +2441,79 @@ String? catalogSystemInstallLocation(
       }
     }
     final bySerialEq = only(fromSystems);
-    if (useful(bySerialEq)) return bySerialEq!.installLocation.trim();
+    final fromEq = labelOf(bySerialEq);
+    if (fromEq != null) return fromEq;
     final locs = <String>{
       for (final item in client.equipment)
-        if (item.serialNumber.trim().toLowerCase() == serial)
-          item.installLocation.trim(),
+        if (calibrationIdentityKey(item.serialNumber) == serial)
+          normalizeInstallLocationLabel(item.installLocation),
     }..removeWhere(
       (loc) =>
-          !isUsefulSystemLocal(loc, site: job.site) ||
+          !isUsefulSystemLocal(
+            loc,
+            site: job.site,
+            client: client,
+            clientName: job.clientName,
+            serviceRequester: job.serviceRequester,
+          ) ||
           installLocationLooksLikePresetTag(job, loc),
     );
     if (locs.length == 1) return locs.first;
   }
+
+  // Último recurso: token de ilha no preset/TAG/N/S casa com um único local
+  // do cadastro (FIQ 3A / PLACT - ILHA 3A → ILHA 3A).
+  // NÃO usa job.installLocation: no bug antigo vinha tudo "ILHA 5B" e
+  // escolheria a ilha errada.
+  final tokens = <String>{
+    if (islandTokenFromLabel(job.presetTag) != null)
+      islandTokenFromLabel(job.presetTag)!,
+    if (islandTokenFromLabel(job.equipmentTag) != null)
+      islandTokenFromLabel(job.equipmentTag)!,
+    if (islandTokenFromLabel(job.serialNumber) != null)
+      islandTokenFromLabel(job.serialNumber)!,
+  };
+  for (final token in tokens) {
+    final hits = <String>{
+      for (final system in systems)
+        if (useful(system) &&
+            islandTokenFromLabel(system.installLocation) == token)
+          normalizeInstallLocationLabel(system.installLocation),
+      for (final system in systems)
+        if (useful(system) &&
+            (islandTokenFromLabel(system.assemblyTag) == token ||
+                islandTokenFromLabel(system.tag) == token))
+          normalizeInstallLocationLabel(system.installLocation),
+    };
+    if (hits.length == 1) return hits.first;
+  }
+
+  // N/S com "ILHA 3A" embutido (sem depender do cadastro ter o mesmo N/S).
+  final fromSerial = islandTokenFromLabel(job.serialNumber);
+  if (fromSerial != null) {
+    final embedded = RegExp(
+      r'\bilha\s*[0-9]+[a-z]?\b',
+      caseSensitive: false,
+    ).firstMatch(job.serialNumber);
+    if (embedded != null) {
+      return normalizeInstallLocationLabel(embedded.group(0)!);
+    }
+  }
   return null;
 }
 
-bool _isRealSystemLocal(CalibrationJob job, String raw) {
-  return isUsefulSystemLocal(raw, site: job.site) &&
+bool _isRealSystemLocal(
+  CalibrationJob job,
+  String raw, {
+  SavedClient? client,
+}) {
+  return isUsefulSystemLocal(
+        raw,
+        site: job.site,
+        client: client,
+        clientName: job.clientName,
+        serviceRequester: job.serviceRequester,
+      ) &&
       !installLocationLooksLikePresetTag(job, raw);
 }
 
@@ -2350,25 +2527,31 @@ String resolveCertificateInstallLocation(
   String equipmentLocal = '',
 }) {
   final catalog = catalogSystemInstallLocation(job, client)?.trim() ?? '';
-  if (_isRealSystemLocal(job, catalog)) return catalog;
+  if (_isRealSystemLocal(job, catalog, client: client)) return catalog;
 
   for (final candidate in [systemLocal, equipmentLocal]) {
-    if (_isRealSystemLocal(job, candidate)) return candidate.trim();
+    if (_isRealSystemLocal(job, candidate, client: client)) {
+      return normalizeInstallLocationLabel(candidate);
+    }
   }
 
   final own = job.installLocation.trim();
-  if (_isRealSystemLocal(job, own)) return own;
+  if (_isRealSystemLocal(job, own, client: client)) {
+    return normalizeInstallLocationLabel(own);
+  }
   return '';
 }
 
 /// Local do sistema (plataforma/ilha). Nunca endereço, "In Loco" nem tag do preset.
 String calibrationSystemLocal(
   CalibrationJob job, {
+  SavedClient? client,
   String systemLocal = '',
   String equipmentLocal = '',
 }) {
   return resolveCertificateInstallLocation(
     job,
+    client: client,
     systemLocal: systemLocal,
     equipmentLocal: equipmentLocal,
   );
@@ -4103,6 +4286,26 @@ CalibrationJob calibrationJobForCertificatePrint(
   String jobOrSlot(String jobVal, String slotVal) =>
       jobVal.trim().isNotEmpty ? jobVal.trim() : slotVal.trim();
 
+  // Local do sistema: ILHA do slot/Excel vence BASPA/"In Loco" gravado no job.
+  String preferInstallLocation() {
+    final fromJob = job.installLocation.trim();
+    final fromSlot = slot.installLocation.trim();
+    bool ok(String value) =>
+        isUsefulSystemLocal(
+          value,
+          site: job.site,
+          clientName: job.clientName,
+          serviceRequester: job.serviceRequester,
+        ) &&
+        !installLocationLooksLikePresetTag(job, value);
+    final jobOk = ok(fromJob);
+    final slotOk = ok(fromSlot);
+    if (slotOk && !jobOk) return fromSlot;
+    if (jobOk) return fromJob;
+    if (slotOk) return fromSlot;
+    return '';
+  }
+
   final serial = _meterSerialForDisplay(slot, job);
   final tag = jobOrSlot(job.equipmentTag, slot.equipmentTag);
   final preset = jobOrSlot(job.presetTag, slot.presetTag);
@@ -4122,7 +4325,7 @@ CalibrationJob calibrationJobForCertificatePrint(
     presetSerial: jobOrSlot(job.presetSerial, slot.presetSerial),
     systemType: jobOrSlot(job.systemType, slot.systemType),
     systemTag: jobOrSlot(job.systemTag, slot.systemTag),
-    installLocation: jobOrSlot(job.installLocation, slot.installLocation),
+    installLocation: preferInstallLocation(),
     fluid: jobOrSlot(job.fluid, slot.product),
     equipmentId: _equipmentIdForPrint(job, slot, tag: tag, serial: serial),
     systemId: _systemIdForPrint(job, slot, preset: preset),
