@@ -41,6 +41,24 @@ const env = {
 run(`"${flutterBin}" config --no-analytics --enable-web`, env);
 run(`"${flutterBin}" pub get`, env);
 
+// Boot screen version must match app_version.dart — it triggers PWA cache clear.
+const appVersionPath = path.join(__dirname, "..", "lib", "core", "app_version.dart");
+const indexHtmlPath = path.join(__dirname, "..", "web", "index.html");
+const appVersionSrc = fs.readFileSync(appVersionPath, "utf8");
+const versionMatch = appVersionSrc.match(/const appVersion = '([^']+)'/);
+if (versionMatch) {
+  const appVersion = versionMatch[1];
+  let indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
+  const nextHtml = indexHtml.replace(
+    /(<span class="gs-boot-version">versão )[^<]+(<\/span>)/,
+    `$1${appVersion}$2`,
+  );
+  if (nextHtml !== indexHtml) {
+    fs.writeFileSync(indexHtmlPath, nextHtml);
+    console.log(`Boot version → ${appVersion}`);
+  }
+}
+
 const defines = [];
 if (process.env.OFFICE_URL) {
   defines.push(`--dart-define=OFFICE_URL=${process.env.OFFICE_URL}`);
