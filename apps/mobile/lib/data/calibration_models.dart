@@ -2488,15 +2488,30 @@ String? catalogSystemInstallLocation(
     if (hits.length == 1) return hits.first;
   }
 
-  // N/S com "ILHA 3A" embutido (sem depender do cadastro ter o mesmo N/S).
-  final fromSerial = islandTokenFromLabel(job.serialNumber);
-  if (fromSerial != null) {
+  return null;
+}
+
+/// Infere ILHA a partir de TAG/preset/N/S mesmo sem cadastro carregado.
+/// Ex.: FIQ 3A / FT 5B / "PLACT - ILHA  3A" → ILHA 3A / ILHA 5B.
+/// Só inventa "ILHA …" com sufixo típico de ilha (número+letra).
+String? inferInstallLocationFromInstrumentLabels(CalibrationJob job) {
+  for (final raw in [job.serialNumber, job.presetTag, job.equipmentTag]) {
     final embedded = RegExp(
       r'\bilha\s*[0-9]+[a-z]?\b',
       caseSensitive: false,
-    ).firstMatch(job.serialNumber);
+    ).firstMatch(raw);
     if (embedded != null) {
       return normalizeInstallLocationLabel(embedded.group(0)!);
+    }
+  }
+  for (final raw in [job.presetTag, job.equipmentTag]) {
+    final key = calibrationIdentityKey(raw);
+    // FIQ 3A / FT 5B / TE 4A / DE 5A — não inventa a partir de TAG genérica "FT".
+    final m = RegExp(
+      r'\b(?:fiq|ft|te|de|tt|ti)\s*([0-9]+[a-z])\b',
+    ).firstMatch(key);
+    if (m != null) {
+      return 'ILHA ${m.group(1)!.toUpperCase()}';
     }
   }
   return null;
@@ -2518,7 +2533,7 @@ bool _isRealSystemLocal(
 }
 
 /// Local do certificado no book/PDF.
-/// Ordem: cadastro único → local do sistema/equipamento casado → campo do job.
+/// Ordem: cadastro → sistema/equipamento → campo do job → inferência FIQ/ILHA.
 /// Assim "BASPA" / vazio no job não engole ILHA 3A/4A/5B do cadastro.
 String resolveCertificateInstallLocation(
   CalibrationJob job, {
@@ -2538,6 +2553,13 @@ String resolveCertificateInstallLocation(
   final own = job.installLocation.trim();
   if (_isRealSystemLocal(job, own, client: client)) {
     return normalizeInstallLocationLabel(own);
+  }
+
+  // Sem cadastro / BASPA no job: ainda separa o book por FIQ 3A → ILHA 3A.
+  final inferred = inferInstallLocationFromInstrumentLabels(job);
+  if (inferred != null &&
+      _isRealSystemLocal(job, inferred, client: client)) {
+    return inferred;
   }
   return '';
 }

@@ -248,15 +248,39 @@ class ClientStore extends ChangeNotifier {
   bool _hasCatalog(SavedClient client) =>
       client.storedEquipment.isNotEmpty || client.systems.isNotEmpty;
 
-  /// A nuvem é a verdade; só uma edição local ainda não enviada é unida.
+  /// Une nuvem + aparelho sem apagar ilhas/instrumentos que só existem aqui.
   SavedClient _absorbRemote(SavedClient local, SavedClient remote) {
     if (_dirtyIds.contains(local.id)) return _mergeRemoteClient(local, remote);
-    if (_hasCatalog(remote) || !_hasCatalog(local)) return remote;
-    // Nuvem sem instrumentos não apaga o cadastro deste aparelho.
-    return remote.copyWith(
-      systems: local.systems,
-      equipment: local.storedEquipment,
-    );
+    if (!_hasCatalog(remote) && _hasCatalog(local)) {
+      // Nuvem sem instrumentos não apaga o cadastro deste aparelho.
+      return remote.copyWith(
+        systems: local.systems,
+        equipment: local.storedEquipment,
+      );
+    }
+    if (!_hasCatalog(local)) return remote;
+    if (!_hasCatalog(remote)) return local;
+
+    // Nunca troca um cadastro local maior por um resumo/parcial da nuvem.
+    final localEq = local.storedEquipment.isNotEmpty
+        ? local.storedEquipment.length
+        : local.equipment.length;
+    final remoteEq = remote.storedEquipment.isNotEmpty
+        ? remote.storedEquipment.length
+        : remote.equipment.length;
+    final localSys = local.resolvedSystems.length;
+    final remoteSys = remote.resolvedSystems.length;
+    if (localEq > remoteEq || localSys > remoteSys) {
+      return remote.copyWith(
+        systems: local.resolvedSystems.isNotEmpty
+            ? local.resolvedSystems
+            : local.systems,
+        equipment: local.storedEquipment.isNotEmpty
+            ? local.storedEquipment
+            : local.equipment,
+      );
+    }
+    return remote;
   }
 
   Future<void> _saveMeta() async {

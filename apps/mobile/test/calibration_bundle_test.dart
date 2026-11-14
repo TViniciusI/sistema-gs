@@ -117,13 +117,70 @@ void main() {
       ),
     ];
     final groups = groupJobsForCertificateBundle(jobs);
+    // FIQ 5B (mesmo com In Loco / local poluído) vira ILHA 5B; FIQ 1 sozinho
+    // não inventa ilha (falta letra) e mantém Plataforma 1.
     expect(
       groups.map((g) => g.location).toList(),
-      ['ILHA 5B', 'Plataforma 1', 'Sem local do sistema'],
+      ['ILHA 5B', 'Plataforma 1'],
     );
-    expect(groups.first.byKind[CalibrationKind.volumetric]!.map((j) => j.number), [
-      'GS-VOL-2026-0003',
-    ]);
+    expect(
+      groups.first.byKind[CalibrationKind.volumetric]!.map((j) => j.number),
+      ['GS-VOL-2026-0001', 'GS-VOL-2026-0002', 'GS-VOL-2026-0003'],
+    );
+  });
+
+  test('sem cadastro: FIQ/FT ainda separa ILHA no book (não Sem local)', () {
+    final jobs = [
+      CalibrationJob(
+        id: 'a',
+        number: 'GS-VOL-2026-0005',
+        kind: CalibrationKind.volumetric,
+        createdAt: DateTime(2026, 11, 14),
+        clientName: 'VIBRA ENERGIA S.A - BASPA',
+        site: 'Avenida Almirante Delamare, 1335',
+        installLocation: 'BASPA',
+        presetTag: 'FIQ 5B',
+        equipmentTag: 'FT 5B',
+        serialNumber: '1346E10136',
+      ),
+      CalibrationJob(
+        id: 'b',
+        number: 'GS-TEMP-2026-0003',
+        kind: CalibrationKind.temperature,
+        createdAt: DateTime(2026, 11, 14),
+        clientName: 'VIBRA ENERGIA S.A - BASPA',
+        site: 'Avenida Almirante Delamare, 1335',
+        installLocation: '',
+        presetTag: 'FIQ 3A',
+        equipmentTag: 'TE 3A',
+        serialNumber: 'PLACT - ILHA 3A',
+      ),
+      CalibrationJob(
+        id: 'c',
+        number: 'GS-VOL-2026-0003',
+        kind: CalibrationKind.volumetric,
+        createdAt: DateTime(2026, 11, 14),
+        clientName: 'VIBRA ENERGIA S.A - BASPA',
+        site: 'Avenida Almirante Delamare, 1335',
+        installLocation: 'In Loco',
+        presetTag: 'FIQ 3A',
+        equipmentTag: 'FT 3A',
+        serialNumber: '1407E10100',
+      ),
+    ];
+    expect(inferInstallLocationFromInstrumentLabels(jobs[0]), 'ILHA 5B');
+    expect(inferInstallLocationFromInstrumentLabels(jobs[1]), 'ILHA 3A');
+    expect(inferInstallLocationFromInstrumentLabels(jobs[2]), 'ILHA 3A');
+    expect(
+      resolveCertificateInstallLocation(jobs[0]),
+      'ILHA 5B',
+    );
+    final groups = groupJobsForCertificateBundle(jobs);
+    expect(groups.map((g) => g.location).toList(), ['ILHA 3A', 'ILHA 5B']);
+    expect(groups, isNot(contains(predicate((g) {
+      return g is CalibrationBundleLocationGroup &&
+          g.location == 'Sem local do sistema';
+    }))));
   });
 
   test('N/S com espaço extra e BASPA no job separam ILHA 3A/5B no book', () {

@@ -275,15 +275,21 @@ void main() {
       presetTag: 'FIQ 5B',
       systemType: '',
     );
-    // Tag do preset não é local da instalação.
-    expect(calibrationSystemLocal(job), '');
+    // Tag do preset não é o local — mas FIQ 5B permite inferir ILHA 5B no book.
     expect(installLocationLooksLikePresetTag(job.copyWith(installLocation: 'FIQ 5B')), isTrue);
+    expect(calibrationSystemLocal(job), 'ILHA 5B');
     expect(
-      calibrationSystemLocal(job, systemLocal: 'ILHA 5B'),
+      calibrationSystemLocal(
+        job.copyWith(presetTag: '', equipmentTag: ''),
+        systemLocal: 'ILHA 5B',
+      ),
       'ILHA 5B',
     );
     expect(
-      calibrationSystemLocal(job, systemLocal: 'Plataforma 1'),
+      calibrationSystemLocal(
+        job.copyWith(presetTag: '', equipmentTag: ''),
+        systemLocal: 'Plataforma 1',
+      ),
       'Plataforma 1',
     );
   });
