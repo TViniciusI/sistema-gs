@@ -570,8 +570,8 @@ Future<Uint8List> buildCalibrationCertificateBundle({
     if (matchId.isNotEmpty) clientIds.add(matchId);
   }
   for (final id in clientIds) {
-    // force: stub local sem ilhas não pode bloquear o download do cadastro.
-    await ClientStore.instance.ensureFull(id, force: true);
+    // Sem force: nunca sobrescreve cadastro local rico com nuvem incompleta.
+    await ClientStore.instance.ensureFull(id);
   }
   final issued = DateFormat('dd/MM/yyyy').format(issuedAt ?? DateTime.now());
   final requester = requesterName.trim().isNotEmpty
