@@ -1,9 +1,11 @@
 # Demo web (Next.js) a partir da raiz do monorepo.
-# No painel da Netlify:
+# O app do técnico (Flutter) é outro site: veja apps/mobile/netlify.toml.
+# No painel da Netlify (este site, escritório):
 #   Base directory     → deixe vazio (raiz do repo)
 #   Package directory  → apps/web
 #   Framework          → Next.js
 # Não preencha NEXT_PUBLIC_SUPABASE_* — a demo não usa banco.
+# Opcional: NEXT_PUBLIC_CAMPO_URL com a URL do GS Campo na Netlify.
 
 [build]
   command = "npm run build"

@@ -1,34 +1,306 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <meta name="description" content="GS Campo — app do técnico">
+  <meta name="theme-color" content="#0C1F33">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GS Campo">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png?v=2">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=2"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png?v=2"/>
 
   <title>GS Campo</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #0C1F33;
+      overscroll-behavior: none;
+    }
+    .gs-boot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #F4F0E6;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: radial-gradient(circle at 50% 40%, #17385C 0%, #0C1F33 55%, #07121F 100%);
+      overflow: hidden;
+      transition: opacity 0.45s ease;
+    }
+    .gs-boot.gs-boot-done {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .gs-stage {
+      position: relative;
+      width: min(48vw, 210px);
+      aspect-ratio: 415 / 346;
+    }
+    .gs-halo {
+      position: absolute;
+      inset: -45%;
+      background: radial-gradient(circle, rgba(197, 158, 57, 0.38) 0%, rgba(197, 158, 57, 0) 62%);
+      animation: gs-halo 2.8s ease-in-out 0.6s infinite both;
+    }
+    .gs-mark,
+    .gs-word {
+      background: linear-gradient(105deg, #B88F2E 0%, #D9B55A 38%, #FFF4D2 50%, #D9B55A 62%, #B88F2E 100%);
+      background-size: 260% 100%;
+      background-position: 100% 0;
+    }
+    .gs-mark {
+      position: absolute;
+      inset: 0;
+      -webkit-mask: url("splash/gs-mark.png") center / contain no-repeat;
+      mask: url("splash/gs-mark.png") center / contain no-repeat;
+      animation:
+        gs-dash-in 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) both,
+        gs-shine 2.8s ease-in-out 1s infinite;
+    }
+    .gs-trail {
+      position: absolute;
+      height: 3px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, rgba(197, 158, 57, 0), #D9B55A);
+      transform-origin: right center;
+      animation: gs-streak 2.8s ease-out infinite both;
+    }
+    .gs-trail.t1 { top: 30%; left: -34%; width: 40%; animation-delay: 0.1s; }
+    .gs-trail.t2 { top: 48%; left: -46%; width: 52%; animation-delay: 0.2s; }
+    .gs-trail.t3 { top: 66%; left: -30%; width: 34%; animation-delay: 0.3s; }
+    .gs-word {
+      width: min(54vw, 232px);
+      aspect-ratio: 451 / 68;
+      margin-top: 22px;
+      -webkit-mask: url("splash/gs-word.png") center / contain no-repeat;
+      mask: url("splash/gs-word.png") center / contain no-repeat;
+      animation:
+        gs-reveal 0.8s cubic-bezier(0.6, 0, 0.2, 1) 0.55s both,
+        gs-shine 2.8s ease-in-out 1.2s infinite;
+    }
+    .gs-loader {
+      position: relative;
+      width: 128px;
+      height: 3px;
+      margin-top: 34px;
+      border-radius: 3px;
+      background: rgba(244, 240, 230, 0.12);
+      overflow: hidden;
+      animation: gs-fade 0.6s ease 1s both;
+    }
+    .gs-loader i {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 38%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, rgba(217, 181, 90, 0), #E9CF7A, rgba(217, 181, 90, 0));
+      animation: gs-load 1.3s ease-in-out infinite;
+    }
+    .gs-boot-status {
+      margin-top: 14px;
+      font-size: 15px;
+      opacity: 0.85;
+      animation: gs-fade 0.6s ease 1s both;
+    }
+    .gs-boot-version {
+      margin-top: 18px;
+      padding: 4px 12px;
+      border: 1px solid rgba(197, 158, 57, 0.45);
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: #E9CF7A;
+      animation: gs-fade 0.6s ease 1.15s both;
+    }
+    @keyframes gs-dash-in {
+      0% { opacity: 0; transform: translateX(-42%) skewX(-14deg) scale(0.82); filter: blur(6px); }
+      60% { opacity: 1; filter: blur(0); }
+      100% { opacity: 1; transform: none; filter: none; }
+    }
+    @keyframes gs-streak {
+      0% { opacity: 0; transform: translateX(60%) scaleX(0); }
+      12% { opacity: 1; transform: translateX(20%) scaleX(1); }
+      34% { opacity: 0; transform: translateX(-60%) scaleX(0.4); }
+      100% { opacity: 0; transform: translateX(-60%) scaleX(0); }
+    }
+    @keyframes gs-shine {
+      0%, 35% { background-position: 100% 0; }
+      75%, 100% { background-position: 0% 0; }
+    }
+    @keyframes gs-halo {
+      0%, 100% { opacity: 0.55; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.06); }
+    }
+    @keyframes gs-reveal {
+      from { opacity: 0; transform: translateY(10px); clip-path: inset(0 100% 0 0); }
+      to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+    }
+    @keyframes gs-fade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes gs-load {
+      from { left: -40%; }
+      to { left: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .gs-boot *, .gs-boot *::before { animation: none !important; }
+      .gs-trail { display: none; }
+    }
+  </style>
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(window.location.search);
+        var cert = (q.get("cert") || "").trim();
+        var abrir = (q.get("abrir") || "").trim().toLowerCase();
+        if (cert && (abrir === "" || abrir === "cert")) {
+          var p = new URLSearchParams();
+          p.set("n", cert);
+          var osId = (q.get("osId") || "").trim();
+          if (osId) p.set("os", osId);
+          window.location.replace("/c?" + p.toString());
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <script>
+    (function () {
+      var ua = navigator.userAgent || "";
+      var isIos = /iPad|iPhone|iPod/.test(ua) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      var standalone = window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+      window.gsPwa = { promptEvent: null, isIos: isIos, isStandalone: standalone };
+      window.addEventListener("beforeinstallprompt", function (event) {
+        event.preventDefault();
+        window.gsPwa.promptEvent = event;
+      });
+      window.addEventListener("appinstalled", function () {
+        window.gsPwa.promptEvent = null;
+        window.gsPwa.isStandalone = true;
+      });
+      window.gsPwaCanInstall = function () {
+        return !window.gsPwa.isStandalone && !!window.gsPwa.promptEvent;
+      };
+      window.gsPwaIsIos = function () {
+        return window.gsPwa.isIos && !window.gsPwa.isStandalone;
+      };
+      window.gsPwaIsStandalone = function () {
+        return !!window.gsPwa.isStandalone;
+      };
+      window.gsPwaInstall = function () {
+        var event = window.gsPwa.promptEvent;
+        if (!event) return Promise.resolve(false);
+        return event.prompt().then(function () {
+          return event.userChoice;
+        }).then(function (choice) {
+          window.gsPwa.promptEvent = null;
+          return choice.outcome === "accepted";
+        }).catch(function () {
+          return false;
+        });
+      };
+      window.gsForceHardReload = function () {
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              for (var i = 0; i < registrations.length; i++) {
+                registrations[i].unregister();
+              }
+            });
+          }
+          if ('caches' in window) {
+            caches.keys().then(function (names) {
+              for (var i = 0; i < names.length; i++) {
+                caches.delete(names[i]);
+              }
+            });
+          }
+        } catch (e) {}
+        setTimeout(function () {
+          var url = window.location.origin + window.location.pathname;
+          window.location.href = url + '?_r=' + Date.now();
+        }, 120);
+      };
+    })();
+  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <div class="gs-boot" id="gs-boot" role="status" aria-label="GS Soluções · abrindo o GS Campo">
+    <div class="gs-stage">
+      <div class="gs-halo"></div>
+      <span class="gs-trail t1"></span>
+      <span class="gs-trail t2"></span>
+      <span class="gs-trail t3"></span>
+      <div class="gs-mark"></div>
+    </div>
+    <div class="gs-word"></div>
+    <div class="gs-loader"><i></i></div>
+    <span class="gs-boot-status">Abrindo o GS Campo…</span>
+    <span class="gs-boot-version">versão 1.2.85</span>
+  </div>
+  <script>
+    window.addEventListener("flutter-first-frame", function () {
+      var boot = document.getElementById("gs-boot");
+      if (!boot) return;
+      boot.classList.add("gs-boot-done");
+      setTimeout(function () { boot.remove(); }, 600);
+    });
+  </script>
+  <script>
+    // index.html vem sempre da rede; o resto pode estar no cache do service
+    // worker. Versão nova aqui = limpa o cache antes de abrir o app velho.
+    (function () {
+      var started = false;
+      function start() {
+        if (started) return;
+        started = true;
+        var s = document.createElement("script");
+        s.src = "flutter_bootstrap.js";
+        s.async = true;
+        document.body.appendChild(s);
+      }
+      try {
+        var el = document.querySelector(".gs-boot-version");
+        var current = el ? el.textContent.trim() : "";
+        var key = "gs_boot_version";
+        var last = window.localStorage.getItem(key);
+        if (!current || last === current) return start();
+        window.localStorage.setItem(key, current);
+        var jobs = [];
+        if ("serviceWorker" in navigator) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (r) { return r.unregister(); }));
+          }));
+        }
+        if ("caches" in window) {
+          jobs.push(caches.keys().then(function (names) {
+            return Promise.all(names.map(function (n) { return caches.delete(n); }));
+          }));
+        }
+        Promise.all(jobs).then(start, start);
+        setTimeout(start, 4000);
+      } catch (e) {
+        start();
+      }
+    })();
+  </script>
 </body>
 </html>

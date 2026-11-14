@@ -16,9 +16,25 @@ export default function CampoPage() {
       <div className="mb-6">
         <h1 className="font-serif text-2xl text-navy">App do técnico</h1>
         <p className="mt-1 text-sm text-muted">
-          Prévia do Flutter — registros do dia no aparelho e o certificado Excel
-          anexado, caindo em Certificados no escritório.
+          O GS Campo roda no navegador (e pode ser instalado como app no
+          Chrome/Edge). A prévia abaixo é só o roteiro da demonstração.
         </p>
+        {process.env.NEXT_PUBLIC_CAMPO_URL ? (
+          <a
+            href={process.env.NEXT_PUBLIC_CAMPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex rounded-sm bg-navy px-4 py-2 text-sm text-paper"
+          >
+            Abrir GS Campo
+          </a>
+        ) : (
+          <p className="mt-3 text-sm text-muted">
+            Publique o Flutter em um site Netlify (pasta apps/mobile) e defina{" "}
+            <code>NEXT_PUBLIC_CAMPO_URL</code> neste escritório para o botão
+            aparecer aqui.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col items-start gap-8 lg:flex-row">

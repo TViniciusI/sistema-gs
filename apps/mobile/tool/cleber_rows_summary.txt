@@ -1,0 +1,28 @@
+﻿2 Medidor Tipo Turbina | med FT 1 | dens None | pt TermorresistÛncia | press None | tel None
+3 Medidor Tipo Turbina | med FT 3.1 | dens None | pt TermorresistÛncia | press None | tel None
+4 Medidor Tipo Turbina | med FT 3.2 | dens None | pt TermorresistÛncia | press None | tel None
+5 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+6 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+7 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+8 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+9 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+10 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+11 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+12 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+13 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+14 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+15 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+16 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+17 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+18 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+19 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+20 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+21 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+22 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+23 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+24 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+25 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+26 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+27 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+28 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None
+29 Medidor Tipo Turbina | med FT | dens None | pt TermorresistÛncia | press None | tel None

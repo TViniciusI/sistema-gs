@@ -1,3 +1,8 @@
+import {
+  ctlFromDensity20,
+  density20FromAmbient,
+} from "./derivados-tables";
+
 export const GS_TABLES = [
   {
     id: "derivados",
@@ -30,7 +35,7 @@ export const GS_TABLES = [
 
 export type GsTableId = (typeof GS_TABLES)[number]["id"];
 
-/** Aproximação operacional a partir das faixas DNS_20 / FCV_20 da planilha GS. */
+/** Conversão ASTM / tabela GS (DNS_20 + FCV_20 da planilha REV.01). */
 export function convertDerivados(input: {
   densityAmbient: number;
   temperature: number;
@@ -38,23 +43,71 @@ export function convertDerivados(input: {
   temperatureCt: number;
   volumeDanfe?: number;
 }) {
-  const dt = input.temperature - 20;
-  const alpha = 0.00082 + Math.max(0, 900 - input.densityAmbient) * 0.00000125;
-  const density20 =
-    input.densityAmbient * (1 + alpha * dt + 0.00000035 * dt * dt);
-  const dtCt = input.temperatureCt - 20;
-  const ctl = round4(
-    1 / (1 + alpha * dtCt + 0.00000035 * dtCt * dtCt),
+  const density20 = density20FromAmbient(
+    input.densityAmbient,
+    input.temperature,
   );
-  const volume20 = input.volumeAmbient * ctl;
+  const ctl = round4(
+    ctlFromDensity20(density20, input.temperatureCt),
+  );
+  const volume20 = round2(input.volumeAmbient * ctl);
   const weight = (volume20 * density20) / 1000;
   const variance =
     input.volumeDanfe === undefined ? undefined : volume20 - input.volumeDanfe;
-  return { density20, ctl, volume20, weight, variance };
+  const variancePercent =
+    variance === undefined ||
+    input.volumeDanfe === undefined ||
+    input.volumeDanfe === 0
+      ? undefined
+      : (variance / input.volumeDanfe) * 100;
+  return { density20, ctl, volume20, weight, variance, variancePercent };
+}
+
+function round2(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
 function round4(value: number) {
   return Math.round(value * 10000) / 10000;
+}
+
+export function parseBrNumber(raw: string): number | null {
+  let text = raw.trim().replace(/\s/g, "").replace(/%/g, "");
+  if (!text) return null;
+
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    if (lastComma > lastDot) {
+      text = text.replace(/\./g, "").replace(",", ".");
+    } else {
+      text = text.replace(/,/g, "");
+    }
+  } else if (lastComma >= 0) {
+    const before = text.substring(0, lastComma);
+    const after = text.substring(lastComma + 1);
+    if (
+      after.length === 3 &&
+      (before.length <= 2 || after === "000")
+    ) {
+      text = before + after;
+    } else {
+      text = text.replace(",", ".");
+    }
+  } else if (lastDot >= 0) {
+    const parts = text.split(".");
+    if (
+      parts.length > 1 &&
+      parts[parts.length - 1].length === 3 &&
+      parts.every((part) => part.length <= 3)
+    ) {
+      text = parts.join("");
+    }
+  }
+
+  const value = Number(text);
+  return Number.isFinite(value) ? value : null;
 }
 
 export function formatPt(value: number, digits = 2) {

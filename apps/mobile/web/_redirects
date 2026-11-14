@@ -1,0 +1,6 @@
+# Assets must 404 when missing — never serve index.html as a "file"
+# (that HTML is ~3.4 KB and breaks PDF: Unable to guess the image type).
+/assets/*  /asset-missing.html  404
+/canvaskit/*  /asset-missing.html  404
+/c    /certificado.html   200
+/*    /index.html   200

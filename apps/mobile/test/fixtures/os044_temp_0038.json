@@ -1,0 +1,304 @@
+[
+ {
+  "id": "1791294598771000-1",
+  "kind": "temperature",
+  "createdAt": "2026-10-06T10:49:58.770",
+  "updatedAt": "2026-10-06T10:50:08.199",
+  "number": "GS-TEMP-2026-0038",
+  "clientId": "1786906757713",
+  "clientName": "DINAMICA TERMINAIS CANEDO S/A",
+  "clientCnpj": "33.047.181/0001-60",
+  "clientAddress": "AV. TROPICAL, S/N, QUADRA MODULO 6-B — DISTRITO INDUSTRIAL BRASIL CENTRAL · SENADOR CANEDO · GO — CEP 75.251-722",
+  "equipmentId": "sys-1789663159736000-451018-pt",
+  "equipmentTag": "TE 3",
+  "equipmentType": "PT100",
+  "manufacturer": "ANTON PAAR",
+  "model": "L-DENS 7300",
+  "serialNumber": "2408-51647U-1-6",
+  "workingPrinciple": "Sensor RTD",
+  "installLocation": "Skid de Descarga 03",
+  "systemType": "Sistema de Descarregamento",
+  "systemId": "sys-1789663159736000-451018",
+  "systemTag": "",
+  "assemblyKind": "preset",
+  "presetTag": "FIQ 3",
+  "presetManufacturer": "ZYLIX",
+  "presetModel": "ZLX-9000",
+  "presetSerial": "001-01-415",
+  "instrumentRole": "pt100",
+  "fluid": "",
+  "fluidDensityMin": "",
+  "fluidDensityMax": "",
+  "fluidViscosityMin": "",
+  "fluidViscosityMax": "",
+  "fluidDensityRefTemp": "",
+  "fluidViscosityRefTemp": "",
+  "fluidReferenceTemp": "",
+  "productDensity": "",
+  "productTemperature": "",
+  "site": "AV TROPICAL, S/N, QUADRAMODULO 6-B, DISTRITO INDUSTRIAL BRASIL CENTRAL, Senador Canedo_ Go",
+  "procedure": "Comparação direta",
+  "ambientTemp": "",
+  "humidity": "",
+  "pressure": "",
+  "technicianName": "Amanda Meline",
+  "notes": "",
+  "measurementUncertainty": "",
+  "coverageFactor": "",
+  "effectiveDof": "",
+  "meterKFactorFound": "",
+  "meterKFactorLeft": "",
+  "instrumentResolution": "",
+  "tankType": "",
+  "concentrator": "",
+  "deviceId": "",
+  "fieldTechnicianName": "",
+  "runCount": 2,
+  "flowCount": 2,
+  "cycleCount": 3,
+  "measurementUnit": "°C",
+  "volumeUnit": "L",
+  "limits": {
+   "maxRepeatabilityPct": 0.05,
+   "maxVolumetricErrorPct": 0.05,
+   "maxLinearityPct": 0.25
+  },
+  "points": [
+   {
+    "id": "1791294598771000-2",
+    "flowUnit": "L/min",
+    "oldMeterFactor": 1,
+    "verification": [
+     {
+      "id": "1791294598771000-3"
+     },
+     {
+      "id": "1791294598771000-4"
+     }
+    ],
+    "conferences": []
+   },
+   {
+    "id": "1791294598771000-5",
+    "flowUnit": "L/min",
+    "oldMeterFactor": 1,
+    "verification": [
+     {
+      "id": "1791294598771000-6"
+     },
+     {
+      "id": "1791294598771000-7"
+     }
+    ],
+    "conferences": []
+   }
+  ],
+  "genericPoints": [
+   {
+    "id": "1791294598771000-8",
+    "label": "",
+    "cycles": [
+     {},
+     {},
+     {}
+    ]
+   },
+   {
+    "id": "1791294598771000-9",
+    "label": "",
+    "cycles": [
+     {},
+     {},
+     {}
+    ]
+   },
+   {
+    "id": "1791294598771000-10",
+    "label": "",
+    "cycles": [
+     {},
+     {},
+     {}
+    ]
+   }
+  ],
+  "telemetryChannels": [],
+  "standards": [
+   {
+    "id": "1791294598771000-11",
+    "tag": "",
+    "description": "",
+    "certificate": "",
+    "validity": "",
+    "uncertainty": "",
+    "coverageK": "",
+    "resolution": "",
+    "stability": "",
+    "manufacturer": "",
+    "model": "",
+    "serialNumber": "",
+    "executant": "",
+    "calibrationDate": "",
+    "nominalValue": "",
+    "certifiedValue": ""
+   }
+  ],
+  "coriolisCoefficients": [],
+  "status": "draft",
+  "calibrationDate": "",
+  "serviceRequester": "DTC CANEDO",
+  "orderNumber": "",
+  "osId": "1786906906918",
+  "osNumber": "044/26",
+  "calibrationSlotId": "1789149905095000_2"
+ },
+ {
+  "id": "1791294590252000-1",
+  "kind": "temperature",
+  "createdAt": "2026-10-06T10:49:50.252",
+  "updatedAt": "2026-10-06T11:03:54.430",
+  "number": "GS-TEMP-2026-0038",
+  "clientId": "1786906757713",
+  "clientName": "DINAMICA TERMINAIS CANEDO S/A",
+  "clientCnpj": "33.047.181/0001-60",
+  "clientAddress": "AV. TROPICAL, S/N, QUADRA MODULO 6-B — DISTRITO INDUSTRIAL BRASIL CENTRAL · SENADOR CANEDO · GO — CEP 75.251-722",
+  "equipmentId": "sys-1788956039208000-384518-pt",
+  "equipmentTag": "TE 3",
+  "equipmentType": "PT100",
+  "manufacturer": "ANTON PAAR",
+  "model": "L-DENS 7300",
+  "serialNumber": "2408-51647U-1-6",
+  "workingPrinciple": "Sensor RTD",
+  "installLocation": "Skid de Descarga 03",
+  "systemType": "Sistema de Descarregamento",
+  "systemId": "sys-1788956039208000-384518",
+  "systemTag": "",
+  "assemblyKind": "preset",
+  "presetTag": "FIQ 3",
+  "presetManufacturer": "ZYLIX",
+  "presetModel": "ZLX-9000",
+  "presetSerial": "001-01-415",
+  "instrumentRole": "pt100",
+  "fluid": "",
+  "fluidDensityMin": "",
+  "fluidDensityMax": "",
+  "fluidViscosityMin": "",
+  "fluidViscosityMax": "",
+  "fluidDensityRefTemp": "",
+  "fluidViscosityRefTemp": "",
+  "fluidReferenceTemp": "",
+  "productDensity": "",
+  "productTemperature": "",
+  "site": "AV TROPICAL, S/N, QUADRAMODULO 6-B, DISTRITO INDUSTRIAL BRASIL CENTRAL, Senador Canedo_ Go",
+  "procedure": "Comparação direta",
+  "ambientTemp": "27,5",
+  "humidity": "33",
+  "pressure": "",
+  "technicianName": "Cleber Guimarães",
+  "notes": "",
+  "measurementUncertainty": "",
+  "coverageFactor": "",
+  "effectiveDof": "",
+  "meterKFactorFound": "",
+  "meterKFactorLeft": "",
+  "instrumentResolution": "",
+  "tankType": "",
+  "concentrator": "",
+  "deviceId": "",
+  "fieldTechnicianName": "",
+  "runCount": 2,
+  "flowCount": 2,
+  "cycleCount": 4,
+  "measurementUnit": "°C",
+  "volumeUnit": "L",
+  "limits": {
+   "maxRepeatabilityPct": 0.05,
+   "maxVolumetricErrorPct": 0.05,
+   "maxLinearityPct": 0.25,
+   "maxGenericError": 0.5
+  },
+  "points": [
+   {
+    "id": "1791294590252000-2",
+    "flowUnit": "L/min",
+    "oldMeterFactor": 1,
+    "verification": [
+     {
+      "id": "1791294590252000-3"
+     },
+     {
+      "id": "1791294590252000-4"
+     }
+    ],
+    "conferences": []
+   },
+   {
+    "id": "1791294590252000-5",
+    "flowUnit": "L/min",
+    "oldMeterFactor": 1,
+    "verification": [
+     {
+      "id": "1791294590252000-6"
+     },
+     {
+      "id": "1791294590252000-7"
+     }
+    ],
+    "conferences": []
+   }
+  ],
+  "genericPoints": [
+   {
+    "id": "1791294590252000-8",
+    "label": "",
+    "cycles": [
+     {
+      "standard": 15,
+      "instrument": 15.24
+     },
+     {
+      "standard": 25,
+      "instrument": 25.1
+     },
+     {
+      "standard": 35,
+      "instrument": 35.17
+     },
+     {
+      "standard": 50,
+      "instrument": 50.34
+     }
+    ]
+   }
+  ],
+  "telemetryChannels": [],
+  "standards": [
+   {
+    "id": "1791294590252000-11",
+    "tag": "GS 001 - T",
+    "description": "MEDIDOR CORIOLIS",
+    "certificate": "T28012-1",
+    "validity": "15/09/2028",
+    "uncertainty": "0,5%",
+    "coverageK": "2",
+    "resolution": "",
+    "stability": "",
+    "manufacturer": "",
+    "model": "",
+    "serialNumber": "10000397",
+    "executant": "",
+    "calibrationDate": "",
+    "nominalValue": "",
+    "certifiedValue": ""
+   }
+  ],
+  "coriolisCoefficients": [],
+  "status": "done",
+  "calibrationDate": "24/08/2026",
+  "serviceRequester": "DTC CANEDO",
+  "orderNumber": "S/N",
+  "osId": "1786906906918",
+  "osNumber": "044/26",
+  "calibrationSlotId": "1789149905095000_2"
+ }
+]

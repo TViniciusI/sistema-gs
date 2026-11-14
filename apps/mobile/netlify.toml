@@ -1,0 +1,52 @@
+# Site separado do escritório (Next.js).
+# No painel da Netlify, crie outro site neste mesmo repositório:
+#   Base directory  → apps/mobile
+#   Branch          → a mesma do escritório
+# Variável opcional:
+#   OFFICE_URL      → URL pública do escritório (ex.: https://gestao.gssolucoestec.com.br)
+
+[build]
+  command = "node tool/netlify-build.cjs"
+  publish = "build/web"
+
+[build.environment]
+  NODE_VERSION = "22"
+  FLUTTER_VERSION = "3.35.6"
+  FLUTTER_WEB = "true"
+
+# Missing /assets must not fall through to index.html (breaks PDF images).
+[[redirects]]
+  from = "/assets/*"
+  to = "/asset-missing.html"
+  status = 404
+
+[[redirects]]
+  from = "/canvaskit/*"
+  to = "/asset-missing.html"
+  status = 404
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/flutter_service_worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "no-cache"

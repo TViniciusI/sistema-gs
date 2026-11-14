@@ -36,3 +36,22 @@ Thumbs.db
 # Supabase local
 supabase/.temp/
 supabase/.branches/
+
+# Cópias de segurança da auditoria (dados de clientes)
+backups_auditoria/
+
+# Artefatos locais / pesados do GS Campo
+apps/mobile/*.apk
+apps/mobile/gs-campo-netlify.zip
+apps/mobile/tool/backups/
+apps/mobile/tool/cert_bundle_preview/
+apps/mobile/tool/cert_compare/
+apps/mobile/tool/cert_latest/
+apps/mobile/tool/cert_preview/
+apps/mobile/tool/cert_ref/
+apps/mobile/tool/modelo_visual/
+apps/mobile/tool/video_frames_*/
+apps/mobile/tool/__pycache__/
+apps/mobile/tool/*.png
+tmp_calib_recovery/
+.cursor/

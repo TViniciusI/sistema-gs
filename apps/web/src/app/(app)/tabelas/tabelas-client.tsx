@@ -6,6 +6,7 @@ import {
   GS_TABLES,
   convertDerivados,
   formatPt,
+  parseBrNumber,
   type GsTableId,
 } from "@/lib/demo/tabelas";
 
@@ -72,12 +73,12 @@ function DerivadosPanel() {
   const [volumeDanfe, setVolumeDanfe] = useState("9940");
 
   const result = useMemo(() => {
-    const d = Number(densityAmbient.replace(",", "."));
-    const t = Number(temperature.replace(",", "."));
-    const v = Number(volumeAmbient.replace(",", "."));
-    const tc = Number(temperatureCt.replace(",", "."));
-    const danfe = Number(volumeDanfe.replace(",", "."));
-    if (![d, t, v, tc, danfe].every(Number.isFinite)) return null;
+    const d = parseBrNumber(densityAmbient);
+    const t = parseBrNumber(temperature);
+    const v = parseBrNumber(volumeAmbient);
+    const tc = parseBrNumber(temperatureCt);
+    const danfe = parseBrNumber(volumeDanfe);
+    if (d == null || t == null || v == null || tc == null || danfe == null) return null;
     return convertDerivados({
       densityAmbient: d,
       temperature: t,
@@ -186,10 +187,10 @@ function AlcoolPanel() {
   const [volumeAmbient, setVolumeAmbient] = useState("10000");
 
   const result = useMemo(() => {
-    const d = Number(densityAmbient.replace(",", "."));
-    const t = Number(temperature.replace(",", "."));
-    const v = Number(volumeAmbient.replace(",", "."));
-    if (![d, t, v].every(Number.isFinite)) return null;
+    const d = parseBrNumber(densityAmbient);
+    const t = parseBrNumber(temperature);
+    const v = parseBrNumber(volumeAmbient);
+    if (d == null || t == null || v == null) return null;
     return convertDerivados({
       densityAmbient: d,
       temperature: t,
@@ -265,11 +266,11 @@ function ValidacaoPanel() {
   const [volSistema, setVolSistema] = useState("49880");
 
   const result = useMemo(() => {
-    const vb = Number(volBase.replace(",", "."));
-    const d = Number(densAmostra.replace(",", "."));
-    const t = Number(temp.replace(",", "."));
-    const vs = Number(volSistema.replace(",", "."));
-    if (![vb, d, t, vs].every(Number.isFinite)) return null;
+    const vb = parseBrNumber(volBase);
+    const d = parseBrNumber(densAmostra);
+    const t = parseBrNumber(temp);
+    const vs = parseBrNumber(volSistema);
+    if (vb == null || d == null || t == null || vs == null) return null;
     const base = convertDerivados({
       densityAmbient: d,
       temperature: t,

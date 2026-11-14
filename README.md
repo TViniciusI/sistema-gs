@@ -23,14 +23,17 @@ Perfil: Cleber Guimarães · Administrador.
 
 Cadastros (cliente, local, equipe, nova OS) funcionam **só nesta sessão** do navegador. Ao reiniciar o `npm run dev`, os dados de exemplo voltam.
 
-## App Flutter (opcional)
+## App Flutter (campo)
+
+O caminho certo para o técnico usar no computador é **o navegador** (e, se quiser ícone no desktop, instalar pelo Chrome/Edge). Não precisa de `.exe`.
 
 ```bash
 cd apps/mobile
-flutter run
+flutter pub get
+flutter run -d chrome
 ```
 
-Sem chave, sem `--dart-define`. Entrar na demonstração → agenda → OS 036/26.
+Para publicar na Netlify, veja `apps/mobile/README.md`. Sem chave, sem `--dart-define` na demo. Entrar → agenda → OS 036/26.
 
 ## O que ainda não entra
 

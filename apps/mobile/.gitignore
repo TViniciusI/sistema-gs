@@ -32,6 +32,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+gs-campo-netlify.zip
 
 # Symbolication related
 app.*.symbols

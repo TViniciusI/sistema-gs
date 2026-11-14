@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0C1F33">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <title>Certificado de Calibração · GS Soluções</title>
+  <style>
+    :root {
+      --navy: #0C1F33;
+      --navy2: #14304D;
+      --gold: #C59E39;
+      --cream: #F4F0E6;
+      --ink: #1B2430;
+      --muted: #5E6B7A;
+      --line: #E3DED2;
+      --ok: #1F7A4A;
+      --warn: #A86A00;
+      --err: #A33A2B;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--cream); color: var(--ink);
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    header { background: var(--navy); color: var(--cream); padding: 20px 16px 26px;
+      text-align: center; border-bottom: 4px solid var(--gold); }
+    header img { width: 84px; height: 84px; border-radius: 16px; display: block; margin: 0 auto 10px; }
+    header .brand { letter-spacing: 2px; font-size: 12px; color: var(--gold); font-weight: 700; }
+    header h1 { margin: 6px 0 0; font-size: 20px; font-weight: 600; }
+    main { max-width: 640px; margin: -14px auto 0; padding: 0 12px 32px; }
+    .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(12,31,51,.08);
+      padding: 16px; margin-bottom: 14px; }
+    .hero { text-align: center; }
+    .hero .kind { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .hero .num { font-size: 24px; font-weight: 700; color: var(--navy); margin: 4px 0 10px; word-break: break-all; }
+    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .badge.ok { background: #E3F3EA; color: var(--ok); }
+    .badge.warn { background: #FFF1D6; color: var(--warn); }
+    .dates { display: flex; gap: 10px; margin-top: 14px; }
+    .dates div { flex: 1; background: var(--cream); border-radius: 10px; padding: 10px; }
+    .dates small { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
+    .dates b { font-size: 18px; color: var(--navy); }
+    h2 { font-size: 13px; margin: 0 0 10px; color: var(--gold); text-transform: uppercase; letter-spacing: 1.2px; }
+    dl { margin: 0; display: grid; grid-template-columns: minmax(110px, 38%) 1fr; row-gap: 8px; column-gap: 10px; }
+    dt { color: var(--muted); font-size: 13px; }
+    dd { margin: 0; font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+    dt { min-width: 0; }
+    .dates div { min-width: 0; }
+    @media (max-width: 380px) {
+      dl { grid-template-columns: 1fr; row-gap: 2px; }
+      dd { margin-bottom: 8px; }
+      .dates b { font-size: 16px; }
+    }
+    .std { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+    .std:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+    .msg { text-align: center; padding: 28px 16px; }
+    .msg.err { color: var(--err); }
+    .spinner { width: 34px; height: 34px; border: 4px solid var(--line); border-top-color: var(--gold);
+      border-radius: 50%; margin: 0 auto 12px; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    button.retry { margin-top: 12px; background: var(--navy); color: var(--cream); border: 0;
+      padding: 10px 18px; border-radius: 10px; font-size: 14px; cursor: pointer; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 16px 24px; }
+    footer a { color: var(--navy2); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="/icons/Icon-192.png" alt="GS Soluções">
+    <div class="brand">GS SOLUÇÕES</div>
+    <h1>Consulta de certificado de calibração</h1>
+  </header>
+  <main id="app">
+    <div class="card msg" id="loading">
+      <div class="spinner"></div>
+      Consultando o certificado…
+    </div>
+  </main>
+  <footer>
+    Informações do certificado emitido pela GS Soluções.<br>
+    <a id="staff-link" href="/" hidden>Equipe GS: abrir no GS Campo</a>
+  </footer>
+  <script>
+    (function () {
+      var API = 'https://script.google.com/macros/s/AKfycbzo6F1Ety_rS3asCvynmFsqSNXzuywc8zpKxqXpi2iOT16ddEGD_GSva1nEfoI82KVTRQ/exec';
+      var q = new URLSearchParams(window.location.search);
+      var number = (q.get('n') || q.get('cert') || '').trim();
+      var id = (q.get('id') || q.get('k') || '').trim();
+      var osId = (q.get('os') || q.get('osId') || '').trim();
+      var app = document.getElementById('app');
+
+      function esc(v) {
+        return String(v == null ? '' : v)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function rows(pairs) {
+        var out = '';
+        for (var i = 0; i < pairs.length; i++) {
+          var v = String(pairs[i][1] == null ? '' : pairs[i][1]).trim();
+          if (!v) continue;
+          out += '<dt>' + esc(pairs[i][0]) + '</dt><dd>' + esc(v) + '</dd>';
+        }
+        return out;
+      }
+
+      function section(title, pairs) {
+        var body = rows(pairs);
+        if (!body) return '';
+        return '<section class="card"><h2>' + esc(title) + '</h2><dl>' + body + '</dl></section>';
+      }
+
+      function showError(text, canRetry) {
+        app.innerHTML = '<div class="card msg err">' + esc(text) +
+          (canRetry ? '<br><button class="retry" id="retry">Tentar de novo</button>' : '') +
+          '</div>';
+        var b = document.getElementById('retry');
+        if (b) b.onclick = function () { load(0); };
+      }
+
+      function render(c) {
+        document.title = (c.number || 'Certificado') + ' · GS Soluções';
+        var badge = c.issued
+          ? '<span class="badge ok">✓ Certificado emitido</span>'
+          : '<span class="badge warn">Certificado em emissão</span>';
+        var html = '<section class="card hero">' +
+          '<div class="kind">' + esc(c.kindLabel) + '</div>' +
+          '<div class="num">' + esc(c.number) + '</div>' + badge +
+          '<div class="dates">' +
+          '<div><small>Calibrado em</small><b>' + esc(c.calibrationDate || '—') + '</b></div>' +
+          '<div><small>Próxima calibração</small><b>' + esc(c.nextCalibrationDate || '—') + '</b></div>' +
+          '</div></section>';
+
+        html += section('Cliente', [
+          ['Cliente', c.clientName],
+          ['Solicitante', c.serviceRequester],
+          ['Local', c.site],
+          ['OS', c.osNumber],
+        ]);
+        html += section('Instrumento calibrado', [
+          ['TAG', c.equipmentTag],
+          ['Tipo', c.equipmentType],
+          ['Fabricante', c.manufacturer],
+          ['Modelo', c.model],
+          ['Nº de série', c.serialNumber],
+          ['Princípio', c.workingPrinciple],
+          ['Instalação', c.installLocation],
+          ['Sistema', [c.systemType, c.systemTag].filter(Boolean).join(' · ')],
+          ['Fluido', c.fluid],
+        ]);
+        html += section('Calibração', [
+          ['Procedimento', c.procedure],
+          ['Fator K encontrado', c.kFactorFound],
+          ['Fator K deixado', c.kFactorLeft],
+          ['Responsável', c.technicianName],
+        ]);
+
+        var stds = c.standards || [];
+        if (stds.length) {
+          html += '<section class="card"><h2>Padrões utilizados</h2>';
+          for (var i = 0; i < stds.length; i++) {
+            var s = stds[i];
+            html += '<div class="std"><dl>' + rows([
+              ['Padrão', [s.tag, s.description].filter(Boolean).join(' — ')],
+              ['Nº de série', s.serialNumber],
+              ['Certificado', s.certificate],
+              ['Validade', s.validity],
+              ['Incerteza', s.uncertainty],
+            ]) + '</dl></div>';
+          }
+          html += '</section>';
+        }
+        app.innerHTML = html;
+
+        var link = document.getElementById('staff-link');
+        var p = new URLSearchParams();
+        p.set('cert', c.number || number);
+        if (osId) p.set('osId', osId);
+        p.set('abrir', 'app');
+        link.href = '/?' + p.toString();
+        link.hidden = false;
+      }
+
+      function load(attempt) {
+        if (!id && !(number && osId)) {
+          showError('Link do certificado incompleto. Leia o QR code do adesivo novamente.', false);
+          return;
+        }
+        app.innerHTML = '<div class="card msg"><div class="spinner"></div>Consultando o certificado…</div>';
+        var cb = 'gsCert' + Date.now() + Math.floor(Math.random() * 1000);
+        var script = document.createElement('script');
+        var done = false;
+        var timer = setTimeout(function () { finish(null); }, 25000);
+
+        function finish(res) {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+          if (script.parentNode) script.parentNode.removeChild(script);
+          if (res && res.ok && res.certificate) {
+            render(res.certificate);
+          } else if (res && res.ok === false) {
+            showError(res.error || 'Certificado não encontrado.', false);
+          } else if (attempt < 2) {
+            load(attempt + 1);
+          } else {
+            showError('Não foi possível consultar agora. Verifique a internet.', true);
+          }
+        }
+
+        window[cb] = function (res) { finish(res); };
+        var p = new URLSearchParams();
+        p.set('action', 'certpublic');
+        p.set('n', number);
+        if (id) p.set('id', id);
+        if (osId) p.set('osId', osId);
+        p.set('callback', cb);
+        p.set('_', String(Date.now()));
+        script.src = API + '?' + p.toString();
+        script.onerror = function () { finish(null); };
+        document.body.appendChild(script);
+      }
+
+      load(0);
+    })();
+  </script>
+</body>
+</html>
