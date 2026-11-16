@@ -1,6 +1,7 @@
 import 'package:gs_mobile/data/br_holidays.dart';
 import 'package:gs_mobile/data/models.dart';
 import 'package:gs_mobile/data/week_agenda.dart';
+import 'package:gs_mobile/data/work_schedule.dart';
 import 'package:intl/intl.dart';
 
 const weekDayFullLabels = [
@@ -38,6 +39,8 @@ class HoursDayRow {
     required this.workedMinutes,
     required this.extraMinutes,
     required this.nightMinutes,
+    this.overtimePercent,
+    this.scheduleLabel = '',
   });
 
   final DateTime date;
@@ -48,6 +51,8 @@ class HoursDayRow {
   final int workedMinutes;
   final int extraMinutes;
   final int nightMinutes;
+  final double? overtimePercent;
+  final String scheduleLabel;
 
   String get holidayLabel => holiday
       ? (holidayName.isEmpty ? 'Sim' : 'Sim · $holidayName')
@@ -126,6 +131,7 @@ HoursReport buildHoursReport({
   required Iterable<SavedOs> orders,
   required DateTime from,
   required DateTime to,
+  List<WorkSchedulePeriod> schedules = const [],
 }) {
   final span = daysInRange(from, to);
   final rows = <HoursDayRow>[];
@@ -164,6 +170,7 @@ HoursReport buildHoursReport({
     }
     final hours = dayHoursFromRdos(dayRdos);
     clients.removeWhere((item) => item.isEmpty);
+    final schedule = scheduleForDay(schedules, day);
     rows.add(
       HoursDayRow(
         date: day,
@@ -180,8 +187,11 @@ HoursReport buildHoursReport({
           workedMinutes: hours.workedMinutes,
           day: day,
           holiday: holiday.isHoliday,
+          dailyLimitOverride: schedule?.dailyLimitMinutes,
         ),
         nightMinutes: hours.nightMinutes,
+        overtimePercent: schedule?.overtimePercent,
+        scheduleLabel: schedule?.label ?? '',
       ),
     );
   }
@@ -209,7 +219,7 @@ String hoursReportCsv(HoursReport report) {
     'Técnico;${_csv(report.technicianName)}',
     'Período;${dayFmt.format(report.from)};${dayFmt.format(report.to)}',
     '',
-    'Data;Dia da semana;Feriado;Cliente;Horas trabalhadas;Horas extras;Adicional noturno',
+    'Data;Dia da semana;Feriado;Cliente;Horas trabalhadas;Horas extras;% extra;Carga;Adicional noturno',
     for (final day in report.days)
       [
         dayFmt.format(day.date),
@@ -218,6 +228,10 @@ String hoursReportCsv(HoursReport report) {
         _csv(day.place),
         formatWorkedHours(day.workedMinutes),
         formatWorkedHours(day.extraMinutes),
+        day.overtimePercent == null
+            ? ''
+            : '${day.overtimePercent!.toStringAsFixed(day.overtimePercent! % 1 == 0 ? 0 : 1)}%',
+        _csv(day.scheduleLabel),
         formatWorkedHours(day.nightMinutes),
       ].join(';'),
     [
@@ -227,6 +241,8 @@ String hoursReportCsv(HoursReport report) {
       '',
       formatWorkedHours(report.totalWorkedMinutes),
       formatWorkedHours(report.totalExtraMinutes),
+      '',
+      '',
       formatWorkedHours(report.totalNightMinutes),
     ].join(';'),
   ];

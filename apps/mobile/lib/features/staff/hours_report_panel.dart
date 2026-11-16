@@ -8,9 +8,9 @@ import 'package:gs_mobile/demo/auth.dart';
 import 'package:gs_mobile/data/field_store.dart';
 import 'package:gs_mobile/data/hours_report.dart';
 import 'package:gs_mobile/data/hours_report_pdf.dart';
-import 'package:gs_mobile/data/models.dart';
 import 'package:gs_mobile/data/rdo_share.dart';
 import 'package:gs_mobile/data/week_agenda.dart';
+import 'package:gs_mobile/features/staff/staff_schedule_page.dart';
 import 'package:intl/intl.dart';
 
 class HoursReportPanel extends StatefulWidget {
@@ -117,6 +117,7 @@ class HoursReportPanelState extends State<HoursReportPanel> {
       orders: FieldStore.instance.officeItems,
       from: _from,
       to: _to,
+      schedules: user.schedules,
     );
   }
 
@@ -144,15 +145,6 @@ class HoursReportPanelState extends State<HoursReportPanel> {
       }
     });
     _rebuild();
-  }
-
-  bool get _canEditHours {
-    final user = AuthSession.instance.user;
-    if (user == null) return false;
-    return user.canManageStaff ||
-        user.hasFullAccess ||
-        user.canAccess('horas') ||
-        user.canAccess('funcionarios');
   }
 
   Future<void> _download({required bool pdf}) async {
@@ -184,42 +176,15 @@ class HoursReportPanelState extends State<HoursReportPanel> {
     if (mounted) setState(() => _busy = false);
   }
 
-  Future<void> _editDayHours(HoursDayRow day) async {
+  Future<void> _openSchedule() async {
     final tech = _technician;
-    if (tech == null || !_canEditHours) return;
-    final account = appUserFromRemote(tech);
-    final name = account.name.trim().isEmpty
-        ? account.login
-        : account.name.trim();
-    final entries = rdosForTechnicianDay(
-      technicianName: name,
-      viewerIds: assigneeKeysFor(account),
-      orders: FieldStore.instance.officeItems,
-      day: day.date,
-    );
-    if (entries.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: GsTheme.navy,
-          content: Text(
-            'Não há RDO neste dia para este técnico. '
-            'Abra a OS e preencha o RDO, ou marque a presença no time.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    final changed = await showDialog<bool>(
-      context: context,
-      builder: (context) => _AdminHoursEditDialog(
-        technicianName: name,
-        day: day.date,
-        entries: entries,
+    if (tech == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => StaffSchedulePage(email: tech.email),
       ),
     );
-    if (changed == true && mounted) _rebuild();
+    if (mounted) _rebuild();
   }
 
   @override
@@ -227,7 +192,10 @@ class HoursReportPanelState extends State<HoursReportPanel> {
     final techs = _technicians;
     final fmt = DateFormat('dd/MM/yyyy');
     final report = _report;
-    final canEdit = _canEditHours;
+    final canManage = AuthSession.instance.user?.canManageStaff == true ||
+        AuthSession.instance.user?.hasFullAccess == true ||
+        AuthSession.instance.user?.canAccess('horas') == true ||
+        AuthSession.instance.user?.canAccess('funcionarios') == true;
     return Container(
       key: const Key('hours-report'),
       padding: const EdgeInsets.all(16),
@@ -252,19 +220,11 @@ class HoursReportPanelState extends State<HoursReportPanel> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            canEdit
-                ? 'O período padrão é o fechamento da GS: dia 24 ao dia 23. '
-                      'Toque em um dia para acertar entrada, almoço e saída do RDO.'
-                : 'O período padrão é o fechamento da GS: dia 24 ao dia 23. '
-                      'Extra depois de 8h no dia (mais 1h de almoço). Sábado: 4h '
-                      'normais, depois extra. Domingo e feriado: só conta extra se '
-                      'houver horário preenchido. Das 22h às 05h: adicional noturno.',
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.35,
-              color: Color(0xFF5C6570),
-            ),
+          const Text(
+            'O período padrão é o fechamento da GS: dia 24 ao dia 23. '
+            'Extra usa a carga horária do técnico (horas/dia e % extra) quando houver período cadastrado; '
+            'senão vale a regra padrão (8h útil / 4h sábado). Domingo e feriado: o dia todo é extra se houver horário.',
+            style: TextStyle(fontSize: 14, height: 1.35, color: Color(0xFF5C6570)),
           ),
           const SizedBox(height: 12),
           if (techs.isEmpty)
@@ -292,6 +252,15 @@ class HoursReportPanelState extends State<HoursReportPanel> {
                 onChanged: (value) => _applySelectedEmail(value),
               ),
             ),
+            if (canManage) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const Key('hours-open-schedule'),
+                onPressed: _openSchedule,
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: const Text('Definir carga horária deste técnico'),
+              ),
+            ],
             const SizedBox(height: 10),
             Row(
               children: [
@@ -325,39 +294,24 @@ class HoursReportPanelState extends State<HoursReportPanel> {
               const SizedBox(height: 8),
               for (final day in report.days.take(31))
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      key: Key('hours-day-${fmt.format(day.date)}'),
-                      onTap: canEdit ? () => _editDayHours(day) : null,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${fmt.format(day.date)} · ${day.weekdayLabel} · ${day.holidayLabel} · ${day.place} · ${formatWorkedHours(day.workedMinutes)} · extra ${formatWorkedHours(day.extraMinutes)} · noturno ${formatWorkedHours(day.nightMinutes)}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  height: 1.3,
-                                  color: Color(0xFF5C6570),
-                                ),
-                              ),
-                            ),
-                            if (canEdit)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 6, top: 1),
-                                child: Icon(
-                                  Icons.edit_outlined,
-                                  size: 18,
-                                  color: GsTheme.navy,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    [
+                      fmt.format(day.date),
+                      day.weekdayLabel,
+                      day.holidayLabel,
+                      day.place,
+                      formatWorkedHours(day.workedMinutes),
+                      'extra ${formatWorkedHours(day.extraMinutes)}',
+                      if (day.overtimePercent != null)
+                        '${day.overtimePercent! % 1 == 0 ? day.overtimePercent!.toStringAsFixed(0) : day.overtimePercent}%',
+                      if (day.scheduleLabel.trim().isNotEmpty) day.scheduleLabel,
+                      'noturno ${formatWorkedHours(day.nightMinutes)}',
+                    ].join(' · '),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.3,
+                      color: Color(0xFF5C6570),
                     ),
                   ),
                 ),
@@ -386,215 +340,5 @@ class HoursReportPanelState extends State<HoursReportPanel> {
         ],
       ),
     );
-  }
-}
-
-class _AdminHoursEditDialog extends StatefulWidget {
-  const _AdminHoursEditDialog({
-    required this.technicianName,
-    required this.day,
-    required this.entries,
-  });
-
-  final String technicianName;
-  final DateTime day;
-  final List<({SavedOs os, SavedRdo rdo})> entries;
-
-  @override
-  State<_AdminHoursEditDialog> createState() => _AdminHoursEditDialogState();
-}
-
-class _AdminHoursEditDialogState extends State<_AdminHoursEditDialog> {
-  late final List<_EditableRdoClocks> _rows;
-  var _saving = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _rows = [
-      for (final entry in widget.entries)
-        _EditableRdoClocks(
-          os: entry.os,
-          rdo: entry.rdo,
-          clockIn: TextEditingController(text: entry.rdo.clockIn),
-          lunchStart: TextEditingController(text: entry.rdo.lunchStart),
-          lunchEnd: TextEditingController(text: entry.rdo.lunchEnd),
-          clockOut: TextEditingController(text: entry.rdo.clockOut),
-        ),
-    ];
-  }
-
-  @override
-  void dispose() {
-    for (final row in _rows) {
-      row.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    try {
-      for (final row in _rows) {
-        final next = row.rdo.copyWith(
-          clockIn: row.clockIn.text.trim(),
-          lunchStart: row.lunchStart.text.trim(),
-          lunchEnd: row.lunchEnd.text.trim(),
-          clockOut: row.clockOut.text.trim(),
-        );
-        final same =
-            next.clockIn == row.rdo.clockIn &&
-            next.lunchStart == row.rdo.lunchStart &&
-            next.lunchEnd == row.rdo.lunchEnd &&
-            next.clockOut == row.rdo.clockOut;
-        if (same) continue;
-        await FieldStore.instance.replaceRdoEntry(row.os, next);
-      }
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _saving = false;
-        _error = '$error';
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final fmt = DateFormat('dd/MM/yyyy');
-    return AlertDialog(
-      title: Text('Acertar horas · ${fmt.format(widget.day)}'),
-      content: SizedBox(
-        width: 420,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                widget.technicianName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: GsTheme.navy,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Ajuste entrada, almoço, retorno e saída do RDO. '
-                'Isso recalcula as horas da equipe e do relatório.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF5C6570)),
-              ),
-              const SizedBox(height: 12),
-              for (final row in _rows) ...[
-                Text(
-                  'OS ${row.os.number}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: GsTheme.navy,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: row.clockIn,
-                        decoration: const InputDecoration(
-                          labelText: 'Entrada',
-                          hintText: '08:00',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: row.lunchStart,
-                        decoration: const InputDecoration(
-                          labelText: 'Almoço',
-                          hintText: '12:00',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: row.lunchEnd,
-                        decoration: const InputDecoration(
-                          labelText: 'Retorno',
-                          hintText: '13:00',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: row.clockOut,
-                        decoration: const InputDecoration(
-                          labelText: 'Saída',
-                          hintText: '17:00',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-              ],
-              if (_error != null)
-                Text(
-                  _error!,
-                  style: const TextStyle(color: Color(0xFFB00020)),
-                ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          key: const Key('hours-admin-save'),
-          onPressed: _saving ? null : _save,
-          style: FilledButton.styleFrom(backgroundColor: GsTheme.navy),
-          child: Text(_saving ? 'Salvando…' : 'Salvar horas'),
-        ),
-      ],
-    );
-  }
-}
-
-class _EditableRdoClocks {
-  _EditableRdoClocks({
-    required this.os,
-    required this.rdo,
-    required this.clockIn,
-    required this.lunchStart,
-    required this.lunchEnd,
-    required this.clockOut,
-  });
-
-  final SavedOs os;
-  final SavedRdo rdo;
-  final TextEditingController clockIn;
-  final TextEditingController lunchStart;
-  final TextEditingController lunchEnd;
-  final TextEditingController clockOut;
-
-  void dispose() {
-    clockIn.dispose();
-    lunchStart.dispose();
-    lunchEnd.dispose();
-    clockOut.dispose();
   }
 }

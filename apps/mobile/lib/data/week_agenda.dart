@@ -1,5 +1,7 @@
+import 'package:gs_mobile/data/br_holidays.dart';
 import 'package:gs_mobile/data/models.dart';
 import 'package:gs_mobile/data/work_hours.dart';
+import 'package:gs_mobile/data/work_schedule.dart';
 import 'package:gs_mobile/demo/auth.dart';
 
 export 'package:gs_mobile/data/work_hours.dart';
@@ -149,15 +151,21 @@ class TechnicianWeekHours {
     required this.name,
     required this.dayMinutes,
     this.nightDayMinutes = const [0, 0, 0, 0, 0, 0, 0],
+    this.extraDayMinutes,
   });
 
   final String name;
   final List<int> dayMinutes;
   final List<int> nightDayMinutes;
+  final List<int>? extraDayMinutes;
 
   int get workedMinutes => dayMinutes.fold(0, (sum, value) => sum + value);
 
   int get extraMinutes {
+    final preset = extraDayMinutes;
+    if (preset != null) {
+      return preset.fold(0, (sum, value) => sum + value);
+    }
     var total = 0;
     for (var i = 0; i < dayMinutes.length; i++) {
       total += extraMinutesForWeekIndex(i, dayMinutes[i]);
@@ -248,6 +256,7 @@ List<TechnicianWeekHours> weekHoursByTechnician({
   required DateTime weekStart,
   String? viewerName,
   Set<String> viewerIds = const {},
+  Map<String, List<WorkSchedulePeriod>> schedulesByName = const {},
 }) {
   final days = daysOfWeek(weekStart);
   final minutes = <String, List<int>>{};
@@ -260,6 +269,17 @@ List<TechnicianWeekHours> weekHoursByTechnician({
     nights.putIfAbsent(key, () => List<int>.filled(7, 0));
     minutes[key]![index] = hours.workedMinutes;
     nights[key]![index] = hours.nightMinutes;
+  }
+
+  List<WorkSchedulePeriod> schedulesOf(String name) {
+    final direct = schedulesByName[name];
+    if (direct != null) return direct;
+    final key = personFirstKey(name);
+    if (key.isEmpty) return const [];
+    for (final entry in schedulesByName.entries) {
+      if (personFirstKey(entry.key) == key) return entry.value;
+    }
+    return const [];
   }
 
   for (var i = 0; i < days.length; i++) {
@@ -312,6 +332,17 @@ List<TechnicianWeekHours> weekHoursByTechnician({
         name: entry.key,
         dayMinutes: entry.value,
         nightDayMinutes: nights[entry.key] ?? List<int>.filled(7, 0),
+        extraDayMinutes: [
+          for (var i = 0; i < days.length; i++)
+            extraMinutesForDay(
+              workedMinutes: entry.value[i],
+              day: days[i],
+              holiday: brazilHoliday(days[i]).isHoliday,
+              dailyLimitOverride:
+                  scheduleForDay(schedulesOf(entry.key), days[i])
+                      ?.dailyLimitMinutes,
+            ),
+        ],
       ),
   ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   return rows;

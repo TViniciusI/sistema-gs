@@ -210,9 +210,17 @@ int dailyOvertimeMinutes(int workedMinutes) {
   return extra < 0 ? 0 : extra;
 }
 
-int extraMinutesForWeekIndex(int mondayBasedIndex, int workedMinutes) {
+int extraMinutesForWeekIndex(
+  int mondayBasedIndex,
+  int workedMinutes, {
+  int? dailyLimitOverride,
+}) {
   if (workedMinutes <= 0) return 0;
   if (mondayBasedIndex >= 6) return workedMinutes;
+  if (dailyLimitOverride != null) {
+    final extra = workedMinutes - dailyLimitOverride;
+    return extra < 0 ? 0 : extra;
+  }
   if (mondayBasedIndex == 5) {
     final extra = workedMinutes - saturdayLimitMinutes;
     return extra < 0 ? 0 : extra;
@@ -224,9 +232,14 @@ int extraMinutesForDay({
   required int workedMinutes,
   required DateTime day,
   required bool holiday,
+  int? dailyLimitOverride,
 }) {
   if (workedMinutes <= 0) return 0;
   if (holiday || day.weekday == DateTime.sunday) return workedMinutes;
+  if (dailyLimitOverride != null) {
+    final extra = workedMinutes - dailyLimitOverride;
+    return extra < 0 ? 0 : extra;
+  }
   if (day.weekday == DateTime.saturday) {
     final extra = workedMinutes - saturdayLimitMinutes;
     return extra < 0 ? 0 : extra;
