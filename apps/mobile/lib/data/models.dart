@@ -258,6 +258,7 @@ class SavedRdo {
   bool get bothSigned => isSigned && clientSigned;
 
   SavedRdo copyWith({
+    DateTime? date,
     List<SavedFile>? files,
     String? description,
     String? notes,
@@ -268,15 +269,19 @@ class SavedRdo {
     String? signToken,
     String? clientStampOnPdf,
     List<String>? absentNames,
+    String? clockIn,
+    String? lunchStart,
+    String? lunchEnd,
+    String? clockOut,
   }) {
     return SavedRdo(
       id: id,
-      date: date,
+      date: date ?? this.date,
       absentNames: absentNames ?? this.absentNames,
-      clockIn: clockIn,
-      lunchStart: lunchStart,
-      lunchEnd: lunchEnd,
-      clockOut: clockOut,
+      clockIn: clockIn ?? this.clockIn,
+      lunchStart: lunchStart ?? this.lunchStart,
+      lunchEnd: lunchEnd ?? this.lunchEnd,
+      clockOut: clockOut ?? this.clockOut,
       description: description ?? this.description,
       notes: notes ?? this.notes,
       files: files ?? this.files,

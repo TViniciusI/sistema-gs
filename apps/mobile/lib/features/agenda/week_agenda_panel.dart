@@ -438,9 +438,15 @@ class _HoursCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Entrada e saída do RDO, menos 1h de almoço. Extra depois de 8h no dia (sábado depois de 4h; domingo e feriado o dia todo). Das 22h às 05h conta adicional noturno.',
-            style: TextStyle(fontSize: 13, height: 1.35, color: Color(0xFF5C6570)),
+          Text(
+            team
+                ? 'Entrada e saída do RDO de cada técnico presente no dia (não só quem assinou), menos 1h de almoço. Extra depois de 8h no dia (sábado depois de 4h; domingo e feriado o dia todo). Das 22h às 05h conta adicional noturno. Admin acerta horários em Funcionários → Analisar horas.'
+                : 'Entrada e saída do RDO, menos 1h de almoço. Extra depois de 8h no dia (sábado depois de 4h; domingo e feriado o dia todo). Das 22h às 05h conta adicional noturno.',
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: Color(0xFF5C6570),
+            ),
           ),
           const SizedBox(height: 10),
           for (final row in rows)

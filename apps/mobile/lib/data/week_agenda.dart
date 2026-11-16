@@ -1,5 +1,6 @@
 import 'package:gs_mobile/data/models.dart';
 import 'package:gs_mobile/data/work_hours.dart';
+import 'package:gs_mobile/demo/auth.dart';
 
 export 'package:gs_mobile/data/work_hours.dart';
 
@@ -284,11 +285,22 @@ List<TechnicianWeekHours> weekHoursByTechnician({
       }
       continue;
     }
+    // Equipe: todos os presentes no RDO (não só quem assinou).
+    // Antes só entrava job.who (= responsibleName) e sumiam os demais.
     final byWho = <String, List<SavedRdo>>{};
     for (final job in jobs) {
       if (job.rdo == null) continue;
-      final who = job.who.trim().isEmpty ? 'Equipe' : job.who.trim();
-      byWho.putIfAbsent(who, () => []).add(job.rdo!);
+      final rdo = job.rdo!;
+      final present = presentTeamForRdo(
+        job.os,
+        rdo,
+        signedBy: rdo.responsibleName,
+      );
+      for (final raw in present) {
+        final name = raw.trim();
+        if (name.isEmpty || name == '-') continue;
+        byWho.putIfAbsent(name, () => []).add(rdo);
+      }
     }
     for (final entry in byWho.entries) {
       setHours(entry.key, i, dayHoursFromRdos(entry.value));
