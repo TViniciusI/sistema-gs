@@ -2187,10 +2187,22 @@ String _nonEmpty(String a, String b) => a.trim().isNotEmpty ? a : b;
 String calibrationIdentityKey(String value) =>
     value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
+/// ILHA 3A / Plataforma 1 — local real do sistema (nunca "base" nem endereço).
+bool looksLikeSystemInstallLocation(String value) {
+  final t = calibrationIdentityKey(value);
+  if (t.isEmpty) return false;
+  if (RegExp(r'\bilha\s*[0-9]+[a-z]?\b').hasMatch(t)) return true;
+  if (RegExp(r'\bplataforma\s*[0-9]+[a-z]?\b').hasMatch(t)) return true;
+  return false;
+}
+
 /// Endereço da base/cliente — não é o "local do sistema" do certificado.
 bool looksLikePostalAddress(String value, {String site = ''}) {
   final t = value.trim();
   if (t.isEmpty) return false;
+  // Se o "site" da OS/cliente for a própria ilha (cadastrado em Locais),
+  // não tratar ILHA/Plataforma como endereço postal.
+  if (looksLikeSystemInstallLocation(t)) return false;
   final siteKey = calibrationIdentityKey(site);
   if (siteKey.isNotEmpty && calibrationIdentityKey(t) == siteKey) return true;
   if (RegExp(r'\bCEP\b', caseSensitive: false).hasMatch(t)) return true;
@@ -2233,6 +2245,9 @@ bool looksLikeClientBaseAlias(
 }) {
   final t = calibrationIdentityKey(value);
   if (t.isEmpty) return false;
+  // ILHA/Plataforma no cadastro ou em "Locais" do cliente NÃO é alias de base.
+  // Antes: sites=["ILHA 3A",…] fazia isUsefulSystemLocal=false → "Sem local".
+  if (looksLikeSystemInstallLocation(value)) return false;
   if (looksLikePostalAddress(value, site: site)) return true;
 
   bool matchesAliasSource(String raw) {
@@ -2245,6 +2260,8 @@ bool looksLikeClientBaseAlias(
 
   if (client != null) {
     for (final s in client.sites) {
+      // Locais do cliente às vezes listam as ilhas; não rejeitar ILHA por isso.
+      if (looksLikeSystemInstallLocation(s)) continue;
       if (calibrationIdentityKey(s) == t) return true;
     }
     if (matchesAliasSource(client.name)) return true;

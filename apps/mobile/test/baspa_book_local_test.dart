@@ -127,6 +127,108 @@ void main() {
     expect(names.length, greaterThanOrEqualTo(3), reason: '$names');
   });
 
+  test(
+    'ILHA em sites/site do cliente não vira Sem local (bug base alias)',
+    () {
+      final client = SavedClient(
+        id: 'vibra',
+        name: 'VIBRA ENERGIA S.A - BASPA',
+        cnpj: '34274233005910',
+        // Usuário/planilha às vezes coloca as ilhas em "Locais".
+        sites: const ['ILHA 3A', 'ILHA 4A', 'ILHA 5A', 'ILHA 5B'],
+        systems: const [
+          ClientSystem(
+            id: 'sys-3a',
+            installLocation: 'ILHA 3A',
+            assemblyTag: 'FIQ 3A',
+            instruments: [
+              ClientInstrument(
+                id: 'm3',
+                role: ClientInstrumentRole.meter,
+                tag: 'FT 3A',
+                serialNumber: 'SN-3A',
+              ),
+            ],
+          ),
+          ClientSystem(
+            id: 'sys-5b',
+            installLocation: 'ILHA 5B',
+            assemblyTag: 'FIQ 5B',
+            instruments: [
+              ClientInstrument(
+                id: 'm5',
+                role: ClientInstrumentRole.meter,
+                tag: 'FT 5B',
+                serialNumber: 'SN-5B',
+              ),
+            ],
+          ),
+        ],
+        updatedAt: DateTime(2026, 11, 14),
+      );
+
+      expect(looksLikeSystemInstallLocation('ILHA 3A'), isTrue);
+      expect(looksLikeClientBaseAlias('ILHA 3A', client: client), isFalse);
+      expect(looksLikeClientBaseAlias('BASPA', clientName: client.name), isTrue);
+      expect(
+        looksLikePostalAddress('ILHA 3A', site: 'ILHA 3A'),
+        isFalse,
+      );
+
+      final vol = CalibrationJob(
+        id: 'v',
+        number: 'GS-VOL-2026-0001',
+        kind: CalibrationKind.volumetric,
+        createdAt: DateTime(2026, 11, 14),
+        clientId: client.id,
+        clientName: client.name,
+        installLocation: 'BASPA',
+        presetTag: 'FIQ 3A',
+        equipmentTag: 'FT 3A',
+        serialNumber: 'SN-3A',
+        systemId: 'sys-3a',
+        site: client.primarySite, // "ILHA 3A" — não pode anular o local
+      );
+      expect(
+        resolveCertificateInstallLocation(vol, client: client),
+        'ILHA 3A',
+      );
+
+      final jobs = [
+        vol,
+        CalibrationJob(
+          id: 'v5',
+          number: 'GS-VOL-2026-0002',
+          kind: CalibrationKind.volumetric,
+          createdAt: DateTime(2026, 11, 14),
+          clientId: client.id,
+          clientName: client.name,
+          installLocation: 'BASPA',
+          presetTag: 'FIQ 5B',
+          equipmentTag: 'FT 5B',
+          serialNumber: 'SN-5B',
+          systemId: 'sys-5b',
+          site: client.primarySite,
+        ),
+      ];
+      final prepared = [
+        for (final job in jobs)
+          job.copyWith(
+            installLocation: resolveCertificateInstallLocation(
+              job,
+              client: client,
+            ),
+          ),
+      ];
+      final groups = groupJobsForCertificateBundle(prepared);
+      expect(groups.map((g) => g.location), isNot(contains('Sem local do sistema')));
+      expect(
+        groups.map((g) => g.location).toSet(),
+        containsAll(['ILHA 3A', 'ILHA 5B']),
+      );
+    },
+  );
+
   test('TAG repetida entre ilhas não anula N/S único (bug Sem local)', () {
     const systems = [
       ClientSystem(
