@@ -216,11 +216,12 @@ int extraMinutesForWeekIndex(
   int? dailyLimitOverride,
 }) {
   if (workedMinutes <= 0) return 0;
-  if (mondayBasedIndex >= 6) return workedMinutes;
+  // Com carga cadastrada: o limite do dia vale inclusive no domingo.
   if (dailyLimitOverride != null) {
     final extra = workedMinutes - dailyLimitOverride;
     return extra < 0 ? 0 : extra;
   }
+  if (mondayBasedIndex >= 6) return workedMinutes;
   if (mondayBasedIndex == 5) {
     final extra = workedMinutes - saturdayLimitMinutes;
     return extra < 0 ? 0 : extra;
@@ -235,11 +236,12 @@ int extraMinutesForDay({
   int? dailyLimitOverride,
 }) {
   if (workedMinutes <= 0) return 0;
-  if (holiday || day.weekday == DateTime.sunday) return workedMinutes;
+  // Escala com horas/dia por weekday: domingo/feriado NÃO forçam 100% extra.
   if (dailyLimitOverride != null) {
     final extra = workedMinutes - dailyLimitOverride;
     return extra < 0 ? 0 : extra;
   }
+  if (holiday || day.weekday == DateTime.sunday) return workedMinutes;
   if (day.weekday == DateTime.saturday) {
     final extra = workedMinutes - saturdayLimitMinutes;
     return extra < 0 ? 0 : extra;

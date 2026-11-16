@@ -171,6 +171,7 @@ HoursReport buildHoursReport({
     final hours = dayHoursFromRdos(dayRdos);
     clients.removeWhere((item) => item.isEmpty);
     final schedule = scheduleForDay(schedules, day);
+    final dayRule = schedule?.ruleForDate(day);
     rows.add(
       HoursDayRow(
         date: day,
@@ -187,10 +188,10 @@ HoursReport buildHoursReport({
           workedMinutes: hours.workedMinutes,
           day: day,
           holiday: holiday.isHoliday,
-          dailyLimitOverride: schedule?.dailyLimitMinutes,
+          dailyLimitOverride: dayRule?.limitMinutes,
         ),
         nightMinutes: hours.nightMinutes,
-        overtimePercent: schedule?.overtimePercent,
+        overtimePercent: dayRule?.overtimePercent,
         scheduleLabel: schedule?.label ?? '',
       ),
     );

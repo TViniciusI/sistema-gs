@@ -338,9 +338,11 @@ List<TechnicianWeekHours> weekHoursByTechnician({
               workedMinutes: entry.value[i],
               day: days[i],
               holiday: brazilHoliday(days[i]).isHoliday,
-              dailyLimitOverride:
-                  scheduleForDay(schedulesOf(entry.key), days[i])
-                      ?.dailyLimitMinutes,
+              dailyLimitOverride: () {
+                final schedule =
+                    scheduleForDay(schedulesOf(entry.key), days[i]);
+                return schedule?.limitMinutesFor(days[i]);
+              }(),
             ),
         ],
       ),
