@@ -59,6 +59,7 @@ const USER_HEADERS = [
   'cargo',
   'calibracao',
   'permissoes',
+  'jornada',
 ];
 
 var CALLBACK_ = '';
@@ -220,6 +221,10 @@ function handle_(p) {
   if (action === 'setpermissoes' || action === 'permissoes' || action === 'setpermissions') {
     if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
     return setPermissoes_(ss, p);
+  }
+  if (action === 'setjornada' || action === 'jornada' || action === 'setschedules') {
+    if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
+    return setJornada_(ss, p);
   }
   if (action === 'setativo') {
     if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
@@ -776,6 +781,7 @@ function readUsers_(sheet) {
       cargo: String(cell_(row, map, 'cargo') || '').trim().slice(0, 80),
       calibracao: normalizeCalibracao_(cell_(row, map, 'calibracao')),
       permissoes: String(cell_(row, map, 'permissoes') || '').trim() || 'geral',
+      jornada: String(cell_(row, map, 'jornada') || '').trim(),
     });
   }
   return users;
@@ -799,7 +805,39 @@ function publicUser_(user) {
     cargo: user.cargo || '',
     calibracao: user.calibracao || 'nao',
     permissoes: user.permissoes || 'geral',
+    jornada: user.jornada || '',
   };
+}
+
+function normalizeJornada_(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return '';
+    return JSON.stringify(parsed).slice(0, 50000);
+  } catch (err) {
+    return '';
+  }
+}
+
+function setJornada_(ss, p) {
+  ensureSheets_(ss);
+  const sheet = ss.getSheetByName('usuarios');
+  ensureUserColumns_(sheet);
+  const user = findUser_(readUsers_(sheet), p.email || p.login);
+  if (!user) return json_({ ok: false, error: 'Usuário não encontrado.' });
+  const map = colMap_(sheet);
+  if (map.jornada < 0) {
+    return json_({
+      ok: false,
+      error: 'Atualize o script para gravar a carga horária (jornada).',
+    });
+  }
+  sheet
+    .getRange(user.row, map.jornada + 1)
+    .setValue(normalizeJornada_(p.jornada || p.value || ''));
+  return json_({ ok: true, users: publicUsers_(ss) });
 }
 
 function normalizeFuncao_(raw) {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:gs_mobile/auth/staff_store.dart';
 import 'package:gs_mobile/core/theme.dart';
 import 'package:gs_mobile/data/br_holidays.dart';
 import 'package:gs_mobile/data/field_store.dart';
 import 'package:gs_mobile/data/models.dart';
 import 'package:gs_mobile/data/week_agenda.dart';
+import 'package:gs_mobile/data/work_schedule.dart';
 import 'package:gs_mobile/demo/auth.dart';
 import 'package:gs_mobile/features/os/os_hub_page.dart';
 import 'package:intl/intl.dart';
@@ -92,6 +94,7 @@ class _WeekAgendaPanelState extends State<WeekAgendaPanel> {
       animation: Listenable.merge([
         FieldStore.instance,
         AuthSession.instance,
+        StaffStore.instance,
       ]),
       builder: (context, _) {
         final days = daysOfWeek(_weekStart);
@@ -100,6 +103,11 @@ class _WeekAgendaPanelState extends State<WeekAgendaPanel> {
             '${DateFormat('dd/MM').format(_weekStart)} — ${DateFormat('dd/MM').format(end)}';
         final team = !widget.onlyMine;
         final user = AuthSession.instance.user;
+        final schedulesByName = <String, List<WorkSchedulePeriod>>{
+          for (final account in StaffStore.instance.employees)
+            if (account.active && account.name.trim().isNotEmpty)
+              account.name.trim(): account.schedules,
+        };
         final hours = weekHoursByTechnician(
           orders: _orders,
           weekStart: _weekStart,
@@ -111,6 +119,7 @@ class _WeekAgendaPanelState extends State<WeekAgendaPanel> {
           viewerIds: team || user == null
               ? const <String>{}
               : assigneeKeysFor(user),
+          schedulesByName: schedulesByName,
         );
 
         return Column(
@@ -440,8 +449,8 @@ class _HoursCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             team
-                ? 'Entrada e saída do RDO de cada técnico presente no dia (não só quem assinou), menos 1h de almoço. Extra depois de 8h no dia (sábado depois de 4h; domingo e feriado o dia todo). Das 22h às 05h conta adicional noturno. Admin acerta horários em Funcionários → Analisar horas.'
-                : 'Entrada e saída do RDO, menos 1h de almoço. Extra depois de 8h no dia (sábado depois de 4h; domingo e feriado o dia todo). Das 22h às 05h conta adicional noturno.',
+                ? 'Entrada e saída do RDO de cada técnico presente no dia (não só quem assinou), menos 1h de almoço. Extra usa a carga horária cadastrada (ou 8h/4h padrão). Domingo e feriado o dia todo. Das 22h às 05h conta adicional noturno. Admin define carga em Funcionários → Carga horária.'
+                : 'Entrada e saída do RDO, menos 1h de almoço. Extra usa a carga horária cadastrada (ou 8h/4h padrão). Domingo e feriado o dia todo. Das 22h às 05h conta adicional noturno.',
             style: const TextStyle(
               fontSize: 13,
               height: 1.35,

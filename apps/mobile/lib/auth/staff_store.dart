@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:gs_mobile/auth/account_api.dart';
+import 'package:gs_mobile/data/work_schedule.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StaffStore extends ChangeNotifier {
@@ -105,13 +106,34 @@ class StaffStore extends ChangeNotifier {
       return;
     }
     if (result.users.isNotEmpty) {
-      users = result.users;
+      users = _mergePreservingSchedules(users, result.users);
       lastError = null;
       await _persist();
       notifyListeners();
       return;
     }
     await refresh();
+  }
+
+  /// Script antigo sem coluna `jornada` volta lista vazia — não apaga carga local.
+  List<RemoteAccount> _mergePreservingSchedules(
+    List<RemoteAccount> previous,
+    List<RemoteAccount> incoming,
+  ) {
+    if (previous.isEmpty) return incoming;
+    final prevByEmail = {
+      for (final user in previous) user.email.trim().toLowerCase(): user,
+    };
+    return [
+      for (final user in incoming)
+        () {
+          final old = prevByEmail[user.email.trim().toLowerCase()];
+          if (old == null || user.schedules.isNotEmpty || old.schedules.isEmpty) {
+            return user;
+          }
+          return user.copyWith(schedules: old.schedules);
+        }(),
+    ];
   }
 
   Future<void> patchFuncao(String email, String funcao) async {
@@ -169,6 +191,22 @@ class StaffStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> patchSchedules(
+    String email,
+    List<WorkSchedulePeriod> schedules,
+  ) async {
+    final key = email.trim().toLowerCase();
+    users = [
+      for (final user in users)
+        user.email == key || user.login == key
+            ? user.copyWith(schedules: schedules)
+            : user,
+    ];
+    lastError = null;
+    await _persist();
+    notifyListeners();
+  }
+
   Future<void> refresh() async {
     final result = await AccountApi.instance.listUsers();
     if (!result.ok) {
@@ -176,7 +214,7 @@ class StaffStore extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    users = result.users;
+    users = _mergePreservingSchedules(users, result.users);
     lastError = null;
     await _persist();
     notifyListeners();
@@ -200,6 +238,7 @@ class StaffStore extends ChangeNotifier {
             'cargo': user.cargo,
             'calibracao': calibrationAccessToSheet(user.calibrationAccess),
             'permissoes': user.permissions,
+            'jornada': encodeWorkSchedules(user.schedules),
           },
       ]),
     );

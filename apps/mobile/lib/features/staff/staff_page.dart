@@ -7,6 +7,7 @@ import 'package:gs_mobile/data/staff_digital_cert.dart';
 import 'package:gs_mobile/features/staff/hours_analyze_page.dart';
 import 'package:gs_mobile/features/staff/hours_report_panel.dart';
 import 'package:gs_mobile/features/staff/staff_docs_page.dart';
+import 'package:gs_mobile/features/staff/staff_schedule_page.dart';
 
 enum _RosterFilter { all, pending, technicians, office, inactive, refused }
 
@@ -963,7 +964,23 @@ class _StaffCardState extends State<_StaffCard> {
                   style: _compactFill.copyWith(
                     backgroundColor: const WidgetStatePropertyAll(GsTheme.navy),
                   ),
-                  label: const Text('Analisar / acertar horas'),
+                  label: const Text('Analisar horas'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => StaffSchedulePage(email: user.email),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                  style: _compactOutline,
+                  label: const Text('Carga horária'),
                 ),
               ),
               const SizedBox(height: 8),

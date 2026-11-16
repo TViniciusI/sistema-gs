@@ -6,6 +6,7 @@ import 'package:gs_mobile/auth/gas_http.dart';
 import 'package:gs_mobile/core/app_version.dart';
 import 'package:gs_mobile/core/config.dart';
 import 'package:gs_mobile/data/office_mailto.dart';
+import 'package:gs_mobile/data/work_schedule.dart';
 
 String passwordHash(String login, String password) {
   return sha256
@@ -220,6 +221,7 @@ class RemoteAccount {
     this.cargo = '',
     this.calibrationAccess = CalibrationAccess.none,
     this.permissions = 'geral',
+    this.schedules = const [],
   });
 
   final String email;
@@ -233,6 +235,7 @@ class RemoteAccount {
   final String cargo;
   final CalibrationAccess calibrationAccess;
   final String permissions;
+  final List<WorkSchedulePeriod> schedules;
 
   bool get isGeneralAccess {
     final clean = permissions.trim().toLowerCase();
@@ -275,6 +278,7 @@ class RemoteAccount {
     String? cargo,
     CalibrationAccess? calibrationAccess,
     String? permissions,
+    List<WorkSchedulePeriod>? schedules,
   }) {
     return RemoteAccount(
       email: email ?? this.email,
@@ -288,6 +292,7 @@ class RemoteAccount {
       cargo: cargo ?? this.cargo,
       calibrationAccess: calibrationAccess ?? this.calibrationAccess,
       permissions: permissions ?? this.permissions,
+      schedules: schedules ?? this.schedules,
     );
   }
 
@@ -314,6 +319,9 @@ class RemoteAccount {
                   json['permissions']?.toString() ??
                   'geral')
               .trim(),
+      schedules: decodeWorkSchedules(
+        json['jornada'] ?? json['schedules'] ?? json['carga'],
+      ),
     );
   }
 }
@@ -511,6 +519,18 @@ class AccountApi {
       'token': AppConfig.loginGateToken,
       'email': email,
       'cargo': cargo,
+    });
+  }
+
+  Future<AccountResult> setSchedules({
+    required String email,
+    required List<WorkSchedulePeriod> schedules,
+  }) {
+    return _call({
+      'action': 'setjornada',
+      'token': AppConfig.loginGateToken,
+      'email': email,
+      'jornada': encodeWorkSchedules(schedules),
     });
   }
 
