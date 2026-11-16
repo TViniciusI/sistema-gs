@@ -93,6 +93,33 @@ List<DateTime> daysInRange(DateTime from, DateTime to) {
   return days;
 }
 
+/// RDOs do dia que contam horas para o técnico (para o admin acertar o relógio).
+List<({SavedOs os, SavedRdo rdo})> rdosForTechnicianDay({
+  required String technicianName,
+  required Set<String> viewerIds,
+  required Iterable<SavedOs> orders,
+  required DateTime day,
+}) {
+  final out = <({SavedOs os, SavedRdo rdo})>[];
+  for (final os in orders) {
+    if (os.status == OsStatus.rascunho) continue;
+    for (final rdo in os.rdos) {
+      if (!isSameDay(rdo.date, day)) continue;
+      if (!rdoHoursBelongToTechnician(
+        os: os,
+        rdo: rdo,
+        technicianName: technicianName,
+        viewerIds: viewerIds,
+      )) {
+        continue;
+      }
+      out.add((os: os, rdo: rdo));
+    }
+  }
+  out.sort((a, b) => a.os.number.compareTo(b.os.number));
+  return out;
+}
+
 HoursReport buildHoursReport({
   required String technicianName,
   required Set<String> viewerIds,

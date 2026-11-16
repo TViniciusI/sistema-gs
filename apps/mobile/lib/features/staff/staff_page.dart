@@ -963,7 +963,7 @@ class _StaffCardState extends State<_StaffCard> {
                   style: _compactFill.copyWith(
                     backgroundColor: const WidgetStatePropertyAll(GsTheme.navy),
                   ),
-                  label: const Text('Analisar horas'),
+                  label: const Text('Analisar / acertar horas'),
                 ),
               ),
               const SizedBox(height: 8),
