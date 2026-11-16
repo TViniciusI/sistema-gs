@@ -6,7 +6,7 @@ import 'package:gs_mobile/data/week_agenda.dart';
 import 'package:gs_mobile/data/work_schedule.dart';
 import 'package:intl/intl.dart';
 
-/// Admin define carga horária por período (início, fim, horas/dia, % extra).
+/// Admin define carga horária por período, com regra nos 7 dias da semana.
 class StaffSchedulePage extends StatefulWidget {
   const StaffSchedulePage({super.key, required this.email});
 
@@ -148,9 +148,11 @@ class _StaffSchedulePageState extends State<StaffSchedulePage> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                   children: [
                     const Text(
-                      'Defina a carga a partir de uma data. Ex.: escala 6x1 com 8h/dia; '
-                      'depois outro período com 12h/dia e % de extra quando passar do limite. '
-                      'Sem período cadastrado, o app usa a regra padrão (8h útil / 4h sábado).',
+                      'Cadastre a escala com os 7 dias da semana: horas normais e % de extra '
+                      'em cada dia (segunda a domingo). Domingo também segue a carga — pode '
+                      'trabalhar sem contar tudo como extra. 0h no dia = folga (tudo que '
+                      'trabalhar vira extra). Sem período, vale a regra padrão (8h / 4h sábado / '
+                      'domingo e feriado 100% extra).',
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.4,
@@ -172,19 +174,24 @@ class _StaffSchedulePageState extends State<StaffSchedulePage> {
                         Card(
                           margin: const EdgeInsets.only(bottom: 10),
                           child: ListTile(
+                            isThreeLine: true,
                             title: Text(
                               period.label.trim().isEmpty
-                                  ? '${period.hoursPerDay}h/dia · extra ${period.overtimePercent % 1 == 0 ? period.overtimePercent.toStringAsFixed(0) : period.overtimePercent}%'
-                                  : '${period.label} · ${period.hoursPerDay}h/dia · extra ${period.overtimePercent % 1 == 0 ? period.overtimePercent.toStringAsFixed(0) : period.overtimePercent}%',
+                                  ? 'Escala'
+                                  : period.label,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: GsTheme.navy,
                               ),
                             ),
                             subtitle: Text(
-                              period.end == null
-                                  ? 'De ${fmt.format(period.start)} em diante'
-                                  : 'De ${fmt.format(period.start)} até ${fmt.format(period.end!)}',
+                              [
+                                period.end == null
+                                    ? 'De ${fmt.format(period.start)} em diante'
+                                    : 'De ${fmt.format(period.start)} até ${fmt.format(period.end!)}',
+                                period.weekdaysSummary,
+                              ].join('\n'),
+                              style: const TextStyle(height: 1.35),
                             ),
                             trailing: Wrap(
                               spacing: 4,
@@ -227,10 +234,17 @@ class _SchedulePeriodDialog extends StatefulWidget {
 class _SchedulePeriodDialogState extends State<_SchedulePeriodDialog> {
   late DateTime _start;
   DateTime? _end;
-  late final TextEditingController _hours;
-  late final TextEditingController _percent;
   late final TextEditingController _label;
+  late final TextEditingController _fillHours;
+  late final TextEditingController _fillPercent;
+  late final List<TextEditingController> _hours;
+  late final List<TextEditingController> _percents;
   String? _error;
+
+  String _fmtNum(double value) {
+    if (value % 1 == 0) return value.toStringAsFixed(0);
+    return value.toString();
+  }
 
   @override
   void initState() {
@@ -238,20 +252,32 @@ class _SchedulePeriodDialogState extends State<_SchedulePeriodDialog> {
     final initial = widget.initial;
     _start = dateOnly(initial?.start ?? DateTime.now());
     _end = initial?.end == null ? null : dateOnly(initial!.end!);
-    _hours = TextEditingController(
-      text: (initial?.hoursPerDay ?? 8).toString().replaceAll('.0', ''),
-    );
-    _percent = TextEditingController(
-      text: (initial?.overtimePercent ?? 50).toString().replaceAll('.0', ''),
-    );
     _label = TextEditingController(text: initial?.label ?? '');
+    final rules = initial?.weekdays ??
+        defaultWeekdayRules(hours: 8, overtimePercent: 50);
+    _hours = [
+      for (final rule in rules)
+        TextEditingController(text: _fmtNum(rule.hours)),
+    ];
+    _percents = [
+      for (final rule in rules)
+        TextEditingController(text: _fmtNum(rule.overtimePercent)),
+    ];
+    _fillHours = TextEditingController(text: '8');
+    _fillPercent = TextEditingController(text: '50');
   }
 
   @override
   void dispose() {
-    _hours.dispose();
-    _percent.dispose();
     _label.dispose();
+    _fillHours.dispose();
+    _fillPercent.dispose();
+    for (final c in _hours) {
+      c.dispose();
+    }
+    for (final c in _percents) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -280,25 +306,66 @@ class _SchedulePeriodDialogState extends State<_SchedulePeriodDialog> {
     setState(() => _end = dateOnly(picked));
   }
 
-  void _submit() {
-    final hours = double.tryParse(_hours.text.trim().replaceAll(',', '.'));
-    final percent = double.tryParse(_percent.text.trim().replaceAll(',', '.'));
-    if (hours == null || hours <= 0 || hours > 24) {
-      setState(() => _error = 'Informe as horas por dia (ex.: 8 ou 12).');
+  void _applyToAll() {
+    final hours = double.tryParse(_fillHours.text.trim().replaceAll(',', '.'));
+    final percent =
+        double.tryParse(_fillPercent.text.trim().replaceAll(',', '.'));
+    if (hours == null || hours < 0 || hours > 24) {
+      setState(() => _error = 'Horas para aplicar: use 0 a 24.');
       return;
     }
     if (percent == null || percent < 0 || percent > 200) {
-      setState(() => _error = 'Informe o % de extra (ex.: 50 ou 100).');
+      setState(() => _error = '% extra para aplicar: use 0 a 200.');
       return;
     }
+    setState(() {
+      _error = null;
+      for (final c in _hours) {
+        c.text = _fmtNum(hours);
+      }
+      for (final c in _percents) {
+        c.text = _fmtNum(percent);
+      }
+    });
+  }
+
+  void _submit() {
+    final days = <WorkDayRule>[];
+    for (var i = 0; i < 7; i++) {
+      final hours =
+          double.tryParse(_hours[i].text.trim().replaceAll(',', '.'));
+      final percent =
+          double.tryParse(_percents[i].text.trim().replaceAll(',', '.'));
+      if (hours == null || hours < 0 || hours > 24) {
+        setState(
+          () => _error =
+              '${scheduleWeekdayLabels[i]}: informe as horas (0 a 24).',
+        );
+        return;
+      }
+      if (percent == null || percent < 0 || percent > 200) {
+        setState(
+          () => _error =
+              '${scheduleWeekdayLabels[i]}: informe o % de extra (0 a 200).',
+        );
+        return;
+      }
+      days.add(WorkDayRule(hours: hours, overtimePercent: percent));
+    }
+    final positive = [for (final d in days) if (d.hours > 0) d.hours];
+    final baseHours = positive.isEmpty
+        ? 8.0
+        : positive.reduce((a, b) => a + b) / positive.length;
+    final basePercent = days.first.overtimePercent;
     Navigator.of(context).pop(
       WorkSchedulePeriod(
         id: widget.initial?.id ??
             DateTime.now().microsecondsSinceEpoch.toString(),
         start: _start,
         end: _end,
-        hoursPerDay: hours,
-        overtimePercent: percent,
+        weekdays: days,
+        hoursPerDay: baseHours.isFinite ? baseHours : 8,
+        overtimePercent: basePercent,
         label: _label.text.trim(),
       ),
     );
@@ -310,16 +377,17 @@ class _SchedulePeriodDialogState extends State<_SchedulePeriodDialog> {
     return AlertDialog(
       title: Text(widget.initial == null ? 'Nova carga horária' : 'Editar carga'),
       content: SizedBox(
-        width: 420,
+        width: 480,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
                 controller: _label,
                 decoration: const InputDecoration(
                   labelText: 'Nome da escala (opcional)',
-                  hintText: 'Ex.: 6x1, plantão 12h',
+                  hintText: 'Ex.: 6x1, plantão',
                 ),
               ),
               const SizedBox(height: 10),
@@ -352,17 +420,25 @@ class _SchedulePeriodDialogState extends State<_SchedulePeriodDialog> {
                     child: const Text('Sem data final'),
                   ),
                 ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
+              const Text(
+                'Preencher todos os dias',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: GsTheme.navy,
+                ),
+              ),
+              const SizedBox(height: 6),
               Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      controller: _hours,
+                      controller: _fillHours,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                       decoration: const InputDecoration(
-                        labelText: 'Horas por dia',
+                        labelText: 'Horas',
                         hintText: '8',
                       ),
                     ),
@@ -370,25 +446,85 @@ class _SchedulePeriodDialogState extends State<_SchedulePeriodDialog> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
-                      controller: _percent,
+                      controller: _fillPercent,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                       decoration: const InputDecoration(
-                        labelText: '% extra se passar',
+                        labelText: '% extra',
                         hintText: '50',
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: _applyToAll,
+                    child: const Text('Aplicar'),
+                  ),
                 ],
               ),
-              if (_error != null) ...[
+              const SizedBox(height: 14),
+              const Text(
+                'Dias da semana',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: GsTheme.navy,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Horas = carga normal do dia. % = adicional sobre o que passar. '
+                'Domingo com 8h/50% só gera extra depois das 8h.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF5C6570)),
+              ),
+              const SizedBox(height: 8),
+              for (var i = 0; i < 7; i++) ...[
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 78,
+                      child: Text(
+                        scheduleWeekdayLabels[i],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: GsTheme.navy,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _hours[i],
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Horas',
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _percents[i],
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: '% extra',
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
+              ],
+              if (_error != null)
                 Text(
                   _error!,
                   style: const TextStyle(color: Color(0xFFB00020)),
                 ),
-              ],
             ],
           ),
         ),
