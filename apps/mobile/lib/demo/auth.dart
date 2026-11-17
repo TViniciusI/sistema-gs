@@ -598,16 +598,31 @@ bool personInNames(String name, Iterable<String> names) {
 }
 
 /// Equipe da OS que esteve no dia deste RDO (sem os marcados como ausentes).
+/// Sempre inclui quem assinou o RDO — mesmo se não estiver na lista da OS
+/// (antes sumia do card "Horas da equipe").
 List<String> presentTeamForRdo(
   SavedOs os,
   SavedRdo rdo, {
   String signedBy = '',
 }) {
-  final team = teamNamesForOs(os, signedBy: signedBy);
-  if (rdo.absentNames.isEmpty) return team;
-  final present = [
+  final lead = (signedBy.trim().isNotEmpty
+          ? signedBy
+          : rdo.responsibleName)
+      .trim();
+  final team = teamNamesForOs(os, signedBy: lead);
+  final candidates = <String>[
     for (final name in team)
-      if (name != '-' && !personInNames(name, rdo.absentNames)) name,
+      if (name.trim().isNotEmpty && name != '-') name.trim(),
+  ];
+  if (lead.isNotEmpty && lead != '-' && !personInNames(lead, candidates)) {
+    candidates.add(lead);
+  }
+  if (rdo.absentNames.isEmpty) {
+    return candidates.isEmpty ? const ['-'] : candidates;
+  }
+  final present = [
+    for (final name in candidates)
+      if (!personInNames(name, rdo.absentNames)) name,
   ];
   return present.isEmpty ? const ['-'] : present;
 }

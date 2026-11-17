@@ -53,4 +53,43 @@ void main() {
       }
     }
   });
+
+  test('assinante do RDO entra mesmo fora da lista da OS', () {
+    final monday = DateTime(2026, 11, 9);
+    final os = SavedOs(
+      id: 'os-signer-only',
+      number: '048/26',
+      ownerEmail: 'administrativo@gssolucoestec.com.br',
+      createdAt: monday,
+      files: const [],
+      technicianName: 'Cleber Guimarães',
+      technicianEmails: const ['cleber@gssolucoestec.com.br'],
+      status: OsStatus.emAndamento,
+      rdo: const RdoData(client: 'VIBRA'),
+      rdos: [
+        SavedRdo(
+          id: 'r-signer',
+          date: monday,
+          clockIn: '08:00',
+          lunchStart: '12:00',
+          lunchEnd: '13:00',
+          clockOut: '17:00',
+          description: 'Campo',
+          notes: '',
+          files: const [],
+          createdAt: monday,
+          responsibleName: 'Felipe Souza',
+        ),
+      ],
+    );
+
+    final rows = weekHoursByTechnician(
+      orders: [os],
+      weekStart: startOfWeek(monday),
+    );
+    final names = {for (final row in rows) row.name};
+    expect(names, contains('Cleber Guimarães'));
+    expect(names, contains('Felipe Souza'));
+    expect(names.length, 2);
+  });
 }
