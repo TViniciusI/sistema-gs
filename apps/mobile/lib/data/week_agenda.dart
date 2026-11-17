@@ -257,18 +257,25 @@ List<TechnicianWeekHours> weekHoursByTechnician({
   String? viewerName,
   Set<String> viewerIds = const {},
   Map<String, List<WorkSchedulePeriod>> schedulesByName = const {},
+  /// Nomes do quadro (StaffStore) para não perder técnico só no e-mail da OS.
+  Iterable<String> rosterNames = const [],
 }) {
   final days = daysOfWeek(weekStart);
   final minutes = <String, List<int>>{};
   final nights = <String, List<int>>{};
   final personal = viewerName?.trim() ?? '';
+  final roster = [
+    for (final name in rosterNames)
+      if (name.trim().isNotEmpty && name.trim() != '-') name.trim(),
+  ];
 
   void setHours(String name, int index, DayWorkHours hours) {
     final key = name.trim().isEmpty ? 'Equipe' : name.trim();
     minutes.putIfAbsent(key, () => List<int>.filled(7, 0));
     nights.putIfAbsent(key, () => List<int>.filled(7, 0));
-    minutes[key]![index] = hours.workedMinutes;
-    nights[key]![index] = hours.nightMinutes;
+    // Soma se a pessoa já tiver horas no mesmo dia (várias OS).
+    minutes[key]![index] += hours.workedMinutes;
+    nights[key]![index] += hours.nightMinutes;
   }
 
   List<WorkSchedulePeriod> schedulesOf(String name) {
@@ -280,6 +287,18 @@ List<TechnicianWeekHours> weekHoursByTechnician({
       if (personFirstKey(entry.key) == key) return entry.value;
     }
     return const [];
+  }
+
+  String canonicalName(String raw) {
+    final key = personFirstKey(raw);
+    if (key.isEmpty) return raw.trim();
+    for (final known in roster) {
+      if (personFirstKey(known) == key) return known;
+    }
+    for (final existing in minutes.keys) {
+      if (personFirstKey(existing) == key) return existing;
+    }
+    return raw.trim();
   }
 
   for (var i = 0; i < days.length; i++) {
@@ -305,25 +324,49 @@ List<TechnicianWeekHours> weekHoursByTechnician({
       }
       continue;
     }
-    // Equipe: todos os presentes no RDO (não só quem assinou).
-    // Antes só entrava job.who (= responsibleName) e sumiam os demais.
+    // Equipe: presentes na OS + quem assinou + quadro Staff (e-mail).
     final byWho = <String, List<SavedRdo>>{};
+    void credit(String raw, SavedRdo rdo) {
+      final name = canonicalName(raw);
+      if (name.isEmpty || name == '-') return;
+      byWho.putIfAbsent(name, () => []).add(rdo);
+    }
+
     for (final job in jobs) {
       if (job.rdo == null) continue;
       final rdo = job.rdo!;
-      final present = presentTeamForRdo(
+      final seenKeys = <String>{};
+      for (final raw in presentTeamForRdo(
         job.os,
         rdo,
         signedBy: rdo.responsibleName,
-      );
-      for (final raw in present) {
-        final name = raw.trim();
-        if (name.isEmpty || name == '-') continue;
-        byWho.putIfAbsent(name, () => []).add(rdo);
+      )) {
+        final key = personFirstKey(raw);
+        if (key.isNotEmpty) seenKeys.add(key);
+        credit(raw, rdo);
+      }
+      for (final raw in roster) {
+        final key = personFirstKey(raw);
+        if (key.isEmpty || seenKeys.contains(key)) continue;
+        if (!rdoHoursBelongToTechnician(
+          os: job.os,
+          rdo: rdo,
+          technicianName: raw,
+          viewerIds: const {},
+        )) {
+          continue;
+        }
+        seenKeys.add(key);
+        credit(raw, rdo);
       }
     }
     for (final entry in byWho.entries) {
-      setHours(entry.key, i, dayHoursFromRdos(entry.value));
+      // Evita contar o mesmo RDO 2x se credit() duplicou referência.
+      final unique = <String, SavedRdo>{};
+      for (final rdo in entry.value) {
+        unique.putIfAbsent(rdo.id, () => rdo);
+      }
+      setHours(entry.key, i, dayHoursFromRdos(unique.values));
     }
   }
   final rows = [

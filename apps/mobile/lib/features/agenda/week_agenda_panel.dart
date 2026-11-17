@@ -108,6 +108,10 @@ class _WeekAgendaPanelState extends State<WeekAgendaPanel> {
             if (account.active && account.name.trim().isNotEmpty)
               account.name.trim(): account.schedules,
         };
+        final rosterNames = [
+          for (final account in StaffStore.instance.technicianAccounts)
+            if (account.name.trim().isNotEmpty) account.name.trim(),
+        ];
         final hours = weekHoursByTechnician(
           orders: _orders,
           weekStart: _weekStart,
@@ -120,6 +124,7 @@ class _WeekAgendaPanelState extends State<WeekAgendaPanel> {
               ? const <String>{}
               : assigneeKeysFor(user),
           schedulesByName: schedulesByName,
+          rosterNames: rosterNames,
         );
 
         return Column(
