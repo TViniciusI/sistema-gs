@@ -7,6 +7,10 @@ import 'package:http/http.dart' as http;
 
 /// Avisa quando o site tem publicação mais nova que a deste navegador.
 /// O PWA offline-first segue rodando a versão em cache até recarregar.
+///
+/// `version.json` (build Flutter) usa o `+N` do pubspec. O `appBuild` em
+/// `app_version.dart` **precisa** ser o mesmo N — senão a faixa amarela
+/// fica presa para sempre (ex.: json 287 vs app 286 na 1.2.94).
 class AppUpdate extends ChangeNotifier {
   AppUpdate._();
   static final instance = AppUpdate._();
@@ -15,8 +19,15 @@ class AppUpdate extends ChangeNotifier {
   int _newBuild = 0;
   var _checking = false;
 
-  bool get available => _newBuild > appBuild;
+  bool get available => _newBuild > appBuild && _newVersion.isNotEmpty;
   String get newVersion => _newVersion;
+
+  void _clearBanner() {
+    if (_newBuild == 0 && _newVersion.isEmpty) return;
+    _newBuild = 0;
+    _newVersion = '';
+    notifyListeners();
+  }
 
   Future<void> check() async {
     if (!kIsWeb || _checking) return;
@@ -33,9 +44,15 @@ class AppUpdate extends ChangeNotifier {
       final data = jsonDecode(res.body);
       if (data is! Map) return;
       final build = int.tryParse('${data['build_number']}') ?? 0;
-      if (build <= _newBuild || build <= appBuild) return;
+      final version = '${data['version'] ?? ''}'.trim();
+      // Já estamos nesta publicação (ou mais nova): some a faixa.
+      if (build <= 0 || build <= appBuild) {
+        _clearBanner();
+        return;
+      }
+      if (build == _newBuild && version == _newVersion) return;
       _newBuild = build;
-      _newVersion = '${data['version'] ?? ''}';
+      _newVersion = version.isEmpty ? 'nova' : version;
       notifyListeners();
     } catch (error) {
       debugPrint('AppUpdate: $error');

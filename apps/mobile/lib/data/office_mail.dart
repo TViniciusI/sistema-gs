@@ -24,6 +24,7 @@ export 'package:gs_mobile/data/office_mailto.dart'
         OfficeMailFile,
         OfficeSendKind,
         MailShareCancelled,
+        isMailAddress,
         officeFileMime,
         gmailComposeUri,
         officeMailtoUri,
@@ -40,7 +41,7 @@ List<String> parseRecipientEmails(String? raw) {
   final emails = <String>{};
   for (final part in raw.split(RegExp(r'[;,\s]+'))) {
     final email = part.trim().toLowerCase();
-    if (email.contains('@')) emails.add(email);
+    if (isMailAddress(email)) emails.add(email);
   }
   return emails.toList();
 }
@@ -51,7 +52,7 @@ String destinationEmailsFor({
 }) {
   final office = officeRecipientTo();
   final client = (clientEmail ?? '').trim();
-  final hasClient = client.contains('@');
+  final hasClient = isMailAddress(client);
   switch (audience) {
     case MailAudience.office:
       return office;
@@ -64,16 +65,28 @@ String destinationEmailsFor({
   }
 }
 
+String? _resolvedTechnicianEmail(String raw) {
+  final value = raw.trim().toLowerCase();
+  if (value.isEmpty) return null;
+  if (isMailAddress(value)) return value;
+  // Handle tipo "@willcardim" ou só o login: resolve pelo cadastro.
+  final login = value.startsWith('@') ? value.substring(1).trim() : value;
+  if (login.isEmpty) return null;
+  final matched = matchUser(login);
+  final mail = matched?.email.trim().toLowerCase() ?? '';
+  return isMailAddress(mail) ? mail : null;
+}
+
 /// E-mails dos técnicos delegados nesta OS (para copiar e colar no envio).
 List<String> technicianEmailsForOs(SavedOs os) {
   final emails = <String>{};
   for (final raw in os.assigneeEmails) {
-    final value = raw.trim().toLowerCase();
-    if (value.contains('@')) emails.add(value);
+    final mail = _resolvedTechnicianEmail(raw);
+    if (mail != null) emails.add(mail);
   }
   for (final user in StaffStore.instance.technicianAccounts) {
     final mail = user.email.trim().toLowerCase();
-    if (!mail.contains('@')) continue;
+    if (!isMailAddress(mail)) continue;
     if (!os.isAssignedToAny(
       assignmentIdsFor(
         email: user.email,
@@ -87,7 +100,7 @@ List<String> technicianEmailsForOs(SavedOs os) {
   }
   for (final known in fieldTechnicians) {
     final mail = known.email.trim().toLowerCase();
-    if (!mail.contains('@')) continue;
+    if (!isMailAddress(mail)) continue;
     if (!os.isAssignedToAny(assigneeKeysFor(known))) continue;
     emails.add(mail);
   }
@@ -257,15 +270,15 @@ List<String> mergeMailRecipients(Iterable<String> extraTo) {
   };
   for (final raw in extraTo) {
     final email = raw.trim().toLowerCase();
-    if (email.contains('@')) emails.add(email);
+    if (isMailAddress(email)) emails.add(email);
   }
-  emails.removeWhere((email) => email.isEmpty || !email.contains('@'));
+  emails.removeWhere((email) => !isMailAddress(email));
   return emails.toList();
 }
 
 String? clientRdoEmail(SavedOs os) {
   final email = os.rdo.baseEmail.trim().toLowerCase();
-  if (email.contains('@')) return email;
+  if (isMailAddress(email)) return email;
   return null;
 }
 
@@ -410,7 +423,7 @@ Future<OfficeSendKind> sendOsToOffice({
   }..removeWhere((email) => email.isEmpty);
   final parsedExtra = [
     for (final email in extraTo)
-      if (email.trim().contains('@')) email.trim().toLowerCase(),
+      if (isMailAddress(email)) email.trim().toLowerCase(),
   ];
   switch (audience) {
     case MailAudience.office:
@@ -454,14 +467,33 @@ Future<OfficeSendKind> sendOsToOffice({
 }
 
 List<OfficeMailFile> _fitMailFiles(List<OfficeMailFile> files) {
-  const maxBytes = 9 * 1024 * 1024;
+  // Alinhado ao MailApp (~25 MB) com folga para base64 no Apps Script.
+  const maxBytes = 20 * 1024 * 1024;
   var total = 0;
   final out = <OfficeMailFile>[];
+  final skipped = <String>[];
   for (final file in files) {
     if (file.bytes.isEmpty) continue;
-    if (total + file.bytes.length > maxBytes) continue;
+    if (total + file.bytes.length > maxBytes) {
+      skipped.add(file.name);
+      continue;
+    }
     total += file.bytes.length;
     out.add(file);
+  }
+  if (out.isEmpty && files.isNotEmpty) {
+    throw StateError(
+      'Os anexos passam do limite do e-mail (~20 MB). '
+      'Marque Compactar em ZIP ou envie em partes.',
+    );
+  }
+  if (skipped.isNotEmpty && out.isNotEmpty) {
+    throw StateError(
+      'Não couberam ${skipped.length} arquivo(s) no e-mail '
+      '(${skipped.take(3).join(', ')}'
+      '${skipped.length > 3 ? '…' : ''}). '
+      'Marque Compactar em ZIP ou envie menos itens.',
+    );
   }
   return out;
 }

@@ -9,9 +9,9 @@ List<String> officeRecipientEmails() {
     if (!user.active) continue;
     if (user.role != 'admin' && user.role != 'ambos') continue;
     final email = user.email.trim().toLowerCase();
-    if (email.contains('@')) emails.add(email);
+    if (isMailAddress(email)) emails.add(email);
   }
-  emails.removeWhere((email) => email.isEmpty || !email.contains('@'));
+  emails.removeWhere((email) => !isMailAddress(email));
   return emails.toList();
 }
 

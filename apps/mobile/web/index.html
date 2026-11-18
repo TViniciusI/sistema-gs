@@ -218,26 +218,31 @@
         });
       };
       window.gsForceHardReload = function () {
+        // Espera limpar SW/cache antes de recarregar — senão o PWA
+        // volta a abrir a build velha e a faixa "Atualizar" não some.
+        var jobs = [];
         try {
           if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (registrations) {
-              for (var i = 0; i < registrations.length; i++) {
-                registrations[i].unregister();
-              }
-            });
+            jobs.push(
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister(); }));
+              })
+            );
           }
           if ('caches' in window) {
-            caches.keys().then(function (names) {
-              for (var i = 0; i < names.length; i++) {
-                caches.delete(names[i]);
-              }
-            });
+            jobs.push(
+              caches.keys().then(function (names) {
+                return Promise.all(names.map(function (n) { return caches.delete(n); }));
+              })
+            );
           }
         } catch (e) {}
-        setTimeout(function () {
+        function go() {
           var url = window.location.origin + window.location.pathname;
-          window.location.href = url + '?_r=' + Date.now();
-        }, 120);
+          window.location.replace(url + '?_r=' + Date.now());
+        }
+        Promise.all(jobs).then(go, go);
+        setTimeout(go, 2500);
       };
     })();
   </script>
@@ -254,7 +259,7 @@
     <div class="gs-word"></div>
     <div class="gs-loader"><i></i></div>
     <span class="gs-boot-status">Abrindo o GS Campo…</span>
-    <span class="gs-boot-version">versão 1.2.94</span>
+    <span class="gs-boot-version">versão 1.2.96</span>
   </div>
   <script>
     window.addEventListener("flutter-first-frame", function () {

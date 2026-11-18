@@ -16,6 +16,21 @@ enum OfficeSendKind { server, shared, gmail, mailto, eml, needsServer }
 
 class MailShareCancelled implements Exception {}
 
+/// E-mail utilizável: precisa de parte local e domínio com ponto.
+/// Rejeita handles tipo `@willcardim` e logins sem domínio.
+bool isMailAddress(String? raw) {
+  final email = (raw ?? '').trim().toLowerCase();
+  if (email.isEmpty) return false;
+  final at = email.indexOf('@');
+  if (at <= 0 || at != email.lastIndexOf('@')) return false;
+  final local = email.substring(0, at);
+  final domain = email.substring(at + 1);
+  if (local.isEmpty || domain.isEmpty) return false;
+  if (domain.startsWith('.') || domain.endsWith('.')) return false;
+  if (!domain.contains('.')) return false;
+  return !email.contains(' ');
+}
+
 String officeShareMailText({
   required List<String> to,
   required List<String> cc,
@@ -37,6 +52,7 @@ String officeShareMailText({
 String officeFileMime(String fileName) {
   final lower = fileName.toLowerCase();
   if (lower.endsWith('.pdf')) return 'application/pdf';
+  if (lower.endsWith('.zip')) return 'application/zip';
   if (lower.endsWith('.eml')) return 'message/rfc822';
   if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
   if (lower.endsWith('.png')) return 'image/png';
@@ -57,7 +73,7 @@ String officeFileMime(String fileName) {
 List<String> _mailAddresses(Iterable<String> emails) {
   return [
     for (final email in emails)
-      if (email.trim().contains('@')) email.trim(),
+      if (isMailAddress(email)) email.trim(),
   ];
 }
 

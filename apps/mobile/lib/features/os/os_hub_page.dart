@@ -51,6 +51,7 @@ class _OsHubPageState extends State<OsHubPage> {
   final _ephemeral = <DraftFile>[];
   late final TextEditingController _techEmails;
   var _busy = false;
+  var _compressZip = true;
   String? _editLockWarning;
   String? _slotMismatchWarning;
   Timer? _lockHeartbeat;
@@ -1278,20 +1279,67 @@ class _OsHubPageState extends State<OsHubPage> {
   }
 
   void _fillClientAndAdminEmails(SavedOs os) {
-    final line = destinationEmailsFor(
-      audience: MailAudience.both,
-      clientEmail: clientRdoEmail(os),
-    );
-    if (!line.contains('@')) {
+    if (clientRdoEmail(os) == null) {
       _toast(
         context,
         'Cadastre o e-mail da base nesta OS para incluir o cliente.',
       );
       return;
     }
+    final line = destinationEmailsFor(
+      audience: MailAudience.both,
+      clientEmail: clientRdoEmail(os),
+    );
     _setEmailField(
       line,
       'Cliente e administrativos. Ajuste se quiser antes de enviar.',
+    );
+  }
+
+  void _fillClientAndTechnicianEmails(SavedOs os) {
+    final client = clientRdoEmail(os);
+    final tech = technicianEmailsForOs(os);
+    final merged = <String>{
+      if (client != null) client,
+      ...tech,
+    }.toList()
+      ..sort();
+    if (client == null) {
+      _toast(
+        context,
+        'Cadastre o e-mail da base nesta OS para incluir o cliente.',
+      );
+      return;
+    }
+    if (merged.isEmpty) {
+      _toast(context, 'Nenhum e-mail de cliente ou técnico encontrado.');
+      return;
+    }
+    _setEmailField(
+      merged.join(', '),
+      'Cliente e técnicos. Ajuste se quiser antes de enviar.',
+    );
+  }
+
+  void _fillAllEmails(SavedOs os) {
+    final admin = parseRecipientEmails(
+      destinationEmailsFor(audience: MailAudience.office),
+    );
+    final client = clientRdoEmail(os);
+    final tech = technicianEmailsForOs(os);
+    final merged = <String>{
+      ...admin,
+      if (client != null) client,
+      ...tech,
+    }.toList()
+      ..sort();
+    if (merged.isEmpty) {
+      _toast(context, 'Nenhum e-mail encontrado para esta OS.');
+      return;
+    }
+    _setEmailField(
+      merged.join(', '),
+      'Todos os destinatários. Ajuste se quiser antes de enviar.',
     );
   }
 
@@ -1418,7 +1466,7 @@ class _OsHubPageState extends State<OsHubPage> {
   }
 
   Future<void> _downloadSaved(SavedFile file) async {
-    final bytes = FieldStore.instance.bytesFor(file);
+    final bytes = await FieldStore.instance.ensureBytes(file);
     if (bytes == null || bytes.isEmpty) {
       _toast(context, 'Este arquivo não está neste aparelho. Anexe de novo.');
       return;
@@ -1427,6 +1475,35 @@ class _OsHubPageState extends State<OsHubPage> {
       await downloadRdoFile(fileName: file.name, bytes: bytes);
     } catch (error) {
       _toast(context, 'Não baixou o arquivo. $error');
+    }
+  }
+
+  Future<void> _downloadSelection(SavedOs os) async {
+    if (_selectionCount == 0) {
+      _toast(context, 'Marque RDOs e/ou anexos para baixar.');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await downloadOsSelection(
+        os: os,
+        rdoIds: {..._selectedRdoIds},
+        attachmentNames: {..._selectedAttachments},
+        drafts: [..._ephemeral],
+        asZip: _compressZip || _selectionCount > 1,
+      );
+      if (!mounted) return;
+      _toast(
+        context,
+        _compressZip || _selectionCount > 1
+            ? 'Download do ZIP iniciado.'
+            : 'Download iniciado.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _toast(context, '$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -1457,6 +1534,7 @@ class _OsHubPageState extends State<OsHubPage> {
         attachmentNames: {..._selectedAttachments},
         drafts: [..._ephemeral],
         emailsField: _techEmails.text,
+        compressZip: _compressZip,
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -2113,19 +2191,50 @@ class _OsHubPageState extends State<OsHubPage> {
                       label: const Text('Técnicos'),
                     ),
                     OutlinedButton.icon(
+                      onPressed: () => _fillClientAndTechnicianEmails(os),
+                      icon: const Icon(Icons.group_add_outlined),
+                      label: const Text('Cliente e técnicos'),
+                    ),
+                    OutlinedButton.icon(
                       onPressed: () => _fillAdminAndTechnicianEmails(os),
                       icon: const Icon(Icons.merge_type),
                       label: const Text('Adm. e técnicos'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _fillAllEmails(os),
+                      icon: const Icon(Icons.select_all),
+                      label: const Text('Todos'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   'Cliente = e-mail da base nesta OS (RDO ao cliente sai assinado pelo responsável). '
-                  'Administrativos = escritório. Técnicos = quem está na OS.',
+                  'Administrativos = escritório. Técnicos = quem está na OS. '
+                  'Todos = cliente + administrativos + técnicos.',
                   style: TextStyle(fontSize: 13, color: Color(0xFF5C6570)),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Compactar seleção em ZIP',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: GsTheme.navy,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Recomendado com vários RDOs: um arquivo só no e-mail e no download.',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF5C6570)),
+                  ),
+                  value: _compressZip,
+                  activeThumbColor: GsTheme.navy,
+                  onChanged: _busy
+                      ? null
+                      : (value) => setState(() => _compressZip = value),
+                ),
+                const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: _busy || _selectionCount == 0
                       ? null
@@ -2133,6 +2242,20 @@ class _OsHubPageState extends State<OsHubPage> {
                   icon: const Icon(Icons.email_outlined),
                   style: FilledButton.styleFrom(backgroundColor: GsTheme.navy),
                   label: Text(_busy ? 'Preparando…' : 'Enviar por e-mail'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _busy || _selectionCount == 0
+                      ? null
+                      : () => _downloadSelection(os),
+                  icon: const Icon(Icons.download_outlined),
+                  label: Text(
+                    _busy
+                        ? 'Preparando…'
+                        : (_compressZip || _selectionCount > 1
+                              ? 'Baixar seleção (ZIP)'
+                              : 'Baixar seleção'),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
@@ -2145,7 +2268,8 @@ class _OsHubPageState extends State<OsHubPage> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Se o arquivo já estiver na pasta, o app pergunta se quer sobrescrever ou gravar como cópia.',
+                  'Se o arquivo já estiver na pasta, o app pergunta se quer sobrescrever ou gravar como cópia. '
+                  'Se o Drive falhar por permissão, use Baixar seleção (ZIP) e rode authorizeDriveFiles no Apps Script.',
                   style: TextStyle(fontSize: 13, color: Color(0xFF5C6570)),
                 ),
               ],
