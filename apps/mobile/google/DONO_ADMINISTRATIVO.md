@@ -60,9 +60,26 @@ Abra [script.google.com](https://script.google.com).
 - Copie a URL `/exec`.
 
 Se o app já estava implantado e o Drive passou a falhar com
-`UrlFetchApp.fetch`, cole o `login_gate.gs` + `appsscript.json`
-atualizados, rode de novo `authorizeDriveFiles` (Aceitar) e
-publique **Nova versão** no mesmo lápis.
+`UrlFetchApp.fetch`, cole o `login_gate.gs` atualizado **e** o
+manifesto `appsscript.json` (no editor ele fica escondido — ver
+abaixo), rode de novo `authorizeDriveFiles` (Aceitar) e publique
+**Nova versão** no mesmo lápis.
+
+### Onde fica o `appsscript.json` no script.google.com
+
+No projeto do Apps Script (não é um arquivo solto na pasta do
+GitHub no Drive):
+
+1. Abra o projeto do GS Campo.
+2. Clique na **engrenagem** à esquerda (**Configurações do projeto**).
+3. Marque **Mostrar o arquivo de manifesto "appsscript.json" no editor**.
+4. Volte para o **Editor** — o arquivo `appsscript.json` aparece na
+   lista à esquerda, junto do `.gs`.
+5. Substitua o conteúdo pelo do repositório
+   (`apps/mobile/google/appsscript.json`), em especial a linha
+   `https://www.googleapis.com/auth/script.external_request`.
+6. Salve (Ctrl+S), rode `authorizeDriveFiles` → Aceitar, depois
+   Implantar → lápis → **Nova versão**.
 
 ## 5. App
 
