@@ -13,11 +13,11 @@ List<int> buildOfficeEml({
 }) {
   final dest = [
     for (final email in to)
-      if (email.trim().contains('@')) email.trim(),
+      if (isMailAddress(email)) email.trim(),
   ];
   final copy = [
     for (final email in cc)
-      if (email.trim().contains('@')) email.trim(),
+      if (isMailAddress(email)) email.trim(),
   ];
   final buffer = StringBuffer();
   _line(buffer, 'MIME-Version: 1.0');

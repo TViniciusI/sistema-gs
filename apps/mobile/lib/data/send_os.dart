@@ -179,7 +179,7 @@ Future<void> sendOsFromUi(
 
 String? _resolvedClientEmail(SavedOs os, String? override) {
   final typed = (override ?? '').trim().toLowerCase();
-  if (typed.contains('@')) return typed;
+  if (isMailAddress(typed)) return typed;
   return clientRdoEmail(os);
 }
 
@@ -266,6 +266,8 @@ Future<OfficeSendKind?> showPreparedMailDialog(
 }) {
   final messenger = ScaffoldMessenger.of(context);
   final desktop = prefersOfficeEmlDownload();
+  final subjectController = TextEditingController(text: mail.subject);
+  final bodyController = TextEditingController(text: mail.body);
   return showDialog<OfficeSendKind>(
     context: context,
     barrierDismissible: true,
@@ -284,7 +286,7 @@ Future<OfficeSendKind?> showPreparedMailDialog(
               ),
             ),
             content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -307,7 +309,28 @@ Future<OfficeSendKind?> showPreparedMailDialog(
                     _MailDetail(label: 'Para', value: mail.to.join(', ')),
                     if (mail.cc.isNotEmpty)
                       _MailDetail(label: 'Cópia', value: mail.cc.join(', ')),
-                    _MailDetail(label: 'Assunto', value: mail.subject),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: subjectController,
+                      decoration: const InputDecoration(
+                        labelText: 'Assunto',
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: bodyController,
+                      minLines: 6,
+                      maxLines: 14,
+                      keyboardType: TextInputType.multiline,
+                      textAlignVertical: TextAlignVertical.top,
+                      decoration: const InputDecoration(
+                        labelText: 'Mensagem',
+                        alignLabelWithHint: true,
+                        hintText: 'Edite o texto do e-mail antes de enviar',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     _MailDetail(
                       label: 'Anexos',
                       value: mail.files.map((file) => file.name).join('\n'),
@@ -328,8 +351,18 @@ Future<OfficeSendKind?> showPreparedMailDialog(
                         if (started) return;
                         started = true;
                         try {
+                          final edited = PreparedOfficeMail(
+                            to: mail.to,
+                            cc: mail.cc,
+                            subject: subjectController.text.trim().isEmpty
+                                ? mail.subject
+                                : subjectController.text.trim(),
+                            body: bodyController.text,
+                            files: mail.files,
+                            attachmentPaths: mail.attachmentPaths,
+                          );
                           final kind = await _deliverPreparedMail(
-                            mail: mail,
+                            mail: edited,
                             osId: osId,
                             osNumber: osNumber,
                             replyTo: replyTo,
@@ -372,7 +405,7 @@ Future<OfficeSendKind?> showPreparedMailDialog(
                 label: Text(
                   busy
                       ? (desktop ? 'Enviando…' : 'Abrindo…')
-                      : 'Enviar RDO',
+                      : 'Enviar',
                 ),
               ),
             ],
@@ -380,7 +413,10 @@ Future<OfficeSendKind?> showPreparedMailDialog(
         },
       );
     },
-  );
+  ).whenComplete(() {
+    subjectController.dispose();
+    bodyController.dispose();
+  });
 }
 
 Future<OfficeSendKind> _deliverPreparedMail({
@@ -515,7 +551,7 @@ class MailAudiencePicker extends StatelessWidget {
 
   String? get _registered {
     final typed = (registeredClientEmail ?? clientEmail ?? '').trim();
-    return typed.contains('@') ? typed : null;
+    return isMailAddress(typed) ? typed : null;
   }
 
   void _select(MailAudience audience) {

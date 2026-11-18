@@ -1278,20 +1278,67 @@ class _OsHubPageState extends State<OsHubPage> {
   }
 
   void _fillClientAndAdminEmails(SavedOs os) {
-    final line = destinationEmailsFor(
-      audience: MailAudience.both,
-      clientEmail: clientRdoEmail(os),
-    );
-    if (!line.contains('@')) {
+    if (clientRdoEmail(os) == null) {
       _toast(
         context,
         'Cadastre o e-mail da base nesta OS para incluir o cliente.',
       );
       return;
     }
+    final line = destinationEmailsFor(
+      audience: MailAudience.both,
+      clientEmail: clientRdoEmail(os),
+    );
     _setEmailField(
       line,
       'Cliente e administrativos. Ajuste se quiser antes de enviar.',
+    );
+  }
+
+  void _fillClientAndTechnicianEmails(SavedOs os) {
+    final client = clientRdoEmail(os);
+    final tech = technicianEmailsForOs(os);
+    final merged = <String>{
+      if (client != null) client,
+      ...tech,
+    }.toList()
+      ..sort();
+    if (client == null) {
+      _toast(
+        context,
+        'Cadastre o e-mail da base nesta OS para incluir o cliente.',
+      );
+      return;
+    }
+    if (merged.isEmpty) {
+      _toast(context, 'Nenhum e-mail de cliente ou técnico encontrado.');
+      return;
+    }
+    _setEmailField(
+      merged.join(', '),
+      'Cliente e técnicos. Ajuste se quiser antes de enviar.',
+    );
+  }
+
+  void _fillAllEmails(SavedOs os) {
+    final admin = parseRecipientEmails(
+      destinationEmailsFor(audience: MailAudience.office),
+    );
+    final client = clientRdoEmail(os);
+    final tech = technicianEmailsForOs(os);
+    final merged = <String>{
+      ...admin,
+      if (client != null) client,
+      ...tech,
+    }.toList()
+      ..sort();
+    if (merged.isEmpty) {
+      _toast(context, 'Nenhum e-mail encontrado para esta OS.');
+      return;
+    }
+    _setEmailField(
+      merged.join(', '),
+      'Todos os destinatários. Ajuste se quiser antes de enviar.',
     );
   }
 
@@ -2113,16 +2160,27 @@ class _OsHubPageState extends State<OsHubPage> {
                       label: const Text('Técnicos'),
                     ),
                     OutlinedButton.icon(
+                      onPressed: () => _fillClientAndTechnicianEmails(os),
+                      icon: const Icon(Icons.group_add_outlined),
+                      label: const Text('Cliente e técnicos'),
+                    ),
+                    OutlinedButton.icon(
                       onPressed: () => _fillAdminAndTechnicianEmails(os),
                       icon: const Icon(Icons.merge_type),
                       label: const Text('Adm. e técnicos'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _fillAllEmails(os),
+                      icon: const Icon(Icons.select_all),
+                      label: const Text('Todos'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   'Cliente = e-mail da base nesta OS (RDO ao cliente sai assinado pelo responsável). '
-                  'Administrativos = escritório. Técnicos = quem está na OS.',
+                  'Administrativos = escritório. Técnicos = quem está na OS. '
+                  'Todos = cliente + administrativos + técnicos.',
                   style: TextStyle(fontSize: 13, color: Color(0xFF5C6570)),
                 ),
                 const SizedBox(height: 12),
