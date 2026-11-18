@@ -1705,27 +1705,34 @@ function upsertDriveFile_(folder, blob, conflict) {
         found[i].setTrashed(true);
       } catch (error) {}
     }
-    const res = UrlFetchApp.fetch(
-      'https://www.googleapis.com/upload/drive/v3/files/' +
-        encodeURIComponent(file.getId()) +
-        '?uploadType=media&supportsAllDrives=true',
-      {
-        method: 'patch',
-        contentType: blob.getContentType() || 'application/octet-stream',
-        payload: blob.getBytes(),
-        headers: {
-          Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+    // Preferência: PATCH via Drive API (não gasta cota com lixeira).
+    // Sem escopo script.external_request o UrlFetchApp estoura — cai no
+    // fallback DriveApp (lixeira + arquivo novo) para não travar o técnico.
+    try {
+      const res = UrlFetchApp.fetch(
+        'https://www.googleapis.com/upload/drive/v3/files/' +
+          encodeURIComponent(file.getId()) +
+          '?uploadType=media&supportsAllDrives=true',
+        {
+          method: 'patch',
+          contentType: blob.getContentType() || 'application/octet-stream',
+          payload: blob.getBytes(),
+          headers: {
+            Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+          },
+          muteHttpExceptions: true,
         },
-        muteHttpExceptions: true,
-      },
-    );
-    const code = res.getResponseCode();
-    if (code >= 200 && code < 300) return file;
-    const body = String(res.getContentText() || '');
-    if (isDriveLimitError_(body) || isDriveLimitError_('HTTP ' + code)) {
-      throw new Error(body || 'Limite excedido: Drive.');
+      );
+      const code = res.getResponseCode();
+      if (code >= 200 && code < 300) return file;
+      const body = String(res.getContentText() || '');
+      if (isDriveLimitError_(body) || isDriveLimitError_('HTTP ' + code)) {
+        throw new Error(body || 'Limite excedido: Drive.');
+      }
+    } catch (error) {
+      if (isDriveLimitError_(error)) throw error;
+      // Permissão UrlFetchApp / outro erro de rede: segue no fallback.
     }
-    // Outro erro no PATCH: cai no caminho antigo.
     try {
       file.setTrashed(true);
     } catch (error) {}
@@ -3310,12 +3317,27 @@ function authorizeClientPayloads() {
  * Depois: Implantar → Gerenciar implantações → lápis → Nova versão.
  */
 function authorizeDriveFiles() {
+  // Força o diálogo de autorização com script.external_request (UrlFetchApp).
+  try {
+    UrlFetchApp.fetch(
+      'https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)',
+      {
+        method: 'get',
+        headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+        muteHttpExceptions: true,
+      },
+    );
+  } catch (error) {}
   const root = filesRoot_();
   const props = PropertiesService.getScriptProperties();
   Object.keys(props.getProperties()).forEach(function (key) {
     if (key.indexOf('ONEDRIVE_') === 0) props.deleteProperty(key);
   });
-  return 'Pasta de arquivos OK: ' + root.getName() + '. Publique Nova versão.';
+  return (
+    'Pasta de arquivos OK: ' +
+    root.getName() +
+    '. Aceite as permissões (incluindo pedido externo) e publique Nova versão.'
+  );
 }
 
 /**
@@ -3843,8 +3865,10 @@ function sendMail_(ss, p) {
   const files = Array.isArray(p.files) ? p.files : parseJson_(p.filesJson, []);
   const blobs = [];
   var total = 0;
-  const maxBytes = 10 * 1024 * 1024;
-  for (var i = 0; i < files.length && i < 8; i++) {
+  // Gmail/MailApp aguenta ~25 MB; mantém folga. ZIP de RDOs entra como 1 anexo.
+  const maxBytes = 22 * 1024 * 1024;
+  const maxFiles = 40;
+  for (var i = 0; i < files.length && i < maxFiles; i++) {
     const item = files[i] || {};
     var raw = String(item.data || item.base64 || '').replace(/\s/g, '');
     const marker = 'base64,';
@@ -3859,7 +3883,7 @@ function sendMail_(ss, p) {
     }
     total += bytes.length;
     if (total > maxBytes) break;
-    const name = String(item.name || ('anexo_' + (i + 1))).slice(0, 80);
+    const name = String(item.name || ('anexo_' + (i + 1))).slice(0, 120);
     const mime = String(item.mime || mimeFromName_(name));
     blobs.push(Utilities.newBlob(bytes, mime, name));
   }
@@ -3928,6 +3952,7 @@ function logMail_(osId, payload) {
 function mimeFromName_(name) {
   const lower = String(name || '').toLowerCase();
   if (lower.slice(-4) === '.pdf') return 'application/pdf';
+  if (lower.slice(-4) === '.zip') return 'application/zip';
   if (lower.slice(-4) === '.png') return 'image/png';
   if (lower.slice(-4) === '.jpg' || lower.slice(-5) === '.jpeg') {
     return 'image/jpeg';

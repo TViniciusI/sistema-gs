@@ -609,7 +609,7 @@ Future<({String name, List<int> bytes})> _rdoDraft(
   if (withSignature) {
     final stored = entry.pdf;
     if (stored != null) {
-      final storedBytes = FieldStore.instance.bytesFor(stored);
+      final storedBytes = await FieldStore.instance.ensureBytes(stored);
       if (storedBytes != null && storedBytes.isNotEmpty) {
         return (name: stored.name, bytes: storedBytes);
       }

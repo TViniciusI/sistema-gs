@@ -48,13 +48,21 @@ Abra [script.google.com](https://script.google.com).
 ## 4. Autorizar e publicar
 
 - Rode `bindGsCampoSheet` (▶️).  
-- Rode `authorizeDriveFiles` → Aceitar.  
+- Rode `authorizeDriveFiles` → Aceitar (precisa incluir
+  `script.external_request` / UrlFetchApp; sem isso o erro
+  “não tem permissão para chamar UrlFetchApp.fetch” aparece ao
+  sobrescrever PDF na pasta da OS).  
 - Rode `authorizeMail`, `authorizeStaffDocs`, `authorizeClientPayloads`.  
 - Implantar → Nova implantação (ou lápis se for a mesma):  
   - Tipo: app da Web  
   - Executar como: **eu** (= administrativo@)  
   - Quem tem acesso: **Qualquer pessoa**  
 - Copie a URL `/exec`.
+
+Se o app já estava implantado e o Drive passou a falhar com
+`UrlFetchApp.fetch`, cole o `login_gate.gs` + `appsscript.json`
+atualizados, rode de novo `authorizeDriveFiles` (Aceitar) e
+publique **Nova versão** no mesmo lápis.
 
 ## 5. App
 

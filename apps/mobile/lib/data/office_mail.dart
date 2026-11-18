@@ -467,14 +467,33 @@ Future<OfficeSendKind> sendOsToOffice({
 }
 
 List<OfficeMailFile> _fitMailFiles(List<OfficeMailFile> files) {
-  const maxBytes = 9 * 1024 * 1024;
+  // Alinhado ao MailApp (~25 MB) com folga para base64 no Apps Script.
+  const maxBytes = 20 * 1024 * 1024;
   var total = 0;
   final out = <OfficeMailFile>[];
+  final skipped = <String>[];
   for (final file in files) {
     if (file.bytes.isEmpty) continue;
-    if (total + file.bytes.length > maxBytes) continue;
+    if (total + file.bytes.length > maxBytes) {
+      skipped.add(file.name);
+      continue;
+    }
     total += file.bytes.length;
     out.add(file);
+  }
+  if (out.isEmpty && files.isNotEmpty) {
+    throw StateError(
+      'Os anexos passam do limite do e-mail (~20 MB). '
+      'Marque Compactar em ZIP ou envie em partes.',
+    );
+  }
+  if (skipped.isNotEmpty && out.isNotEmpty) {
+    throw StateError(
+      'Não couberam ${skipped.length} arquivo(s) no e-mail '
+      '(${skipped.take(3).join(', ')}'
+      '${skipped.length > 3 ? '…' : ''}). '
+      'Marque Compactar em ZIP ou envie menos itens.',
+    );
   }
   return out;
 }

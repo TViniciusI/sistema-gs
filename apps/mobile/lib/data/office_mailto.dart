@@ -52,6 +52,7 @@ String officeShareMailText({
 String officeFileMime(String fileName) {
   final lower = fileName.toLowerCase();
   if (lower.endsWith('.pdf')) return 'application/pdf';
+  if (lower.endsWith('.zip')) return 'application/zip';
   if (lower.endsWith('.eml')) return 'message/rfc822';
   if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
   if (lower.endsWith('.png')) return 'image/png';

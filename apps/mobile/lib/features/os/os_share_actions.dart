@@ -7,6 +7,7 @@ import 'package:gs_mobile/data/field_store.dart';
 import 'package:gs_mobile/data/models.dart';
 import 'package:gs_mobile/data/office_mail.dart';
 import 'package:gs_mobile/data/drive_archive.dart';
+import 'package:gs_mobile/data/os_zip.dart';
 import 'package:gs_mobile/data/rdo_pdf.dart';
 import 'package:gs_mobile/data/rdo_refresh.dart';
 import 'package:gs_mobile/data/send_os.dart';
@@ -158,6 +159,7 @@ Future<void> emailSelectedOsItems(
   required Set<String> attachmentNames,
   Iterable<DraftFile> drafts = const [],
   required String emailsField,
+  bool compressZip = false,
 }) async {
   final extra = <DraftFile>[];
   final current = FieldStore.instance.byId(os.id) ?? os;
@@ -229,6 +231,20 @@ Future<void> emailSelectedOsItems(
     );
     return;
   }
+  final payload = compressZip && extra.length > 1
+      ? <DraftFile>[zipAsDraft(osNumber: current.number, files: extra)]
+      : extra;
+  if (missing.isNotEmpty && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: GsTheme.navy,
+        content: Text(
+          'Sem arquivo local: ${missing.take(3).join(', ')}'
+          '${missing.length > 3 ? '…' : ''}. Os outros seguem no e-mail.',
+        ),
+      ),
+    );
+  }
   final audience = toClient
       ? (recipients.any(officeRecipientEmails().contains)
             ? MailAudience.both
@@ -240,7 +256,7 @@ Future<void> emailSelectedOsItems(
     includeRdo: false,
     includeAttachments: false,
     audience: audience,
-    extraFiles: extra,
+    extraFiles: payload,
     rdoIds: rdoIds,
     clientEmailOverride: emailsField,
     withSignature: withSignature,
@@ -254,7 +270,7 @@ Future<DraftFile> _rdoAsDraft(
 }) async {
   final stored = entry.pdf;
   if (stored != null) {
-    final bytes = FieldStore.instance.bytesFor(stored);
+    final bytes = await FieldStore.instance.ensureBytes(stored);
     if (bytes != null && bytes.isNotEmpty) {
       return DraftFile(name: stored.name, kind: OsFileKind.rdo, bytes: bytes);
     }
