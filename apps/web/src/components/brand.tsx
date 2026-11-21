@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+/** Logo GS Campo (dourado, fundo transparente) — mesmo asset do app. */
 export function BrandLogo({
   className = "h-auto w-[200px]",
   priority = false,
@@ -9,12 +10,12 @@ export function BrandLogo({
 }) {
   return (
     <Image
-      src="/logo.png"
+      src="/logo-gold.svg"
       alt="GS Soluções Técnicas"
-      width={133}
-      height={116}
+      width={451}
+      height={424}
       priority={priority}
-      className={className}
+      className={`bg-transparent object-contain ${className}`}
     />
   );
 }

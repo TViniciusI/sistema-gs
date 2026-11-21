@@ -72,9 +72,9 @@ export function Sidebar({
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-brass" />
         <Link
           href="/"
-          className={`block ${collapsed ? "mx-auto w-[44px] overflow-hidden" : "w-[158px]"}`}
+          className={`block ${collapsed ? "mx-auto w-[52px]" : "w-[168px]"}`}
         >
-          <BrandLogo className="h-auto w-full brightness-110" />
+          <BrandLogo className="h-auto w-full drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]" />
         </Link>
         {!collapsed ? (
           <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-brass">
