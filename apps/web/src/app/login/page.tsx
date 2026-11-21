@@ -50,12 +50,12 @@ export default function LoginPage() {
           <p className="text-[11px] font-medium uppercase tracking-[0.36em] text-brass">
             GS Soluções Técnicas
           </p>
-          <h1 className="mt-10 max-w-[14ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
-            O escritório ligado ao mesmo acesso do campo.
+          <h1 className="mt-10 max-w-[15ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
+            O escritório completo do GS Campo.
           </h1>
-          <p className="mt-6 max-w-[38ch] text-[15px] leading-7 text-paper/70">
-            Use o usuário do GS Campo. O sistema é a extensão responsiva do app
-            — sem cadastro paralelo.
+          <p className="mt-6 max-w-[40ch] text-[15px] leading-7 text-paper/70">
+            Mesmo login do app. OS, clientes, calibração, Drive e equipe — em
+            layout profissional para notebook e desktop.
           </p>
 
           <ul className="mt-12 max-w-md space-y-5">
@@ -94,18 +94,18 @@ export default function LoginPage() {
 
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-14">
           <main className="page-enter w-full max-w-[420px]">
-            <div className="border border-line bg-white px-8 py-9 shadow-[0_28px_64px_rgba(12,31,51,0.08)]">
-              <div className="mx-auto h-[3px] w-11 bg-brass" />
+            <div className="rounded-3xl border border-navy/10 bg-white px-8 py-9 shadow-[0_28px_64px_rgba(12,31,51,0.1)]">
+              <div className="mx-auto h-[3px] w-11 rounded-full bg-brass" />
               <BrandLogo priority className="mx-auto mt-6 h-auto w-[168px]" />
 
-              <p className="mt-3 text-center text-[11px] font-medium uppercase tracking-[0.32em] text-brass">
-                Acesso ao sistema
+              <p className="mt-3 text-center text-[11px] font-semibold uppercase tracking-[0.32em] text-brass">
+                Escritório GS
               </p>
               <h2 className="mt-3 text-center font-serif text-2xl text-navy">
-                Entrar na gestão GS
+                Entrar na gestão
               </h2>
               <p className="mx-auto mt-2 max-w-[34ch] text-center text-sm leading-6 text-muted">
-                Mesmo login e senha do aplicativo GS Campo.
+                Mesmo usuário e senha do aplicativo GS Campo.
               </p>
 
               <LoginForm />

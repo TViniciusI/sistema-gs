@@ -30,8 +30,9 @@ body {
 
 body {
   background-image:
-    radial-gradient(1200px 500px at 0% -10%, rgba(197, 158, 57, 0.08), transparent 55%),
-    radial-gradient(900px 400px at 100% 0%, rgba(12, 31, 51, 0.05), transparent 50%);
+    radial-gradient(1200px 520px at 0% -10%, rgba(197, 158, 57, 0.1), transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, rgba(12, 31, 51, 0.06), transparent 50%),
+    linear-gradient(180deg, rgba(244, 240, 230, 0.92), rgba(244, 240, 230, 1));
 }
 
 ::selection {

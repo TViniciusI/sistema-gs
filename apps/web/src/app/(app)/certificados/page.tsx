@@ -1,42 +1,38 @@
 import Link from "next/link";
-import { formatWorkOrderNumber } from "@gs/shared";
-import { DataTable, PageHeader, StatusPill } from "@/components/ui";
-import { listCertificates } from "@/lib/demo/queries";
+import { DataTable, PageHeader } from "@/components/ui";
+import { listCampoCalibrations } from "@/lib/campo-data";
 
-export default function CertificadosPage() {
-  const certificates = listCertificates();
+export const dynamic = "force-dynamic";
+
+export default async function CertificadosPage() {
+  const items = await listCampoCalibrations();
+  const withNumber = items.filter((item) => item.number.trim().length > 0);
 
   return (
     <div>
       <PageHeader
-        title="Certificados de calibração"
-        description="A planilha continua no Excel. O técnico anexa o arquivo no app e, ao sincronizar, o documento cai nesta lista."
+        eyebrow="Qualidade"
+        title="Certificados"
+        description="Registros de calibração do Campo — base para emissão e conferência."
       />
       <DataTable
-        headers={["Número", "OS", "Instrumento", "Emissão", "Próxima", "Origem"]}
-        empty="Nenhum certificado."
-        rows={certificates.map((certificate) => [
+        headers={["Cert. / nº", "Cliente", "Equipamento", "Tipo", "Atualizado"]}
+        empty="Nenhum certificado/calibração encontrado."
+        rows={withNumber.slice(0, 150).map((item) => [
           <Link
-            key={certificate.id}
-            href={`/certificados/${certificate.id}`}
+            key={item.id}
+            href={`/calibracao`}
             className="font-medium text-navy hover:underline"
           >
-            {certificate.number}
+            {item.number}
           </Link>,
-          certificate.workOrder
-            ? formatWorkOrderNumber(
-                certificate.workOrder.number,
-                certificate.workOrder.year,
-              )
+          item.clientName || "—",
+          [item.equipmentTag, item.equipmentType].filter(Boolean).join(" · ") ||
+            "—",
+          item.kind || "—",
+          item.updatedAt
+            ? new Date(item.updatedAt).toLocaleDateString("pt-BR")
             : "—",
-          certificate.instrument,
-          new Date(`${certificate.issuedAt}T00:00:00`).toLocaleDateString("pt-BR"),
-          new Date(`${certificate.nextDue}T00:00:00`).toLocaleDateString("pt-BR"),
-          <StatusPill
-            key={`${certificate.id}-src`}
-            label={certificate.source === "field" ? "Anexo do campo" : "Escritório"}
-            tone={certificate.source === "field" ? "warn" : "neutral"}
-          />,
         ])}
       />
     </div>

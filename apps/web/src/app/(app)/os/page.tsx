@@ -14,6 +14,7 @@ export default async function OsListPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Operação"
         title="Ordens de serviço"
         description="Mesmas OS do GS Campo — status, técnicos e RDOs da planilha."
       />

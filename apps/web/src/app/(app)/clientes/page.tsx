@@ -11,7 +11,8 @@ export default async function ClientesPage() {
   return (
     <div>
       <PageHeader
-        title="Clientes"
+        eyebrow="Cadastros"
+        title="Clientes e sistemas"
         description="Cadastro compartilhado com o GS Campo — sistemas, instrumentos e bases."
       />
       <DataTable

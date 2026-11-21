@@ -13,6 +13,7 @@ export default async function ConfiguracoesPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Sistema"
         title="Configurações"
         description="Conta do escritório e status do Google Drive compartilhado com o GS Campo."
       />

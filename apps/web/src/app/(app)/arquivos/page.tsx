@@ -13,7 +13,8 @@ export default async function ArquivosPage() {
   return (
     <div>
       <PageHeader
-        title="Arquivos"
+        eyebrow="Operação"
+        title="Arquivos / Drive"
         description="RDO, fotos, anexos e certificados na mesma pasta Drive do GS Campo."
       />
 

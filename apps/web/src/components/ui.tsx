@@ -5,21 +5,68 @@ export function PageHeader({
   title,
   description,
   action,
+  eyebrow,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  eyebrow?: string;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="font-serif text-3xl tracking-tight text-navy">{title}</h1>
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <div className="max-w-2xl">
+        {eyebrow ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-brass">
+            {eyebrow}
+          </p>
+        ) : null}
+        <h1 className="mt-1 font-serif text-[2rem] leading-tight tracking-tight text-navy md:text-[2.35rem]">
+          {title}
+        </h1>
+        <div className="mt-3 h-[3px] w-12 rounded-full bg-brass" />
         {description ? (
-          <p className="mt-1 text-sm text-muted">{description}</p>
+          <p className="mt-3 text-[15px] leading-7 text-navy/65">{description}</p>
         ) : null}
       </div>
       {action}
     </div>
+  );
+}
+
+export function HubCard({
+  href,
+  title,
+  description,
+  icon,
+  meta,
+}: {
+  href: string;
+  title: string;
+  description: string;
+  icon: ReactNode;
+  meta?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group relative flex min-h-[132px] flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white p-5 shadow-[0_10px_30px_rgba(12,31,51,0.05)] transition hover:-translate-y-0.5 hover:border-brass/40 hover:shadow-[0_16px_36px_rgba(12,31,51,0.1)]"
+    >
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brass via-brass-2 to-brass opacity-80" />
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy text-brass">
+          {icon}
+        </span>
+        {meta ? (
+          <span className="rounded-full bg-paper px-2.5 py-1 text-[11px] font-semibold tracking-wide text-navy/55">
+            {meta}
+          </span>
+        ) : null}
+      </div>
+      <h3 className="mt-4 font-serif text-xl text-navy group-hover:text-navy-2">
+        {title}
+      </h3>
+      <p className="mt-1.5 text-sm leading-6 text-navy/60">{description}</p>
+    </Link>
   );
 }
 
@@ -40,10 +87,10 @@ export function Button({
 }) {
   const className =
     variant === "primary"
-      ? "inline-flex items-center justify-center rounded-[2px] bg-brass px-3.5 py-2 text-sm font-semibold tracking-wide text-black hover:bg-brass-2 hover:shadow-[0_8px_20px_rgba(197,158,57,0.25)] disabled:opacity-50"
+      ? "inline-flex items-center justify-center rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold tracking-wide text-navy hover:bg-brass-2 hover:shadow-[0_8px_20px_rgba(197,158,57,0.25)] disabled:opacity-50"
       : variant === "danger"
-        ? "inline-flex items-center justify-center rounded-sm bg-danger px-3.5 py-2 text-sm font-medium text-white hover:opacity-90"
-        : "inline-flex items-center justify-center rounded-sm border border-line bg-white px-3.5 py-2 text-sm font-medium text-navy hover:bg-paper-2";
+        ? "inline-flex items-center justify-center rounded-xl bg-danger px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+        : "inline-flex items-center justify-center rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper";
 
   if (href) {
     return (
@@ -146,19 +193,19 @@ export function DataTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-sm border border-dashed border-line bg-white px-4 py-10 text-center text-sm text-muted">
+      <div className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
         {empty}
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-sm border border-line bg-white">
+    <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white shadow-[0_8px_24px_rgba(12,31,51,0.04)]">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-line bg-paper-2 text-xs uppercase tracking-wide text-muted">
+        <thead className="border-b border-navy/10 bg-navy text-xs uppercase tracking-[0.16em] text-brass">
           <tr>
             {headers.map((header) => (
-              <th key={header} className="px-3 py-2 font-medium">
+              <th key={header} className="px-4 py-3 font-semibold">
                 {header}
               </th>
             ))}
@@ -168,10 +215,10 @@ export function DataTable({
           {rows.map((row, index) => (
             <tr
               key={index}
-              className="border-b border-line last:border-0 transition-colors duration-200 hover:bg-paper/80"
+              className="border-b border-navy/8 last:border-0 transition-colors duration-200 hover:bg-paper/90"
             >
               {row.map((cell, cellIndex) => (
-                <td key={cellIndex} className="px-3 py-2.5 align-middle">
+                <td key={cellIndex} className="px-4 py-3.5 align-middle">
                   {cell}
                 </td>
               ))}
@@ -230,7 +277,7 @@ export function FormGrid({ children }: { children: ReactNode }) {
 
 export function Panel({ children }: { children: ReactNode }) {
   return (
-    <div className="border border-line bg-white p-5 transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(12,31,51,0.04)]">
+    <div className="rounded-2xl border border-navy/10 bg-white p-5 shadow-[0_8px_24px_rgba(12,31,51,0.04)]">
       {children}
     </div>
   );

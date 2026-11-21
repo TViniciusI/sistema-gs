@@ -10,7 +10,8 @@ export default async function EquipePage() {
   return (
     <div>
       <PageHeader
-        title="Equipe e acessos"
+        eyebrow="Cadastros"
+        title="Funcionários e acessos"
         description="Mesmos usuários do GS Campo — aprovação, papel e módulos."
       />
       <DataTable
