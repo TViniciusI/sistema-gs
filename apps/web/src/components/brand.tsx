@@ -15,6 +15,7 @@ export function BrandLogo({
       width={451}
       height={424}
       priority={priority}
+      unoptimized
       className={`bg-transparent object-contain ${className}`}
     />
   );
