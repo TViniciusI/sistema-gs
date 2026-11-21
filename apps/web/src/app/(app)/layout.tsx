@@ -13,8 +13,15 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  const roleLabel =
+    profile.role_label || ROLE_LABELS[profile.role] || profile.role;
+
   return (
-    <AppShell name={profile.full_name} role={ROLE_LABELS[profile.role]}>
+    <AppShell
+      name={profile.full_name}
+      role={roleLabel}
+      source={profile.source}
+    >
       {children}
     </AppShell>
   );

@@ -9,9 +9,9 @@ npm install
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000) e clique em **Entrar na demonstração**.
+Abra [http://localhost:3000](http://localhost:3000) e entre com o **mesmo usuário/senha do GS Campo** (cadastro da planilha).
 
-Perfil: Cleber Guimarães · Administrador.
+O escritório autentica no mesmo Apps Script do app (`LOGIN_GATE_URL` em `apps/web/.env.example`). Os dados das telas ainda podem ser demonstrativos; o login já é o real.
 
 ### Roteiro sugerido
 

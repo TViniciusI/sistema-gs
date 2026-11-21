@@ -1,22 +1,22 @@
 import { BrandLogo } from "@/components/brand";
 import { Icons } from "@/components/icons";
-import { login } from "./actions";
+import { LoginForm } from "./login-form";
 
 const HIGHLIGHTS = [
   {
     icon: Icons.clipboard,
-    title: "Ordens de serviço e RDO",
-    text: "Agenda, equipe e registro do dia no mesmo fluxo.",
+    title: "Mesmos usuários do GS Campo",
+    text: "Entre com o login e a senha já cadastrados no app de campo.",
   },
   {
     icon: Icons.shield,
-    title: "Certificados de calibração",
-    text: "Feitos no Excel e anexados no app — o arquivo cai no escritório.",
+    title: "Escritório no navegador",
+    text: "Gestão técnica em tela grande — extensão do que o campo já grava.",
   },
   {
     icon: Icons.phone,
-    title: "App de campo",
-    text: "Registros do dia, fotos, GPS e assinatura mesmo sem sinal na planta.",
+    title: "App só no campo",
+    text: "RDO, fotos e anexos continuam no GS Campo; o sistema herda o restante.",
   },
 ];
 
@@ -51,11 +51,11 @@ export default function LoginPage() {
             GS Soluções Técnicas
           </p>
           <h1 className="mt-10 max-w-[14ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
-            O escritório e o campo no mesmo sistema.
+            O escritório ligado ao mesmo acesso do campo.
           </h1>
           <p className="mt-6 max-w-[38ch] text-[15px] leading-7 text-paper/70">
-            Gestão técnica para instrumentação e metrologia — da OS aos
-            registros de campo, com o certificado em Excel anexado no app.
+            Use o usuário do GS Campo. O sistema é a extensão responsiva do app
+            — sem cadastro paralelo.
           </p>
 
           <ul className="mt-12 max-w-md space-y-5">
@@ -77,7 +77,7 @@ export default function LoginPage() {
           </ul>
 
           <p className="mt-auto pt-16 text-[10px] uppercase tracking-[0.24em] text-paper/35">
-            Demonstração para apresentação ao cliente
+            Cadastro compartilhado com o GS Campo
           </p>
         </div>
       </aside>
@@ -105,54 +105,10 @@ export default function LoginPage() {
                 Entrar na gestão GS
               </h2>
               <p className="mx-auto mt-2 max-w-[34ch] text-center text-sm leading-6 text-muted">
-                Sessão de demonstração com dados ilustrativos da OS 036/26 e do
-                certificado de calibração.
+                Mesmo login e senha do aplicativo GS Campo.
               </p>
 
-              <form action={login} className="mt-8 space-y-4">
-                <label className="block text-left">
-                  <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.16em] text-muted">
-                    Usuário
-                  </span>
-                  <input
-                    name="email"
-                    type="email"
-                    autoComplete="username"
-                    defaultValue="cleber@gssolucoestec.com.br"
-                    className="w-full rounded-[2px] border border-line bg-paper/40 px-3 py-2.5 text-sm text-ink outline-none focus:border-brass"
-                  />
-                </label>
-                <label className="block text-left">
-                  <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.16em] text-muted">
-                    Senha
-                  </span>
-                  <input
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    defaultValue="demonstracao"
-                    className="w-full rounded-[2px] border border-line bg-paper/40 px-3 py-2.5 text-sm text-ink outline-none focus:border-brass"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="mt-2 w-full rounded-[2px] bg-brass px-6 py-3.5 text-sm font-semibold tracking-[0.08em] text-black hover:bg-brass-2 hover:shadow-[0_8px_24px_rgba(197,158,57,0.28)]"
-                >
-                  Entrar na demonstração
-                </button>
-              </form>
-
-              <div className="mt-6 flex items-center gap-3 border-t border-line pt-5">
-                <span className="flex h-9 w-9 items-center justify-center bg-navy font-serif text-sm text-brass">
-                  C
-                </span>
-                <p className="text-left text-sm leading-5">
-                  <span className="block font-medium text-navy">
-                    Cleber Guimarães
-                  </span>
-                  <span className="text-xs text-muted">Administrador · sessão demo</span>
-                </p>
-              </div>
+              <LoginForm />
             </div>
           </main>
 

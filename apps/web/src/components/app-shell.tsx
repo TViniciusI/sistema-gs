@@ -9,10 +9,12 @@ import { Icons } from "@/components/icons";
 export function AppShell({
   name,
   role,
+  source,
   children,
 }: {
   name: string;
   role: string;
+  source?: "campo" | "demo" | "supabase";
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -23,6 +25,13 @@ export function AppShell({
       void router.prefetch(href);
     });
   }, [router]);
+
+  const banner =
+    source === "campo"
+      ? "Acesso GS Campo · escritório"
+      : source === "supabase"
+        ? "Conta conectada"
+        : "Demonstração · dados ilustrativos";
 
   return (
     <div className="flex min-h-full bg-paper">
@@ -44,7 +53,7 @@ export function AppShell({
               {Icons.menu}
             </button>
             <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-brass">
-              Demonstração · dados ilustrativos
+              {banner}
             </p>
           </div>
           <p className="text-[10px] uppercase tracking-[0.22em] text-navy/40">
