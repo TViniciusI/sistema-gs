@@ -13,6 +13,7 @@ const GROUPS = [
     items: [
       { href: "/", label: "Painel", icon: Icons.home },
       { href: "/os", label: "Ordens de serviço", icon: Icons.clipboard, chevron: true },
+      { href: "/arquivos", label: "Arquivos / Drive", icon: Icons.clipboard, chevron: true },
       { href: "/agenda", label: "Agenda", icon: Icons.calendar },
     ],
   },
@@ -20,10 +21,10 @@ const GROUPS = [
     label: "Cadastros",
     icon: Icons.building,
     items: [
-      { href: "/clientes", label: "Clientes", icon: Icons.building, chevron: true },
+      { href: "/clientes", label: "Clientes e sistemas", icon: Icons.building, chevron: true },
+      { href: "/equipe", label: "Equipe e acessos", icon: Icons.users, chevron: true },
       { href: "/locais", label: "Locais", icon: Icons.pin, chevron: true },
       { href: "/equipamentos", label: "Equipamentos", icon: Icons.wrench, chevron: true },
-      { href: "/equipe", label: "Equipe", icon: Icons.users, chevron: true },
     ],
   },
   {

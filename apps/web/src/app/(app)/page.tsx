@@ -1,47 +1,52 @@
 import Link from "next/link";
-import {
-  WORK_ORDER_STATUS_LABELS,
-  formatWorkOrderNumber,
-  type WorkOrderStatus,
-} from "@gs/shared";
 import { StatusPill } from "@/components/ui";
-import { dashboardStats, getClient } from "@/lib/demo/queries";
+import {
+  listCampoClients,
+  listCampoOrders,
+  listCampoUsers,
+} from "@/lib/campo-data";
+import {
+  campoOsStatusLabel,
+  campoOsStatusTone,
+} from "@/lib/campo-data/labels";
 
-function tone(status: string) {
-  if (status === "cancelled") return "danger" as const;
-  if (["completed", "reviewed", "billed"].includes(status)) return "ok" as const;
-  if (["in_progress", "traveling", "on_site"].includes(status)) return "warn" as const;
-  return "neutral" as const;
-}
+export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
-  const stats = dashboardStats();
+export default async function DashboardPage() {
+  const [orders, clients, users] = await Promise.all([
+    listCampoOrders(),
+    listCampoClients(),
+    listCampoUsers(),
+  ]);
+
+  const open = orders.filter((os) => {
+    const s = os.status.toLowerCase().replace(/\s+/g, "");
+    return s !== "encerrada";
+  });
+  const recent = orders.slice(0, 8);
+  const pendingUsers = users.filter((u) => u.status === "pendente");
 
   return (
     <div>
       <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-brass">
-        Sistema de gestão técnica
+        Escritório GS · dados do Campo
       </p>
       <h1 className="mt-2 font-serif text-3xl tracking-tight text-navy">
         Painel operacional
       </h1>
       <p className="mt-2 max-w-xl text-[15px] leading-7 text-navy/65">
-        Visão da GS Soluções nesta semana — ordens de serviço, bases e
-        vencimentos de padrões.
+        Visão ao vivo da planilha compartilhada com o GS Campo — OS, clientes e
+        acessos.
       </p>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-4">
+        <Stat label="OS em aberto" value={open.length} href="/os" />
+        <Stat label="OS no total" value={orders.length} href="/os" />
+        <Stat label="Clientes" value={clients.length} href="/clientes" />
         <Stat
-          label="OS em aberto"
-          value={stats.open}
-          href="/os"
-        />
-        <Stat label="OS de hoje" value={stats.today} href="/agenda" />
-        <Stat label="Clientes ativos" value={stats.clients} href="/clientes" />
-        <Stat
-          label="Padrões a vencer"
-          value={stats.dueStandards}
-          href="/vencimentos"
+          label="Acessos pendentes"
+          value={pendingUsers.length}
+          href="/equipe"
         />
       </div>
 
@@ -51,9 +56,12 @@ export default function DashboardPage() {
             Últimas ordens
           </h2>
           <div className="divide-y divide-line border border-line bg-white">
-            {stats.recent.map((os) => {
-              const client = getClient(os.clientId);
-              return (
+            {recent.length === 0 ? (
+              <p className="px-5 py-6 text-sm text-muted">
+                Nenhuma OS carregada da planilha.
+              </p>
+            ) : (
+              recent.map((os) => (
                 <Link
                   key={os.id}
                   href={`/os/${os.id}`}
@@ -61,33 +69,42 @@ export default function DashboardPage() {
                 >
                   <div>
                     <div className="font-medium tracking-wide text-navy">
-                      {formatWorkOrderNumber(os.number, os.year)}
+                      GS {os.number}
                     </div>
                     <div className="mt-0.5 text-sm text-muted">
-                      {client?.legalName} · {client?.alias}
+                      {os.clientName || "—"} · {os.technicianName || "sem técnico"}
                     </div>
                   </div>
                   <StatusPill
-                    label={WORK_ORDER_STATUS_LABELS[os.status as WorkOrderStatus]}
-                    tone={tone(os.status)}
+                    label={campoOsStatusLabel(os.status)}
+                    tone={campoOsStatusTone(os.status)}
                   />
                 </Link>
-              );
-            })}
+              ))
+            )}
           </div>
         </section>
 
         <section>
           <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-brass">
-            Nesta apresentação
+            Atalhos
           </h2>
-          <ul className="space-y-0 border border-line bg-white text-sm">
-            <Highlight href="/os/os-036" label="RDO e ponto" detail="GS 036/26 · ALESAT/MG" />
-            <Highlight href="/certificados/cert-2303126" label="Certificado" detail="Nº 2303126" />
-            <Highlight href="/campo" label="App do técnico" detail="GPS, foto e assinatura" />
-            <Highlight href="/campo" label="Sem internet" detail="Prévia do fluxo offline" />
-            <Highlight href="/vencimentos" label="Padrões RBC" detail="Controle de vencimento" />
-          </ul>
+          <div className="space-y-2">
+            {[
+              { href: "/clientes", label: "Cadastro de clientes e sistemas" },
+              { href: "/arquivos", label: "Drive · pastas das OS" },
+              { href: "/equipe", label: "Usuários e permissões" },
+              { href: "/configuracoes", label: "Configurações e Drive" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block border border-line bg-white px-4 py-3 text-sm text-navy hover:bg-paper"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </section>
       </div>
     </div>
@@ -100,37 +117,18 @@ function Stat({
   href,
 }: {
   label: string;
-  value: string | number;
+  value: number;
   href: string;
 }) {
   return (
     <Link
       href={href}
-      className="border border-line bg-white px-5 py-4 transition duration-200 hover:-translate-y-0.5 hover:border-brass/50 hover:shadow-[0_10px_24px_rgba(12,31,51,0.06)]"
+      className="border border-line bg-white px-4 py-4 transition hover:border-brass/40"
     >
-      <div className="font-serif text-3xl text-navy">{value}</div>
-      <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+      <div className="text-[11px] uppercase tracking-[0.16em] text-muted">
         {label}
       </div>
+      <div className="mt-2 font-serif text-3xl text-navy">{value}</div>
     </Link>
-  );
-}
-
-function Highlight({
-  href,
-  label,
-  detail,
-}: {
-  href: string;
-  label: string;
-  detail: string;
-}) {
-  return (
-    <li className="border-b border-line last:border-0">
-      <Link href={href} className="block px-5 py-3.5 transition hover:bg-paper">
-        <div className="text-navy">{label}</div>
-        <div className="mt-0.5 text-xs text-muted">{detail}</div>
-      </Link>
-    </li>
   );
 }

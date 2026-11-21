@@ -29,5 +29,5 @@ export function sessionSecret(): string {
 
 /** Build enviado ao script (só informativo no login). */
 export function appBuild(): string {
-  return process.env.CAMPO_APP_BUILD?.trim() || "289";
+  return process.env.CAMPO_APP_BUILD?.trim() || "290";
 }
