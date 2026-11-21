@@ -10,6 +10,29 @@ import 'package:gs_mobile/data/models.dart';
 import 'package:gs_mobile/data/prefs_json.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Aplica o cadastro remoto em um aparelho sem edição suja local.
+///
+/// - Nuvem completa → prevalece (apaga ilhas/equipamentos removidos noutro
+///   aparelho; evita certificado com instrumento fantasma no telefone).
+/// - Nuvem sem catálogo (stub leve / lista parcial) → mantém o local.
+SavedClient absorbRemoteClient({
+  required SavedClient local,
+  required SavedClient remote,
+}) {
+  bool hasCatalog(SavedClient client) =>
+      client.storedEquipment.isNotEmpty || client.systems.isNotEmpty;
+
+  if (!hasCatalog(remote) && hasCatalog(local)) {
+    return remote.copyWith(
+      systems: local.systems,
+      equipment: local.storedEquipment,
+    );
+  }
+  if (!hasCatalog(local)) return remote;
+  if (!hasCatalog(remote)) return local;
+  return remote;
+}
+
 /// Junta a edição feita sobre [base] com a versão mais nova da nuvem:
 /// o que o usuário mudou vale; o que ele não mexeu vem da nuvem
 /// (ilhas novas, correções e nome trocados em outro aparelho).
@@ -248,39 +271,12 @@ class ClientStore extends ChangeNotifier {
   bool _hasCatalog(SavedClient client) =>
       client.storedEquipment.isNotEmpty || client.systems.isNotEmpty;
 
-  /// Une nuvem + aparelho sem apagar ilhas/instrumentos que só existem aqui.
+  /// Une nuvem + aparelho. Cadastro completo da nuvem é a fonte da verdade
+  /// (inclusive exclusões feitas noutro aparelho). Só preserva o local quando
+  /// a nuvem veio vazia/resumo (stub Drive) — nunca porque o local é “maior”.
   SavedClient _absorbRemote(SavedClient local, SavedClient remote) {
     if (_dirtyIds.contains(local.id)) return _mergeRemoteClient(local, remote);
-    if (!_hasCatalog(remote) && _hasCatalog(local)) {
-      // Nuvem sem instrumentos não apaga o cadastro deste aparelho.
-      return remote.copyWith(
-        systems: local.systems,
-        equipment: local.storedEquipment,
-      );
-    }
-    if (!_hasCatalog(local)) return remote;
-    if (!_hasCatalog(remote)) return local;
-
-    // Nunca troca um cadastro local maior por um resumo/parcial da nuvem.
-    final localEq = local.storedEquipment.isNotEmpty
-        ? local.storedEquipment.length
-        : local.equipment.length;
-    final remoteEq = remote.storedEquipment.isNotEmpty
-        ? remote.storedEquipment.length
-        : remote.equipment.length;
-    final localSys = local.resolvedSystems.length;
-    final remoteSys = remote.resolvedSystems.length;
-    if (localEq > remoteEq || localSys > remoteSys) {
-      return remote.copyWith(
-        systems: local.resolvedSystems.isNotEmpty
-            ? local.resolvedSystems
-            : local.systems,
-        equipment: local.storedEquipment.isNotEmpty
-            ? local.storedEquipment
-            : local.equipment,
-      );
-    }
-    return remote;
+    return absorbRemoteClient(local: local, remote: remote);
   }
 
   Future<void> _saveMeta() async {

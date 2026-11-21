@@ -1,20 +1,28 @@
 import Image from "next/image";
 
+type BrandLogoProps = {
+  className?: string;
+  priority?: boolean;
+  /** `full` = GS + SOLUÇÕES TÉCNICAS; `mark` = só o monograma. */
+  variant?: "full" | "mark";
+};
+
+/** Logo GS Campo sem placa/fundo — mesmo asset transparente do app. */
 export function BrandLogo({
   className = "h-auto w-[200px]",
   priority = false,
-}: {
-  className?: string;
-  priority?: boolean;
-}) {
+  variant = "full",
+}: BrandLogoProps) {
+  const isMark = variant === "mark";
+
   return (
     <Image
-      src="/logo.png"
+      src={isMark ? "/logo-mark.png" : "/logo-clear.png"}
       alt="GS Soluções Técnicas"
-      width={133}
-      height={116}
+      width={isMark ? 415 : 342}
+      height={isMark ? 346 : 325}
       priority={priority}
-      className={className}
+      className={`bg-transparent object-contain ${className}`}
     />
   );
 }

@@ -16,8 +16,9 @@ export function TabelasClient() {
   return (
     <div>
       <PageHeader
+        eyebrow="Qualidade"
         title="Tabelas 20 °C"
-        description="Correção volumétrica da GS — derivados de petróleo e álcool. As planilhas oficiais ficam nesta aba para consulta, download e cálculo."
+        description="Correção volumétrica da GS — derivados de petróleo e álcool. O mesmo módulo do app, em tela de escritório."
       />
 
       <div className="grid gap-3 lg:grid-cols-3">

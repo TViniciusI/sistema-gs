@@ -1,26 +1,26 @@
-import { Button, DataTable, PageHeader } from "@/components/ui";
-import { listLocations } from "@/lib/demo/queries";
+import Link from "next/link";
+import { PageHeader, Panel } from "@/components/ui";
 
 export default function LocaisPage() {
-  const locations = listLocations();
-
   return (
     <div>
       <PageHeader
-        title="Locais de atendimento"
-        description="Bases e plantas — o apelido é o que o técnico vê no campo."
-        action={<Button href="/locais/novo">Novo local</Button>}
+        eyebrow="Cadastros"
+        title="Locais e bases"
+        description="No GS Campo, bases e plataformas ficam dentro do cadastro do cliente."
       />
-      <DataTable
-        headers={["Apelido", "Cliente", "Endereço", "Cidade"]}
-        empty="Nenhum local."
-        rows={locations.map((location) => [
-          location.alias,
-          location.client?.legalName ?? "—",
-          location.address,
-          `${location.city}/${location.state}`,
-        ])}
-      />
+      <Panel>
+        <p className="text-sm leading-7 text-navy/70">
+          Abra um cliente para ver sistemas, plataformas de carregamento e
+          equipamentos no mesmo lugar do app.
+        </p>
+        <Link
+          href="/clientes"
+          className="mt-4 inline-flex rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-paper hover:bg-navy-2"
+        >
+          Ir para clientes e sistemas
+        </Link>
+      </Panel>
     </div>
   );
 }

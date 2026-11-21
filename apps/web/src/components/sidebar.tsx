@@ -8,43 +8,44 @@ import { Icons } from "@/components/icons";
 
 const GROUPS = [
   {
-    label: "Operação",
-    icon: Icons.home,
+    label: "Início",
     items: [
-      { href: "/", label: "Painel", icon: Icons.home },
-      { href: "/os", label: "Ordens de serviço", icon: Icons.clipboard, chevron: true },
-      { href: "/agenda", label: "Agenda", icon: Icons.calendar },
+      { href: "/", label: "Área de trabalho", icon: Icons.home },
+      { href: "/agenda", label: "Agenda da semana", icon: Icons.calendar },
     ],
   },
   {
-    label: "Cadastros",
-    icon: Icons.building,
+    label: "Operação",
     items: [
-      { href: "/clientes", label: "Clientes", icon: Icons.building, chevron: true },
-      { href: "/locais", label: "Locais", icon: Icons.pin, chevron: true },
-      { href: "/equipamentos", label: "Equipamentos", icon: Icons.wrench, chevron: true },
-      { href: "/equipe", label: "Equipe", icon: Icons.users, chevron: true },
+      { href: "/os", label: "Ordens de serviço", icon: Icons.clipboard },
+      { href: "/arquivos", label: "Arquivos / Drive", icon: Icons.clipboard },
+      { href: "/clientes", label: "Clientes e sistemas", icon: Icons.building },
+      { href: "/equipe", label: "Funcionários", icon: Icons.users },
+      { href: "/documentos", label: "Documentos RH", icon: Icons.users },
     ],
   },
   {
     label: "Qualidade",
-    icon: Icons.shield,
     items: [
-      { href: "/certificados", label: "Certificados", icon: Icons.shield, chevron: true },
-      { href: "/tabelas", label: "Tabelas 20 °C", icon: Icons.table, chevron: true },
-      { href: "/vencimentos", label: "Vencimentos", icon: Icons.clock, chevron: true },
+      { href: "/calibracao", label: "Calibração", icon: Icons.wrench },
+      { href: "/certificados", label: "Certificados", icon: Icons.shield },
+      { href: "/padroes", label: "Padrões", icon: Icons.shield },
+      { href: "/fluidos", label: "Fluidos", icon: Icons.wrench },
+      { href: "/tabelas", label: "Tabelas 20 °C", icon: Icons.table },
+      { href: "/vencimentos", label: "Vencimentos", icon: Icons.clock },
     ],
   },
   {
-    label: "Campo",
-    icon: Icons.phone,
-    items: [{ href: "/campo", label: "App do técnico", icon: Icons.phone }],
+    label: "Sistema",
+    items: [
+      { href: "/configuracoes", label: "Configurações", icon: Icons.settings },
+      { href: "/campo", label: "App de campo", icon: Icons.phone },
+    ],
   },
 ];
 
 export const APP_NAV_HREFS = [
   ...GROUPS.flatMap((group) => group.items.map((item) => item.href)),
-  "/configuracoes",
 ];
 
 export function Sidebar({
@@ -63,50 +64,43 @@ export function Sidebar({
 
   return (
     <aside
-      className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-line bg-white shadow-[4px_0_24px_rgba(12,31,51,0.04)] transition-[width] duration-200 ${
-        collapsed ? "w-[76px]" : "w-[272px]"
+      className={`sticky top-0 flex h-dvh shrink-0 flex-col bg-navy text-paper transition-[width] duration-200 ${
+        collapsed ? "w-[84px]" : "w-[292px]"
       }`}
     >
-      <div className="relative border-b border-line bg-white px-4 py-4">
+      <div className="relative border-b border-white/10 px-4 py-5">
+        <div className="absolute inset-x-0 bottom-0 h-[3px] bg-brass" />
         <Link
           href="/"
-          className={`block ${collapsed ? "mx-auto w-[44px] overflow-hidden" : "mx-auto w-[158px]"}`}
+          className={`flex flex-col items-start gap-2 ${
+            collapsed ? "mx-auto items-center" : ""
+          }`}
         >
-          <BrandLogo className="h-auto w-full" />
+          <BrandLogo
+            variant={collapsed ? "mark" : "full"}
+            className={
+              collapsed
+                ? "h-10 w-10"
+                : "h-auto w-[132px] max-h-[112px]"
+            }
+          />
+          {!collapsed ? (
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brass">
+              Escritório GS
+            </p>
+          ) : null}
         </Link>
-        {!collapsed ? (
-          <button
-            type="button"
-            onClick={onToggle}
-            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full border border-line text-brass hover:bg-paper"
-            aria-label="Recolher menu"
-          >
-            {Icons.chevronLeft}
-          </button>
-        ) : null}
       </div>
-
-      {collapsed ? (
-        <button
-          type="button"
-          onClick={onToggle}
-          className="mx-auto mt-3 flex h-8 w-8 items-center justify-center rounded-full border border-line text-navy/60 hover:text-navy"
-          aria-label="Expandir menu"
-        >
-          {Icons.chevronRight}
-        </button>
-      ) : null}
 
       <nav className="flex-1 overflow-y-auto px-2.5 py-4">
         {GROUPS.map((group) => (
-          <div key={group.label} className="mb-4">
+          <div key={group.label} className="mb-5">
             {!collapsed ? (
-              <p className="mb-1 flex items-center gap-1.5 px-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-brass">
-                <span className="scale-90">{group.icon}</span>
+              <p className="mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brass/80">
                 {group.label}
               </p>
             ) : null}
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               {group.items.map((item) => {
                 const active =
                   item.href === "/"
@@ -118,16 +112,17 @@ export function Sidebar({
                     href={item.href}
                     prefetch
                     title={item.label}
-                    className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] ${
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium ${
                       active
-                        ? "bg-[#f3e6c8] font-semibold text-navy shadow-[inset_3px_0_0_#c59e39]"
-                        : "text-navy/70 hover:bg-paper hover:text-navy"
+                        ? "bg-brass text-navy shadow-[0_8px_20px_rgba(197,158,57,0.28)]"
+                        : "text-paper/75 hover:bg-white/8 hover:text-paper"
                     } ${collapsed ? "justify-center px-0" : ""}`}
                   >
-                    <span className={active ? "text-brass" : ""}>{item.icon}</span>
-                    {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
-                    {!collapsed && item.chevron ? (
-                      <span className="text-navy/30">{Icons.chevronRight}</span>
+                    <span className={active ? "text-navy" : "text-brass"}>
+                      {item.icon}
+                    </span>
+                    {!collapsed ? (
+                      <span className="flex-1 truncate">{item.label}</span>
                     ) : null}
                   </Link>
                 );
@@ -137,69 +132,51 @@ export function Sidebar({
         ))}
       </nav>
 
-      {!collapsed ? (
-        <div className="px-3 pb-3">
-          <a
-            href="mailto:cleber@gssolucoestec.com.br"
-            className="flex items-center gap-3 rounded-xl border border-brass/25 bg-[#f7efdc] px-3 py-3"
-          >
-            <span className="text-brass">{Icons.headset}</span>
-            <span className="min-w-0">
-              <span className="block text-[13px] font-semibold text-brass">
-                Precisa de ajuda?
-              </span>
-              <span className="mt-0.5 flex items-center gap-1 text-[12px] text-navy/70">
-                Abrir suporte
-                <span className="text-navy/30">{Icons.chevronRight}</span>
-              </span>
-            </span>
-          </a>
-        </div>
-      ) : null}
-
-      <div className="border-t border-line px-3 py-3">
-        <div className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : ""}`}>
-          <div className="relative shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brass text-sm font-semibold text-black">
-              {initial}
-            </div>
-            <span className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-ok" />
+      <div className="border-t border-white/10 px-3 py-4">
+        <div
+          className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brass text-sm font-bold text-navy">
+            {initial}
           </div>
           {!collapsed ? (
             <div className="min-w-0">
-              <div className="truncate text-[13px] font-semibold text-navy">{name}</div>
-              <div className="text-[11px] text-navy/45">{role}</div>
+              <div className="truncate text-[13px] font-semibold text-paper">
+                {name}
+              </div>
+              <div className="truncate text-[11px] text-paper/50">{role}</div>
             </div>
           ) : null}
         </div>
 
         {!collapsed ? (
-          <div className="mt-3 flex items-center gap-3 border-t border-line pt-3 text-[12px] text-navy/65">
-            <Link
-              href="/configuracoes"
-              prefetch
-              className="inline-flex items-center gap-1.5 hover:text-navy"
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onToggle}
+              className="flex-1 rounded-xl border border-white/15 px-3 py-2 text-[12px] text-paper/70 hover:bg-white/8"
             >
-              {Icons.settings}
-              Configurações
-            </Link>
-            <span className="h-3 w-px bg-line" />
+              Recolher
+            </button>
             <form action={logout}>
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 hover:text-navy"
+                className="rounded-xl border border-white/15 px-3 py-2 text-brass hover:bg-white/8"
+                title="Sair"
               >
                 {Icons.logout}
-                Sair
               </button>
             </form>
           </div>
         ) : (
-          <form action={logout} className="mt-3 flex justify-center">
-            <button type="submit" className="text-navy/50 hover:text-navy" title="Sair">
-              {Icons.logout}
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="mt-3 flex w-full items-center justify-center rounded-xl border border-white/15 py-2 text-paper/70"
+            aria-label="Expandir menu"
+          >
+            {Icons.menu}
+          </button>
         )}
       </div>
     </aside>

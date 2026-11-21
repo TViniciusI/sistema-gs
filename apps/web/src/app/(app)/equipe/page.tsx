@@ -1,28 +1,41 @@
-import { Button, DataTable, PageHeader, StatusPill } from "@/components/ui";
-import { listEmployees } from "@/lib/demo/queries";
+import { DataTable, PageHeader, StatusPill } from "@/components/ui";
+import { listCampoUsers } from "@/lib/campo-data";
+import { campoRoleLabel } from "@/lib/campo-data/labels";
 
-export default function EquipePage() {
-  const employees = listEmployees();
+export const dynamic = "force-dynamic";
+
+export default async function EquipePage() {
+  const users = await listCampoUsers();
 
   return (
     <div>
       <PageHeader
-        title="Equipe técnica"
-        description="Quadro atual da GS, como na aba Equipe Técnica do RDO."
-        action={<Button href="/equipe/novo">Novo integrante</Button>}
+        eyebrow="Cadastros"
+        title="Funcionários e acessos"
+        description="Mesmos usuários do GS Campo — aprovação, papel e módulos."
       />
       <DataTable
-        headers={["Nome", "Cargo", "Telefone", "Campo"]}
-        empty="Nenhum integrante."
-        rows={employees.map((employee) => [
-          employee.name,
-          employee.title,
-          employee.phone,
+        headers={["Nome", "Login", "Papel", "Status", "Ativo"]}
+        empty="Não foi possível carregar os usuários (token/planilha)."
+        rows={users.map((user) => [
+          <div key={user.login}>
+            <div className="font-medium text-navy">{user.name}</div>
+            <div className="text-xs text-muted">{user.email}</div>
+          </div>,
+          user.login || "—",
+          campoRoleLabel(user.role),
           <StatusPill
-            key={employee.id}
-            label={employee.field ? "Técnico" : "Escritório"}
-            tone={employee.field ? "ok" : "neutral"}
+            key={`${user.login}-st`}
+            label={user.status}
+            tone={
+              user.status === "aprovado"
+                ? "ok"
+                : user.status === "pendente"
+                  ? "warn"
+                  : "danger"
+            }
           />,
+          user.active ? "Sim" : "Não",
         ])}
       />
     </div>

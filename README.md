@@ -9,9 +9,17 @@ npm install
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000) e clique em **Entrar na demonstração**.
+Abra [http://localhost:3000](http://localhost:3000) e entre com o **mesmo usuário/senha do GS Campo** (cadastro da planilha).
 
-Perfil: Cleber Guimarães · Administrador.
+O escritório autentica e lê a **mesma planilha/Drive do app** (`LOGIN_GATE_URL` em `apps/web/.env.example`):
+
+- Login compartilhado
+- Clientes e sistemas/instrumentos (com exclusão na fonte da verdade)
+- OS e RDOs
+- Equipe / acessos
+- Status do Google Drive e atalho de arquivos
+
+Algumas telas legadas (locais/equipamentos demo) ainda misturam dados ilustrativos — o núcleo operacional já vem do Campo.
 
 ### Roteiro sugerido
 
