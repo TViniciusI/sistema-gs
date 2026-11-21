@@ -1,21 +1,27 @@
 import Image from "next/image";
 
-/** Logo GS Campo (dourado, fundo transparente) — mesmo asset do app. */
+type BrandLogoProps = {
+  className?: string;
+  priority?: boolean;
+  /** `full` = GS + SOLUÇÕES TÉCNICAS; `mark` = só o monograma. */
+  variant?: "full" | "mark";
+};
+
+/** Logo GS Campo sem placa/fundo — mesmo asset transparente do app. */
 export function BrandLogo({
   className = "h-auto w-[200px]",
   priority = false,
-}: {
-  className?: string;
-  priority?: boolean;
-}) {
+  variant = "full",
+}: BrandLogoProps) {
+  const isMark = variant === "mark";
+
   return (
     <Image
-      src="/logo-gold.svg"
+      src={isMark ? "/logo-mark.png" : "/logo-clear.png"}
       alt="GS Soluções Técnicas"
-      width={451}
-      height={424}
+      width={isMark ? 415 : 342}
+      height={isMark ? 346 : 325}
       priority={priority}
-      unoptimized
       className={`bg-transparent object-contain ${className}`}
     />
   );

@@ -72,15 +72,24 @@ export function Sidebar({
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-brass" />
         <Link
           href="/"
-          className={`block ${collapsed ? "mx-auto w-[52px]" : "w-[168px]"}`}
+          className={`flex flex-col items-start gap-2 ${
+            collapsed ? "mx-auto items-center" : ""
+          }`}
         >
-          <BrandLogo className="h-auto w-full drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]" />
+          <BrandLogo
+            variant={collapsed ? "mark" : "full"}
+            className={
+              collapsed
+                ? "h-10 w-10"
+                : "h-auto w-[132px] max-h-[112px]"
+            }
+          />
+          {!collapsed ? (
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brass">
+              Escritório GS
+            </p>
+          ) : null}
         </Link>
-        {!collapsed ? (
-          <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-brass">
-            Escritório GS
-          </p>
-        ) : null}
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2.5 py-4">

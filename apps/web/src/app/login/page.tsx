@@ -1,24 +1,5 @@
 import { BrandLogo } from "@/components/brand";
-import { Icons } from "@/components/icons";
 import { LoginForm } from "./login-form";
-
-const HIGHLIGHTS = [
-  {
-    icon: Icons.clipboard,
-    title: "Mesmos usuários do GS Campo",
-    text: "Entre com o login e a senha já cadastrados no app de campo.",
-  },
-  {
-    icon: Icons.shield,
-    title: "Escritório no navegador",
-    text: "Gestão técnica em tela grande — extensão do que o campo já grava.",
-  },
-  {
-    icon: Icons.phone,
-    title: "App só no campo",
-    text: "RDO, fotos e anexos continuam no GS Campo; o sistema herda o restante.",
-  },
-];
 
 export default function LoginPage() {
   return (
@@ -46,38 +27,16 @@ export default function LoginPage() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_0%_100%,rgba(197,158,57,0.14),transparent_55%)]"
         />
 
-        <div className="relative z-10 flex flex-1 flex-col px-14 py-14">
-          <p className="text-[11px] font-medium uppercase tracking-[0.36em] text-brass">
+        <div className="relative z-10 flex flex-1 flex-col justify-center px-14 py-14">
+          <BrandLogo variant="mark" className="h-auto w-[120px]" />
+          <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.36em] text-brass">
             GS Soluções Técnicas
           </p>
-          <h1 className="mt-10 max-w-[15ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
-            O escritório completo do GS Campo.
+          <h1 className="mt-6 max-w-[14ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
+            Escritório GS
           </h1>
-          <p className="mt-6 max-w-[40ch] text-[15px] leading-7 text-paper/70">
-            Mesmo login do app. OS, clientes, calibração, Drive e equipe — em
-            layout profissional para notebook e desktop.
-          </p>
-
-          <ul className="mt-12 max-w-md space-y-5">
-            {HIGHLIGHTS.map((item) => (
-              <li key={item.title} className="flex gap-4">
-                <span className="mt-0.5 flex h-9 w-9 items-center justify-center border border-brass/35 text-brass">
-                  {item.icon}
-                </span>
-                <span>
-                  <span className="block text-sm font-medium text-paper">
-                    {item.title}
-                  </span>
-                  <span className="mt-0.5 block text-[13px] leading-5 text-paper/55">
-                    {item.text}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <p className="mt-auto pt-16 text-[10px] uppercase tracking-[0.24em] text-paper/35">
-            Cadastro compartilhado com o GS Campo
+          <p className="mt-5 max-w-[36ch] text-[15px] leading-7 text-paper/70">
+            Gestão técnica no navegador, com os mesmos usuários do GS Campo.
           </p>
         </div>
       </aside>
@@ -87,25 +46,20 @@ export default function LoginPage() {
           <p className="text-[10px] font-medium uppercase tracking-[0.32em] text-brass">
             GS Soluções Técnicas
           </p>
-          <p className="mt-2 font-serif text-xl leading-snug">
-            Sistema de gestão técnica
-          </p>
+          <p className="mt-2 font-serif text-xl leading-snug">Escritório GS</p>
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-14">
           <main className="page-enter w-full max-w-[420px]">
             <div className="rounded-3xl border border-navy/10 bg-white px-8 py-9 shadow-[0_28px_64px_rgba(12,31,51,0.1)]">
               <div className="mx-auto h-[3px] w-11 rounded-full bg-brass" />
-              <BrandLogo priority className="mx-auto mt-6 h-auto w-[168px]" />
+              <BrandLogo priority className="mx-auto mt-6 h-auto w-[148px]" />
 
-              <p className="mt-3 text-center text-[11px] font-semibold uppercase tracking-[0.32em] text-brass">
-                Escritório GS
-              </p>
-              <h2 className="mt-3 text-center font-serif text-2xl text-navy">
-                Entrar na gestão
+              <h2 className="mt-5 text-center font-serif text-2xl text-navy">
+                Entrar
               </h2>
               <p className="mx-auto mt-2 max-w-[34ch] text-center text-sm leading-6 text-muted">
-                Mesmo usuário e senha do aplicativo GS Campo.
+                Use o login e a senha do aplicativo GS Campo.
               </p>
 
               <LoginForm />
