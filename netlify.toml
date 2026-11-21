@@ -8,8 +8,9 @@
 # Opcional: NEXT_PUBLIC_CAMPO_URL com a URL do GS Campo na Netlify.
 
 [build]
+  # Next.js Runtime (@netlify/plugin-nextjs) define o publish.
+  # No painel: Base directory vazio, Package directory = apps/web.
   command = "npm run build"
-  publish = "apps/web/.next"
 
 [build.environment]
   NODE_VERSION = "22"
