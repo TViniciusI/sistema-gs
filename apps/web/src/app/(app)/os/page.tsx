@@ -1,10 +1,7 @@
 import Link from "next/link";
-import { DataTable, PageHeader, StatusPill } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { listCampoOrders } from "@/lib/campo-data";
-import {
-  campoOsStatusLabel,
-  campoOsStatusTone,
-} from "@/lib/campo-data/labels";
+import { OsBoard } from "./os-board";
 
 export const dynamic = "force-dynamic";
 
@@ -17,35 +14,27 @@ export default async function OsListPage() {
         eyebrow="Operação"
         title="Ordens de serviço"
         description="Mesmas OS do GS Campo — status, técnicos e RDOs da planilha."
-      />
-      <DataTable
-        headers={["OS", "Cliente", "Técnico", "Início", "RDO", "Status"]}
-        empty="Nenhuma OS na planilha."
-        rows={orders.map((os) => [
+        action={
           <Link
-            key={os.id}
-            href={`/os/${os.id}`}
-            className="font-medium text-navy hover:underline"
+            href="/os/nova"
+            className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
           >
-            GS {os.number}
-            {os.payloadLight ? (
-              <span className="ml-2 text-[11px] font-normal text-muted">
-                (resumo)
-              </span>
-            ) : null}
-          </Link>,
-          os.clientName || "—",
-          os.technicianName || "—",
-          os.startsAt
-            ? new Date(os.startsAt).toLocaleDateString("pt-BR")
-            : "—",
-          String(os.rdoCount),
-          <StatusPill
-            key={`${os.id}-st`}
-            label={campoOsStatusLabel(os.status)}
-            tone={campoOsStatusTone(os.status)}
-          />,
-        ])}
+            Nova OS
+          </Link>
+        }
+      />
+      <OsBoard
+        orders={orders.map((os) => ({
+          id: os.id,
+          number: os.number,
+          status: os.status,
+          clientName: os.clientName,
+          technicianName: os.technicianName,
+          startsAt: os.startsAt,
+          rdoCount: os.rdoCount,
+          fileCount: os.fileCount,
+          payloadLight: os.payloadLight,
+        }))}
       />
     </div>
   );

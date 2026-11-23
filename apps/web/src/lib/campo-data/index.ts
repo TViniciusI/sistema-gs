@@ -1,7 +1,8 @@
 export { listCampoClients, getCampoClient, deleteCampoClientSystem } from "./clients";
-export { listCampoOrders, getCampoOrder } from "./orders";
+export { listCampoOrders, getCampoOrder, saveCampoOrder } from "./orders";
 export {
   isExcludedFromTechLoad,
+  isFieldTechnicianUser,
   isOfficeHiddenOrder,
 } from "./office-filters";
 export { listCampoUsers } from "./users";
