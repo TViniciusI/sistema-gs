@@ -72,20 +72,16 @@ export function Sidebar({
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-brass" />
         <Link
           href="/"
-          className={`flex flex-col items-start gap-2 ${
-            collapsed ? "mx-auto items-center" : ""
+          className={`flex flex-col ${
+            collapsed ? "mx-auto items-center" : "items-start"
           }`}
         >
           <BrandLogo
-            variant={collapsed ? "mark" : "full"}
-            className={
-              collapsed
-                ? "h-10 w-10"
-                : "h-auto w-[132px] max-h-[112px]"
-            }
+            variant="mark"
+            className={collapsed ? "h-11 w-11" : "h-14 w-auto max-w-[168px]"}
           />
           {!collapsed ? (
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-brass">
+            <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-brass">
               Escritório GS
             </p>
           ) : null}

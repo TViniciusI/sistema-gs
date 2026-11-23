@@ -1,27 +1,46 @@
-import Image from "next/image";
-
 type BrandLogoProps = {
   className?: string;
   priority?: boolean;
-  /** `full` = GS + SOLUÇÕES TÉCNICAS; `mark` = só o monograma. */
-  variant?: "full" | "mark";
+  /**
+   * `onDark` — ouro vetorial do app (sidebar / navy).
+   * `onLight` — preto vetorial (card branco).
+   * `mark` — só o monograma dourado.
+   */
+  variant?: "onDark" | "onLight" | "mark";
 };
 
-/** Logo GS Campo sem placa/fundo — mesmo asset transparente do app. */
+/** Logo GS Campo — vetores do app, sem placa nem halo branco. */
 export function BrandLogo({
   className = "h-auto w-[200px]",
   priority = false,
-  variant = "full",
+  variant = "onDark",
 }: BrandLogoProps) {
-  const isMark = variant === "mark";
+  if (variant === "mark") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src="/logo-mark.png"
+        alt="GS Soluções Técnicas"
+        width={415}
+        height={346}
+        decoding="async"
+        {...(priority ? { fetchPriority: "high" as const } : {})}
+        className={`bg-transparent object-contain ${className}`}
+      />
+    );
+  }
+
+  const src = variant === "onLight" ? "/logo-black.svg" : "/logo-gold.svg";
 
   return (
-    <Image
-      src={isMark ? "/logo-mark.png" : "/logo-clear.png"}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
       alt="GS Soluções Técnicas"
-      width={isMark ? 415 : 342}
-      height={isMark ? 346 : 325}
-      priority={priority}
+      width={451}
+      height={424}
+      decoding="async"
+      {...(priority ? { fetchPriority: "high" as const } : {})}
       className={`bg-transparent object-contain ${className}`}
     />
   );

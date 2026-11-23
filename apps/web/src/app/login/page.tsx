@@ -28,11 +28,8 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10 flex flex-1 flex-col justify-center px-14 py-14">
-          <BrandLogo variant="mark" className="h-auto w-[120px]" />
-          <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.36em] text-brass">
-            GS Soluções Técnicas
-          </p>
-          <h1 className="mt-6 max-w-[14ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
+          <BrandLogo variant="onDark" className="h-[88px] w-auto" />
+          <h1 className="mt-8 max-w-[14ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
             Escritório GS
           </h1>
           <p className="mt-5 max-w-[36ch] text-[15px] leading-7 text-paper/70">
@@ -53,7 +50,11 @@ export default function LoginPage() {
           <main className="page-enter w-full max-w-[420px]">
             <div className="rounded-3xl border border-navy/10 bg-white px-8 py-9 shadow-[0_28px_64px_rgba(12,31,51,0.1)]">
               <div className="mx-auto h-[3px] w-11 rounded-full bg-brass" />
-              <BrandLogo priority className="mx-auto mt-6 h-auto w-[148px]" />
+              <BrandLogo
+                priority
+                variant="onLight"
+                className="mx-auto mt-6 h-[92px] w-auto"
+              />
 
               <h2 className="mt-5 text-center font-serif text-2xl text-navy">
                 Entrar
