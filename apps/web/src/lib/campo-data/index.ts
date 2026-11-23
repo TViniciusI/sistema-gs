@@ -5,6 +5,15 @@ export {
   isFieldTechnicianUser,
   isOfficeHiddenOrder,
 } from "./office-filters";
+export {
+  calibrationsForOs,
+  campoAppUrl,
+  groupSlotsByKind,
+  kindLabel,
+  parseOsCalibrationSlots,
+  parseOsRdos,
+  publicCertUrl,
+} from "./os-docs";
 export { listCampoUsers } from "./users";
 export { getCampoDriveStatus } from "./drive";
 export {

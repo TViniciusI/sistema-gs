@@ -127,3 +127,28 @@ button:not(:disabled):active {
     transition: none;
   }
 }
+
+@media print {
+  .no-print,
+  aside,
+  nav,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    background-image: none !important;
+  }
+
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .label-sheet {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

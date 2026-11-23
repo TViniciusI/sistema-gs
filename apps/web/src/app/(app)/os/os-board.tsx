@@ -105,51 +105,78 @@ export function OsBoard({ orders }: { orders: OsBoardItem[] }) {
       ) : (
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {filtered.map((os) => (
-            <Link
+            <article
               key={os.id}
-              href={`/os/${os.id}`}
               className="group flex flex-col rounded-3xl border border-navy/10 bg-white p-5 shadow-[0_10px_28px_rgba(12,31,51,0.04)] transition hover:-translate-y-0.5 hover:border-brass/40"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brass">
-                    Ordem
-                  </p>
-                  <h3 className="mt-1 font-serif text-2xl text-navy">
-                    GS {os.number}
-                  </h3>
+              <Link href={`/os/${os.id}`} className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brass">
+                      Ordem
+                    </p>
+                    <h3 className="mt-1 font-serif text-2xl text-navy">
+                      GS {os.number}
+                    </h3>
+                  </div>
+                  <StatusPill
+                    label={campoOsStatusLabel(os.status)}
+                    tone={campoOsStatusTone(os.status)}
+                  />
                 </div>
-                <StatusPill
-                  label={campoOsStatusLabel(os.status)}
-                  tone={campoOsStatusTone(os.status)}
-                />
-              </div>
 
-              <p className="mt-4 line-clamp-2 text-sm leading-6 text-navy/70">
-                {os.clientName || "Cliente não informado"}
-              </p>
-              <p className="mt-1 truncate text-xs text-navy/45">
-                {os.technicianName || "Sem técnico"}
-              </p>
+                <p className="mt-4 line-clamp-2 text-sm leading-6 text-navy/70">
+                  {os.clientName || "Cliente não informado"}
+                </p>
+                <p className="mt-1 truncate text-xs text-navy/45">
+                  {os.technicianName || "Sem técnico"}
+                </p>
 
-              <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-navy/8 pt-3 text-[11px] font-medium uppercase tracking-wide text-navy/45">
-                <span>
-                  {os.startsAt
-                    ? new Date(os.startsAt).toLocaleDateString("pt-BR")
-                    : "Sem data"}
-                </span>
-                <span>·</span>
-                <span>{os.rdoCount} RDO</span>
-                <span>·</span>
-                <span>{os.fileCount} arq.</span>
-                {os.payloadLight ? (
-                  <>
-                    <span>·</span>
-                    <span className="text-warn">resumo</span>
-                  </>
-                ) : null}
+                <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-navy/8 pt-3 text-[11px] font-medium uppercase tracking-wide text-navy/45">
+                  <span>
+                    {os.startsAt
+                      ? new Date(os.startsAt).toLocaleDateString("pt-BR")
+                      : "Sem data"}
+                  </span>
+                  <span>·</span>
+                  <span>{os.rdoCount} RDO</span>
+                  <span>·</span>
+                  <span>{os.fileCount} arq.</span>
+                  {os.payloadLight ? (
+                    <>
+                      <span>·</span>
+                      <span className="text-warn">resumo</span>
+                    </>
+                  ) : null}
+                </div>
+              </Link>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href={`/os/${os.id}/documentos`}
+                  className="rounded-lg bg-navy px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-brass hover:bg-navy-2"
+                >
+                  Documentos
+                </Link>
+                <Link
+                  href={`/os/${os.id}/etiquetas`}
+                  className="rounded-lg border border-navy/15 bg-paper px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-navy hover:border-brass/40"
+                >
+                  Etiquetas
+                </Link>
+                <Link
+                  href={`/os/${os.id}/livro`}
+                  className="rounded-lg border border-navy/15 bg-paper px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-navy hover:border-brass/40"
+                >
+                  Livro
+                </Link>
+                <Link
+                  href={`/os/${os.id}/rdo`}
+                  className="rounded-lg border border-navy/15 bg-paper px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-navy hover:border-brass/40"
+                >
+                  RDO
+                </Link>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
       )}

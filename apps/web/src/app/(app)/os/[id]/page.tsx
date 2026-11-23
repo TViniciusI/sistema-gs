@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { OsDocActions } from "@/components/os/os-doc-actions";
 import { PageHeader, StatusPill } from "@/components/ui";
-import { getCampoOrder } from "@/lib/campo-data";
+import {
+  campoAppUrl,
+  getCampoDriveStatus,
+  getCampoOrder,
+  groupSlotsByKind,
+  parseOsCalibrationSlots,
+  parseOsRdos,
+} from "@/lib/campo-data";
 import {
   campoOsStatusLabel,
   campoOsStatusTone,
@@ -19,17 +27,18 @@ export default async function OsDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const os = await getCampoOrder(id);
+  const [os, drive] = await Promise.all([
+    getCampoOrder(id),
+    getCampoDriveStatus(),
+  ]);
   if (!os) notFound();
 
   const rdo = (
     os.raw.rdo && typeof os.raw.rdo === "object" ? os.raw.rdo : {}
   ) as Record<string, unknown>;
-  const rdos = Array.isArray(os.raw.rdos) ? os.raw.rdos : [];
-  const files = Array.isArray(os.raw.files) ? os.raw.files : [];
-  const slots = Array.isArray(os.raw.calibrationSlots)
-    ? os.raw.calibrationSlots
-    : [];
+  const slots = parseOsCalibrationSlots(os);
+  const rdos = parseOsRdos(os);
+  const groups = groupSlotsByKind(slots);
 
   const service = text(rdo.service) || "—";
   const systemType = text(rdo.systemType) || "—";
@@ -52,6 +61,12 @@ export default async function OsDetailPage({
               tone={campoOsStatusTone(os.status)}
             />
             <Link
+              href={`/os/${os.id}/documentos`}
+              className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
+            >
+              Documentos
+            </Link>
+            <Link
               href="/os"
               className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
             >
@@ -61,116 +76,105 @@ export default async function OsDetailPage({
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-3xl border border-navy/10 bg-navy px-5 py-5 text-paper lg:col-span-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-            Resumo
-          </p>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div>
-              <dt className="text-paper/45">Cliente</dt>
-              <dd className="mt-0.5 font-medium">
-                {os.clientName || text(rdo.client) || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-paper/45">CNPJ</dt>
-              <dd className="mt-0.5">{text(rdo.cnpj) || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-paper/45">Início</dt>
-              <dd className="mt-0.5">
-                {os.startsAt
-                  ? new Date(os.startsAt).toLocaleString("pt-BR")
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-paper/45">Técnicos</dt>
-              <dd className="mt-0.5">{os.technicianName || "—"}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="rounded-3xl border border-navy/10 bg-white px-5 py-5 lg:col-span-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-            Serviço
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {[
-              ["Serviço contratado", service],
-              ["Tipo de sistema", systemType],
-              ["Local", site],
-              ["Responsável base", text(rdo.baseName) || "—"],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <p className="text-xs uppercase tracking-wide text-muted">
-                  {label}
-                </p>
-                <p className="mt-1 text-sm font-medium text-navy">{value}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: "RDOs", value: String(rdos.length) },
-          { label: "Arquivos", value: String(files.length) },
-          { label: "Calibração", value: String(slots.length) },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="rounded-2xl border border-navy/10 bg-white px-4 py-4"
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/45">
-              {item.label}
+      <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+              {campoOsStatusLabel(os.status)}
             </p>
-            <p className="mt-2 font-serif text-3xl text-navy">{item.value}</p>
+            <h2 className="mt-1 font-serif text-3xl text-navy">
+              {os.clientName || text(rdo.client) || "—"}
+            </h2>
+            <p className="mt-2 text-sm text-navy/55">
+              CNPJ {text(rdo.cnpj) || "—"} · {service}
+              {os.startsAt
+                ? ` · Início ${new Date(os.startsAt).toLocaleDateString("pt-BR")}`
+                : ""}
+            </p>
+            <p className="mt-1 text-sm text-navy/55">
+              Técnicos: {os.technicianName || "—"}
+            </p>
           </div>
-        ))}
-      </div>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl bg-paper px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wide text-navy/45">
+              Local
+            </p>
+            <p className="mt-1 text-sm font-medium text-navy">{site}</p>
+          </div>
+          <div className="rounded-2xl bg-paper px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wide text-navy/45">
+              Sistema
+            </p>
+            <p className="mt-1 text-sm font-medium text-navy">{systemType}</p>
+          </div>
+          <div className="rounded-2xl bg-paper px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wide text-navy/45">
+              Campo
+            </p>
+            <p className="mt-1 text-sm font-medium text-navy">
+              {rdos.length} RDO · {slots.length} slots · {os.fileCount} arq.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {rdos.length > 0 ? (
-        <section className="rounded-3xl border border-navy/10 bg-white p-5">
-          <h2 className="font-serif text-xl text-navy">RDOs de campo</h2>
-          <div className="mt-4 divide-y divide-navy/8 overflow-hidden rounded-2xl border border-navy/8">
-            {rdos.map((item, index) => {
-              const entry =
-                item && typeof item === "object"
-                  ? (item as Record<string, unknown>)
-                  : {};
-              const day = text(entry.date) || text(entry.day);
-              return (
-                <div
-                  key={String(entry.id || index)}
-                  className="px-4 py-3 text-sm"
-                >
-                  <div className="font-medium text-navy">
-                    RDO{" "}
-                    {day
-                      ? new Date(day).toLocaleDateString("pt-BR")
-                      : index + 1}
-                  </div>
-                  <div className="text-muted">
-                    {text(entry.description) ||
-                      text(entry.obs) ||
-                      "Registro de campo"}
-                  </div>
-                </div>
-              );
-            })}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+            Calibração nesta OS
+          </p>
+          <h2 className="mt-1 font-serif text-xl text-navy">
+            Certificados, livro, etiquetas e RDO
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-navy/60">
+            Os certificados são preenchidos no GS Campo. No escritório você gera
+            o livro, as etiquetas e imprime o RDO — direto nesta OS.
+          </p>
+          <div className="mt-4">
+            <OsDocActions
+              osId={os.id}
+              hasSlots={slots.length > 0}
+              hasRdos={rdos.length > 0}
+              driveUrl={drive.folderUrl}
+              campoUrl={campoAppUrl()}
+            />
           </div>
         </section>
-      ) : null}
 
-      <div className="rounded-2xl border border-navy/10 bg-white/80 px-4 py-3 text-sm text-navy/60">
-        RDO, fotos e anexos continuam no app de campo.{" "}
-        <Link href="/arquivos" className="font-medium text-navy underline">
-          Ver arquivos no escritório
-        </Link>
-        .
+        <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+            Itens
+          </p>
+          <h2 className="mt-1 font-serif text-xl text-navy">
+            Slots de calibração
+          </h2>
+          {groups.length === 0 ? (
+            <p className="mt-6 rounded-2xl border border-dashed border-navy/15 px-4 py-10 text-center text-sm text-muted">
+              Sem slots nesta OS.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {groups.map((group) => (
+                <div
+                  key={group.label}
+                  className="flex items-center justify-between rounded-2xl border border-navy/10 bg-paper/70 px-4 py-3"
+                >
+                  <p className="font-semibold text-navy">
+                    {group.label} · {group.items.length}
+                  </p>
+                  <Link
+                    href={`/os/${os.id}/etiquetas`}
+                    className="text-xs font-medium text-navy/50 hover:text-navy"
+                  >
+                    Etiquetas →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
