@@ -124,11 +124,28 @@ export function buildWeekBuckets(orders: CampoOrder[], weeks = 8) {
   });
 }
 
+/** Dev / contas de teste — não entram na carga de técnicos. */
+export function isExcludedFromTechLoad(name: string) {
+  const n = name
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!n) return true;
+  if (n.includes("vinicius") && n.includes("magalhaes")) return true;
+  if (n === "vinicius") return true;
+  if (n.includes("teste") && n.includes("vini")) return true;
+  if (n.includes("testes vini") || n.includes("teste vini")) return true;
+  return false;
+}
+
 export function buildTechLoad(orders: CampoOrder[], limit = 6) {
   const open = orders.filter((os) => normalizeStatus(os.status) !== "encerrada");
   const map = new Map<string, number>();
   for (const os of open) {
     const name = (os.technicianName || "").trim() || "Sem técnico";
+    if (isExcludedFromTechLoad(name)) continue;
     map.set(name, (map.get(name) ?? 0) + 1);
   }
   return [...map.entries()]
