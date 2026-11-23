@@ -55,8 +55,8 @@ export default function LoginPage() {
               <div className="mx-auto h-[3px] w-11 rounded-full bg-brass" />
               <BrandLogo
                 priority
-                variant="onLight"
-                className="mx-auto mt-6 h-[92px] w-auto"
+                variant="mark"
+                className="mx-auto mt-6 h-[68px] w-auto"
               />
 
               <h2 className="mt-5 text-center font-serif text-2xl text-navy">
