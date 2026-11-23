@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OsDocActions } from "@/components/os/os-doc-actions";
 import { PageHeader, StatusPill } from "@/components/ui";
+import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import {
   campoAppUrl,
   certificatesForOs,
@@ -10,6 +11,7 @@ import {
   groupCertificatesByKind,
   kindLabel,
   listCampoCalibrations,
+  listCampoOsDriveFiles,
   parseOsCalibrationSlots,
   parseOsRdos,
 } from "@/lib/campo-data";
@@ -26,12 +28,13 @@ export default async function OsDocumentosPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [os, calibrations, drive] = await Promise.all([
-    getCampoOrder(id),
+  const os = await getCampoOrder(id);
+  if (!os) notFound();
+  const [calibrations, drive, driveListing] = await Promise.all([
     listCampoCalibrations(),
     getCampoDriveStatus(),
+    listCampoOsDriveFiles(os.number),
   ]);
-  if (!os) notFound();
 
   const slots = parseOsCalibrationSlots(os);
   const rdos = parseOsRdos(os);
@@ -78,11 +81,13 @@ export default async function OsDocumentosPage({
             : ""}
         </p>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-navy/60">
-          Os certificados (volumétrica, temperatura, densidade…) vêm da mesma
-          planilha do GS Campo. No escritório você confere, abre cada
-          certificado, gera o livro e imprime o RDO.
+          Os certificados oficiais (PDF) são os mesmos gerados no GS Campo e
+          salvos no Google Drive. Aqui você lê a planilha, abre os PDFs e
+          imprime o Relatório de Serviço.
         </p>
       </section>
+
+      <OsDrivePanel listing={driveListing} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
@@ -95,7 +100,7 @@ export default async function OsDocumentosPage({
               osId={os.id}
               hasSlots={slots.length > 0}
               hasRdos={rdos.length > 0}
-              driveUrl={drive.folderUrl}
+              driveUrl={driveListing.folderUrl || drive.folderUrl}
               campoUrl={campoAppUrl()}
               showHubLink={false}
             />

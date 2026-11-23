@@ -37,6 +37,18 @@ export type {
 export { listCampoUsers } from "./users";
 export { getCampoDriveStatus } from "./drive";
 export {
+  CAMPO_DRIVE_ROOT_ID,
+  CAMPO_DRIVE_ROOT_URL,
+  getKnownOsDriveFolders,
+  osFolderKey,
+} from "./drive-os-folders";
+export {
+  driveFilesByKind,
+  findDriveCertForNumber,
+  listCampoOsDriveFiles,
+} from "./os-drive";
+export type { CampoOsDriveFile, CampoOsDriveListing } from "./os-drive";
+export {
   getCampoCalibration,
   listCampoCalibrations,
   listCampoStandards,

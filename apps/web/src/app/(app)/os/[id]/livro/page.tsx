@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import { PrintToolbar } from "@/components/os/print-toolbar";
 import {
   campoAppUrl,
@@ -8,6 +9,7 @@ import {
   groupCertificatesByKind,
   kindLabel,
   listCampoCalibrations,
+  listCampoOsDriveFiles,
   publicCertUrl,
 } from "@/lib/campo-data";
 
@@ -19,11 +21,12 @@ export default async function OsLivroPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [os, calibrations] = await Promise.all([
-    getCampoOrder(id),
-    listCampoCalibrations(),
-  ]);
+  const os = await getCampoOrder(id);
   if (!os) notFound();
+  const [calibrations, driveListing] = await Promise.all([
+    listCampoCalibrations(),
+    listCampoOsDriveFiles(os.number),
+  ]);
 
   const rows = certificatesForOs(os, calibrations);
   const groups = groupCertificatesByKind(rows);
@@ -44,8 +47,12 @@ export default async function OsLivroPage({
           rel="noreferrer"
           className="rounded-xl border border-navy/15 bg-white px-3 py-2 text-sm font-medium text-navy hover:bg-paper"
         >
-          PDF oficial no GS Campo ↗
+          Gerar book no GS Campo ↗
         </a>
+      </div>
+
+      <div className="no-print mb-6">
+        <OsDrivePanel listing={driveListing} focus="book" />
       </div>
 
       <PrintToolbar title={`Livro de certificados · OS GS ${os.number}`} />

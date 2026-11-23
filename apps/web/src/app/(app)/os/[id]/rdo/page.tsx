@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import { PrintToolbar } from "@/components/os/print-toolbar";
 import { RdoServiceReport } from "@/components/os/rdo-service-report";
 import { PageHeader } from "@/components/ui";
 import {
   campoAppUrl,
   getCampoOrder,
+  listCampoOsDriveFiles,
   parseOsRdoMeta,
   parseOsRdos,
 } from "@/lib/campo-data";
@@ -26,6 +28,7 @@ export default async function OsRdoPage({
 
   const meta = parseOsRdoMeta(os);
   const rdos = parseOsRdos(os);
+  const drive = await listCampoOsDriveFiles(os.number);
   const selected =
     (rdoFilter
       ? rdos.find((r) => r.id === rdoFilter)
@@ -83,6 +86,10 @@ export default async function OsRdoPage({
           })}
         </div>
       ) : null}
+
+      <div className="no-print">
+        <OsDrivePanel listing={drive} focus="rdo" />
+      </div>
 
       <PrintToolbar
         title={

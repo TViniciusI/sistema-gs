@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OsDocActions } from "@/components/os/os-doc-actions";
 import { PageHeader, StatusPill } from "@/components/ui";
+import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import {
   campoAppUrl,
   certificatesForOs,
@@ -9,6 +10,7 @@ import {
   getCampoOrder,
   groupCertificatesByKind,
   listCampoCalibrations,
+  listCampoOsDriveFiles,
   parseOsRdos,
 } from "@/lib/campo-data";
 import {
@@ -28,12 +30,13 @@ export default async function OsDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [os, drive, calibrations] = await Promise.all([
-    getCampoOrder(id),
+  const os = await getCampoOrder(id);
+  if (!os) notFound();
+  const [drive, calibrations, driveListing] = await Promise.all([
     getCampoDriveStatus(),
     listCampoCalibrations(),
+    listCampoOsDriveFiles(os.number),
   ]);
-  if (!os) notFound();
 
   const rdo = (
     os.raw.rdo && typeof os.raw.rdo === "object" ? os.raw.rdo : {}
@@ -123,6 +126,8 @@ export default async function OsDetailPage({
         </div>
       </section>
 
+      <OsDrivePanel listing={driveListing} />
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
@@ -132,15 +137,15 @@ export default async function OsDetailPage({
             Certificados, livro e RDO
           </h2>
           <p className="mt-2 text-sm leading-6 text-navy/60">
-            Os certificados são preenchidos no GS Campo. No escritório você lê
-            volumétrica, temperatura e densidade, gera o livro e imprime o RDO.
+            PDFs oficiais vêm do GS Campo (Drive). No escritório você lê
+            volumétrica, temperatura e densidade, abre o book e imprime o RDO.
           </p>
           <div className="mt-4">
             <OsDocActions
               osId={os.id}
               hasSlots={slotsCount > 0}
               hasRdos={rdos.length > 0}
-              driveUrl={drive.folderUrl}
+              driveUrl={driveListing.folderUrl || drive.folderUrl}
               campoUrl={campoAppUrl()}
             />
           </div>

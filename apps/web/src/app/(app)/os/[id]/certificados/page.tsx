@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import { PageHeader } from "@/components/ui";
 import {
   campoAppUrl,
@@ -8,6 +9,7 @@ import {
   groupCertificatesByKind,
   kindLabel,
   listCampoCalibrations,
+  listCampoOsDriveFiles,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -21,11 +23,12 @@ export default async function OsCertificadosPage({
 }) {
   const { id } = await params;
   const { kind: kindFilter } = await searchParams;
-  const [os, calibrations] = await Promise.all([
-    getCampoOrder(id),
-    listCampoCalibrations(),
-  ]);
+  const os = await getCampoOrder(id);
   if (!os) notFound();
+  const [calibrations, driveListing] = await Promise.all([
+    listCampoCalibrations(),
+    listCampoOsDriveFiles(os.number),
+  ]);
 
   const rows = certificatesForOs(os, calibrations);
   const groups = groupCertificatesByKind(rows);
@@ -87,7 +90,13 @@ export default async function OsCertificadosPage({
             ? ` · ${rows.filter((r) => r.hasCalibration).length} com calibração na planilha`
             : ""}
         </p>
+        <p className="mt-3 text-sm leading-6 text-navy/60">
+          O PDF oficial (layout Flutter) é gerado no GS Campo e fica no Drive.
+          Aqui você vê todos os números da OS e abre os PDFs já emitidos.
+        </p>
       </section>
+
+      <OsDrivePanel listing={driveListing} focus="certificates" />
 
       {rows.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">

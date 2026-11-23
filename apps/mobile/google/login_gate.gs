@@ -164,6 +164,14 @@ function handle_(p) {
     if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
     return osFolderStatus_(p);
   }
+  if (
+    action === 'listosdrive' ||
+    action === 'osdrive.list' ||
+    action === 'listdirveos'
+  ) {
+    if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
+    return listOsDrive_(p);
+  }
   const ss = spreadsheet_();
   if (GATED_WRITE_ACTIONS_.indexOf(action) >= 0 && Number(p.appBuild || 0) < MIN_WRITE_BUILD) {
     return json_({
@@ -4502,6 +4510,76 @@ function checkOsFolder_(p) {
     return json_({ ok: true, existing: existing });
   } catch (error) {
     return json_({ ok: false, error: String((error && error.message) || error) });
+  }
+}
+
+/**
+ * Lista arquivos da pasta da OS no Drive (RDO, certificados, book, fotos…).
+ * Mesma árvore que o app grava via saveosfolder.
+ */
+function listOsDriveFilesRecursive_(folder, prefix, out, depth) {
+  if (!folder || depth > 6 || out.length >= 400) return;
+  const folders = folder.getFolders();
+  while (folders.hasNext()) {
+    const child = folders.next();
+    if (child.isTrashed()) continue;
+    const path = prefix ? prefix + '/' + child.getName() : child.getName();
+    listOsDriveFilesRecursive_(child, path, out, depth + 1);
+  }
+  const files = folder.getFiles();
+  while (files.hasNext()) {
+    const file = files.next();
+    if (file.isTrashed()) continue;
+    var mime = '';
+    try {
+      mime = String(file.getMimeType() || '');
+    } catch (error) {}
+    out.push({
+      id: file.getId(),
+      name: file.getName(),
+      path: prefix ? prefix + '/' + file.getName() : file.getName(),
+      folder: prefix || '',
+      mimeType: mime,
+      url: file.getUrl(),
+      downloadUrl:
+        'https://drive.google.com/uc?export=download&id=' + file.getId(),
+      updatedAt: file.getLastUpdated()
+        ? file.getLastUpdated().toISOString()
+        : '',
+    });
+    if (out.length >= 400) return;
+  }
+}
+
+function listOsDrive_(p) {
+  try {
+    const osNumber = String(p.osNumber || p.number || '').trim();
+    if (!osNumber) return json_({ ok: false, error: 'OS sem número' });
+    const key = osFolderKey_(osNumber);
+    const osFolder = driveFindFolder_(filesRoot_(), key);
+    if (!osFolder) {
+      return json_({
+        ok: true,
+        osNumber: osNumber,
+        folderKey: key,
+        folderUrl: '',
+        files: [],
+      });
+    }
+    const files = [];
+    listOsDriveFilesRecursive_(osFolder, '', files, 0);
+    return json_({
+      ok: true,
+      osNumber: osNumber,
+      folderKey: key,
+      folderUrl: osFolder.getUrl(),
+      files: files,
+    });
+  } catch (error) {
+    return json_({
+      ok: false,
+      error: String((error && error.message) || error),
+    });
   }
 }
 
