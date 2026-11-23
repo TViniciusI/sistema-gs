@@ -1,5 +1,8 @@
 import { campoOsStatusLabel } from "./labels";
+import { isExcludedFromTechLoad } from "./office-filters";
 import type { CampoOrder } from "./types";
+
+export { isExcludedFromTechLoad } from "./office-filters";
 
 export type DashboardOrderLite = {
   id: string;
@@ -122,22 +125,6 @@ export function buildWeekBuckets(orders: CampoOrder[], weeks = 8) {
       count: counts.get(key) ?? 0,
     };
   });
-}
-
-/** Dev / contas de teste — não entram na carga de técnicos. */
-export function isExcludedFromTechLoad(name: string) {
-  const n = name
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!n) return true;
-  if (n.includes("vinicius") && n.includes("magalhaes")) return true;
-  if (n === "vinicius") return true;
-  if (n.includes("teste") && n.includes("vini")) return true;
-  if (n.includes("testes vini") || n.includes("teste vini")) return true;
-  return false;
 }
 
 export function buildTechLoad(orders: CampoOrder[], limit = 6) {
