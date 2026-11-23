@@ -49,12 +49,6 @@ export function OsDocActions({
       disabled: !hasSlots,
     },
     {
-      href: `/os/${osId}/etiquetas`,
-      label: "Gerar etiquetas",
-      tone: "ghost",
-      disabled: !hasSlots,
-    },
-    {
       href: `/os/${osId}/rdo`,
       label: "Gerar / imprimir RDO",
       tone: "ghost",

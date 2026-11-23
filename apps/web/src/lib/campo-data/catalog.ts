@@ -52,34 +52,57 @@ function text(v: unknown) {
   return String(v ?? "").trim();
 }
 
+function parseCalibration(raw: unknown): CampoCalibration | null {
+  if (!raw || typeof raw !== "object") return null;
+  const c = raw as Record<string, unknown>;
+  const id = text(c.id);
+  if (!id) return null;
+  return {
+    id,
+    kind: text(c.kind),
+    number: text(c.number) || id,
+    clientName: text(c.clientName),
+    clientCnpj: text(c.clientCnpj),
+    equipmentTag: text(c.equipmentTag),
+    equipmentType: text(c.equipmentType),
+    status: text(c.status) || text(c.phase) || "—",
+    updatedAt: text(c.updatedAt),
+    createdAt: text(c.createdAt),
+    raw: c,
+  };
+}
+
 export async function listCampoCalibrations(): Promise<CampoCalibration[]> {
   const payload = await gateGet({ action: "listcalib" }, { withToken: false });
   if (!payload || payload.ok !== true) return [];
   const list = Array.isArray(payload.calibrations) ? payload.calibrations : [];
   return list
-    .map((raw) => {
-      if (!raw || typeof raw !== "object") return null;
-      const c = raw as Record<string, unknown>;
-      const id = text(c.id);
-      if (!id) return null;
-      return {
-        id,
-        kind: text(c.kind),
-        number: text(c.number) || id,
-        clientName: text(c.clientName),
-        clientCnpj: text(c.clientCnpj),
-        equipmentTag: text(c.equipmentTag),
-        equipmentType: text(c.equipmentType),
-        status: text(c.status) || text(c.phase) || "—",
-        updatedAt: text(c.updatedAt),
-        createdAt: text(c.createdAt),
-        raw: c,
-      } satisfies CampoCalibration;
-    })
+    .map(parseCalibration)
     .filter(Boolean)
     .sort((a, b) =>
       (b!.updatedAt || b!.createdAt).localeCompare(a!.updatedAt || a!.createdAt),
     ) as CampoCalibration[];
+}
+
+/** Lê uma calibração completa (forceFull no gate). Fallback: lista leve. */
+export async function getCampoCalibration(
+  idOrNumber: string,
+): Promise<CampoCalibration | null> {
+  const key = text(idOrNumber);
+  if (!key) return null;
+  const payload = await gateGet(
+    { action: "getcalib", id: key, n: key },
+    { withToken: false, timeoutMs: 60_000 },
+  );
+  if (payload?.ok === true && payload.calibration) {
+    return parseCalibration(payload.calibration);
+  }
+  const all = await listCampoCalibrations();
+  return (
+    all.find((item) => item.id === key) ||
+    all.find((item) => item.number.toLowerCase() === key.toLowerCase()) ||
+    null
+  );
 }
 
 export async function listCampoStandards(): Promise<CampoStandard[]> {

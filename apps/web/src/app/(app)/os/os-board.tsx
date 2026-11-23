@@ -158,10 +158,10 @@ export function OsBoard({ orders }: { orders: OsBoardItem[] }) {
                   Documentos
                 </Link>
                 <Link
-                  href={`/os/${os.id}/etiquetas`}
+                  href={`/os/${os.id}/certificados`}
                   className="rounded-lg border border-navy/15 bg-paper px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-navy hover:border-brass/40"
                 >
-                  Etiquetas
+                  Certificados
                 </Link>
                 <Link
                   href={`/os/${os.id}/livro`}

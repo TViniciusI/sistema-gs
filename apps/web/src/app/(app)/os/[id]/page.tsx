@@ -4,10 +4,11 @@ import { OsDocActions } from "@/components/os/os-doc-actions";
 import { PageHeader, StatusPill } from "@/components/ui";
 import {
   campoAppUrl,
+  certificatesForOs,
   getCampoDriveStatus,
   getCampoOrder,
-  groupSlotsByKind,
-  parseOsCalibrationSlots,
+  groupCertificatesByKind,
+  listCampoCalibrations,
   parseOsRdos,
 } from "@/lib/campo-data";
 import {
@@ -27,18 +28,20 @@ export default async function OsDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [os, drive] = await Promise.all([
+  const [os, drive, calibrations] = await Promise.all([
     getCampoOrder(id),
     getCampoDriveStatus(),
+    listCampoCalibrations(),
   ]);
   if (!os) notFound();
 
   const rdo = (
     os.raw.rdo && typeof os.raw.rdo === "object" ? os.raw.rdo : {}
   ) as Record<string, unknown>;
-  const slots = parseOsCalibrationSlots(os);
+  const certRows = certificatesForOs(os, calibrations);
   const rdos = parseOsRdos(os);
-  const groups = groupSlotsByKind(slots);
+  const groups = groupCertificatesByKind(certRows);
+  const slotsCount = certRows.length;
 
   const service = text(rdo.service) || "—";
   const systemType = text(rdo.systemType) || "—";
@@ -114,7 +117,7 @@ export default async function OsDetailPage({
               Campo
             </p>
             <p className="mt-1 text-sm font-medium text-navy">
-              {rdos.length} RDO · {slots.length} slots · {os.fileCount} arq.
+              {rdos.length} RDO · {slotsCount} cert. · {os.fileCount} arq.
             </p>
           </div>
         </div>
@@ -126,16 +129,16 @@ export default async function OsDetailPage({
             Calibração nesta OS
           </p>
           <h2 className="mt-1 font-serif text-xl text-navy">
-            Certificados, livro, etiquetas e RDO
+            Certificados, livro e RDO
           </h2>
           <p className="mt-2 text-sm leading-6 text-navy/60">
-            Os certificados são preenchidos no GS Campo. No escritório você gera
-            o livro, as etiquetas e imprime o RDO — direto nesta OS.
+            Os certificados são preenchidos no GS Campo. No escritório você lê
+            volumétrica, temperatura e densidade, gera o livro e imprime o RDO.
           </p>
           <div className="mt-4">
             <OsDocActions
               osId={os.id}
-              hasSlots={slots.length > 0}
+              hasSlots={slotsCount > 0}
               hasRdos={rdos.length > 0}
               driveUrl={drive.folderUrl}
               campoUrl={campoAppUrl()}
@@ -158,17 +161,20 @@ export default async function OsDetailPage({
             <div className="mt-4 space-y-3">
               {groups.map((group) => (
                 <div
-                  key={group.label}
+                  key={group.kind}
                   className="flex items-center justify-between rounded-2xl border border-navy/10 bg-paper/70 px-4 py-3"
                 >
-                  <p className="font-semibold text-navy">
-                    {group.label} · {group.items.length}
-                  </p>
+                  <div>
+                    <p className="font-semibold text-navy">
+                      {group.label} · {group.items.length}
+                    </p>
+                    <p className="mt-0.5 text-xs text-navy/45">{group.stats}</p>
+                  </div>
                   <Link
-                    href={`/os/${os.id}/etiquetas`}
+                    href={`/os/${os.id}/certificados?kind=${encodeURIComponent(group.kind)}`}
                     className="text-xs font-medium text-navy/50 hover:text-navy"
                   >
-                    Etiquetas →
+                    Ver →
                   </Link>
                 </div>
               ))}

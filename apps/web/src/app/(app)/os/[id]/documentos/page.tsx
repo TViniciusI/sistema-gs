@@ -4,14 +4,14 @@ import { OsDocActions } from "@/components/os/os-doc-actions";
 import { PageHeader, StatusPill } from "@/components/ui";
 import {
   campoAppUrl,
+  certificatesForOs,
   getCampoDriveStatus,
   getCampoOrder,
-  groupSlotsByKind,
+  groupCertificatesByKind,
   kindLabel,
   listCampoCalibrations,
   parseOsCalibrationSlots,
   parseOsRdos,
-  calibrationsForOs,
 } from "@/lib/campo-data";
 import {
   campoOsStatusLabel,
@@ -35,8 +35,9 @@ export default async function OsDocumentosPage({
 
   const slots = parseOsCalibrationSlots(os);
   const rdos = parseOsRdos(os);
-  const groups = groupSlotsByKind(slots);
-  const related = calibrationsForOs(os, calibrations);
+  const certRows = certificatesForOs(os, calibrations);
+  const groups = groupCertificatesByKind(certRows);
+  const withCalibration = certRows.filter((r) => r.hasCalibration).length;
   const emptySlots = slots.filter(
     (s) => !s.serialNumber.trim() && !s.equipmentTag.trim(),
   ).length;
@@ -46,7 +47,7 @@ export default async function OsDocumentosPage({
       <PageHeader
         eyebrow="Documentos da OS"
         title={`OS GS ${os.number}`}
-        description="Certificados, livro, etiquetas e RDO — mesmo hub do GS Campo, no escritório."
+        description="Certificados, livro e RDO — mesmo hub do GS Campo, no escritório."
         action={
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill
@@ -77,9 +78,9 @@ export default async function OsDocumentosPage({
             : ""}
         </p>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-navy/60">
-          Os certificados oficiais do app continuam no GS Campo. No escritório
-          você gera/imprime livro, etiquetas e RDO, confere os slots e abre a
-          pasta do Drive quando o book já foi salvo.
+          Os certificados (volumétrica, temperatura, densidade…) vêm da mesma
+          planilha do GS Campo. No escritório você confere, abre cada
+          certificado, gera o livro e imprime o RDO.
         </p>
       </section>
 
@@ -107,9 +108,9 @@ export default async function OsDocumentosPage({
               </p>
             </div>
             <div className="rounded-xl bg-paper px-2 py-3">
-              <p className="font-serif text-2xl text-navy">{related.length}</p>
+              <p className="font-serif text-2xl text-navy">{withCalibration}</p>
               <p className="text-[10px] uppercase tracking-wide text-navy/45">
-                Certs
+                Com calib.
               </p>
             </div>
             <div className="rounded-xl bg-paper px-2 py-3">
@@ -143,37 +144,47 @@ export default async function OsDocumentosPage({
             <div className="mt-4 space-y-3">
               {groups.map((group) => (
                 <div
-                  key={group.label}
+                  key={group.kind}
                   className="rounded-2xl border border-navy/10 bg-paper/70 px-4 py-3"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-navy">
-                      {group.label} · {group.items.length}
-                    </p>
+                    <div>
+                      <p className="font-semibold text-navy">
+                        {group.label} · {group.items.length}
+                      </p>
+                      <p className="mt-0.5 text-xs text-navy/45">
+                        {group.stats}
+                      </p>
+                    </div>
                     <Link
-                      href={`/os/${os.id}/etiquetas`}
+                      href={`/os/${os.id}/certificados?kind=${encodeURIComponent(group.kind)}`}
                       className="text-xs font-medium text-navy/55 hover:text-navy"
                     >
-                      Etiquetas →
+                      Ver →
                     </Link>
                   </div>
                   <ul className="mt-2 space-y-1.5">
-                    {group.items.slice(0, 6).map((slot) => (
+                    {group.items.slice(0, 6).map((row) => (
                       <li
-                        key={slot.id}
+                        key={row.slot.id}
                         className="flex flex-wrap items-center justify-between gap-2 text-sm text-navy/70"
                       >
-                        <span>
-                          {slot.certificateNumber || "Sem nº"}
-                          {slot.equipmentTag
-                            ? ` · TAG ${slot.equipmentTag}`
+                        <Link
+                          href={`/os/${os.id}/certificados/${encodeURIComponent(row.slot.id)}`}
+                          className="hover:text-navy"
+                        >
+                          {row.slot.certificateNumber || "Sem nº"}
+                          {row.slot.equipmentTag
+                            ? ` · TAG ${row.slot.equipmentTag}`
                             : ""}
-                          {slot.serialNumber
-                            ? ` · N/S ${slot.serialNumber}`
+                          {row.slot.serialNumber
+                            ? ` · N/S ${row.slot.serialNumber}`
                             : ""}
-                        </span>
+                        </Link>
                         <span className="text-[11px] uppercase tracking-wide text-navy/40">
-                          {kindLabel(slot.kind)}
+                          {row.hasCalibration
+                            ? "com calibração"
+                            : kindLabel(row.slot.kind)}
                         </span>
                       </li>
                     ))}

@@ -2,13 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintToolbar } from "@/components/os/print-toolbar";
 import {
-  calibrationsForOs,
   campoAppUrl,
+  certificatesForOs,
   getCampoOrder,
-  groupSlotsByKind,
+  groupCertificatesByKind,
   kindLabel,
   listCampoCalibrations,
-  parseOsCalibrationSlots,
   publicCertUrl,
 } from "@/lib/campo-data";
 
@@ -26,9 +25,9 @@ export default async function OsLivroPage({
   ]);
   if (!os) notFound();
 
-  const slots = parseOsCalibrationSlots(os);
-  const groups = groupSlotsByKind(slots);
-  const related = calibrationsForOs(os, calibrations);
+  const rows = certificatesForOs(os, calibrations);
+  const groups = groupCertificatesByKind(rows);
+  const withJob = rows.filter((r) => r.hasCalibration).length;
 
   return (
     <div>
@@ -72,72 +71,91 @@ export default async function OsLivroPage({
         <div className="px-8 py-8">
           <h2 className="font-serif text-2xl text-navy">Sumário</h2>
           <p className="mt-2 text-sm text-navy/55">
-            {slots.length} slot(s) · {related.length} certificado(s) na planilha
+            {rows.length} certificado(s) · {withJob} com calibração na planilha
           </p>
 
           <div className="mt-6 space-y-5">
             {groups.map((group) => (
-              <section key={group.label}>
+              <section key={group.kind}>
                 <h3 className="border-b border-navy/10 pb-2 font-semibold text-navy">
                   {group.label} · {group.items.length}
+                  <span className="ml-2 text-sm font-normal text-navy/45">
+                    {group.stats}
+                  </span>
                 </h3>
                 <ol className="mt-3 space-y-2">
-                  {group.items.map((slot, index) => (
-                    <li
-                      key={slot.id}
-                      className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
-                    >
-                      <span className="text-navy">
-                        {index + 1}. Cert. {slot.certificateNumber || "—"}
-                        {slot.equipmentTag
-                          ? ` · TAG ${slot.equipmentTag}`
-                          : ""}
-                        {slot.serialNumber
-                          ? ` · N/S ${slot.serialNumber}`
-                          : ""}
-                      </span>
-                      <a
-                        href={publicCertUrl({
-                          number: slot.certificateNumber,
-                          id: slot.jobId || slot.id,
-                          osId: os.id,
-                        })}
-                        className="text-xs text-navy/45 hover:text-navy"
-                        target="_blank"
-                        rel="noreferrer"
+                  {group.items.map((row, index) => {
+                    const slot = row.slot;
+                    const consult = publicCertUrl({
+                      number: slot.certificateNumber || row.job?.number,
+                      jobId: row.job?.id || slot.jobId,
+                      osId: os.id,
+                    });
+                    return (
+                      <li
+                        key={slot.id}
+                        className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
                       >
-                        consulta pública
-                      </a>
-                    </li>
-                  ))}
+                        <span className="text-navy">
+                          {index + 1}. Cert. {slot.certificateNumber || "—"}
+                          {slot.equipmentTag
+                            ? ` · TAG ${slot.equipmentTag}`
+                            : ""}
+                          {slot.serialNumber
+                            ? ` · N/S ${slot.serialNumber}`
+                            : ""}
+                          {!row.hasCalibration ? (
+                            <span className="text-warn"> · sem calibração</span>
+                          ) : null}
+                        </span>
+                        {row.hasCalibration ? (
+                          <Link
+                            href={`/os/${os.id}/certificados/${encodeURIComponent(slot.id)}`}
+                            className="text-xs text-navy/45 hover:text-navy"
+                          >
+                            ver no sistema
+                          </Link>
+                        ) : (
+                          <a
+                            href={consult}
+                            className="text-xs text-navy/35"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            consulta
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ol>
               </section>
             ))}
           </div>
 
-          {related.length > 0 ? (
+          {withJob > 0 ? (
             <section className="mt-10">
               <h2 className="font-serif text-2xl text-navy">
-                Certificados na planilha
+                Com calibração na planilha
               </h2>
               <ul className="mt-4 space-y-2">
-                {related.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-xl border border-navy/10 px-4 py-3 text-sm"
-                  >
-                    <span className="font-semibold text-navy">
-                      {item.number}
-                    </span>
-                    <span className="text-navy/55">
-                      {" "}
-                      · {kindLabel(item.kind)} ·{" "}
-                      {[item.equipmentTag, item.equipmentType]
-                        .filter(Boolean)
-                        .join(" · ") || "equipamento"}
-                    </span>
-                  </li>
-                ))}
+                {rows
+                  .filter((r) => r.hasCalibration && r.job)
+                  .map((row) => (
+                    <li
+                      key={row.job!.id}
+                      className="rounded-xl border border-navy/10 px-4 py-3 text-sm"
+                    >
+                      <span className="font-semibold text-navy">
+                        {row.job!.number || row.slot.certificateNumber}
+                      </span>
+                      <span className="text-navy/55">
+                        {" "}
+                        · {kindLabel(row.job!.kind || row.slot.kind)} ·{" "}
+                        {row.job!.status}
+                      </span>
+                    </li>
+                  ))}
               </ul>
             </section>
           ) : null}

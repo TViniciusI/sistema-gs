@@ -8,15 +8,26 @@ export {
 export {
   calibrationsForOs,
   campoAppUrl,
+  certificatesForOs,
+  getCampoPublicCertificate,
+  groupCertificatesByKind,
   groupSlotsByKind,
+  jobForSlot,
   kindLabel,
   parseOsCalibrationSlots,
   parseOsRdos,
   publicCertUrl,
 } from "./os-docs";
+export type {
+  CampoPublicCertificate,
+  OsCalibrationSlotLite,
+  OsCertificateRow,
+  OsRdoLite,
+} from "./os-docs";
 export { listCampoUsers } from "./users";
 export { getCampoDriveStatus } from "./drive";
 export {
+  getCampoCalibration,
   listCampoCalibrations,
   listCampoStandards,
   listCampoFluids,

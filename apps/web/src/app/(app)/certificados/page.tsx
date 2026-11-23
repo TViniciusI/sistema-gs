@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DataTable, PageHeader } from "@/components/ui";
-import { listCampoCalibrations } from "@/lib/campo-data";
+import { kindLabel, listCampoCalibrations } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -13,27 +13,32 @@ export default async function CertificadosPage() {
       <PageHeader
         eyebrow="Qualidade"
         title="Certificados"
-        description="Registros de calibração do Campo — base para emissão e conferência."
+        description="Calibrações sincronizadas do GS Campo (volumétrica, temperatura, densidade e demais tipos)."
       />
       <DataTable
-        headers={["Cert. / nº", "Cliente", "Equipamento", "Tipo", "Atualizado"]}
-        empty="Nenhum certificado/calibração encontrado."
-        rows={withNumber.slice(0, 150).map((item) => [
-          <Link
-            key={item.id}
-            href={`/calibracao`}
-            className="font-medium text-navy hover:underline"
-          >
-            {item.number}
-          </Link>,
-          item.clientName || "—",
-          [item.equipmentTag, item.equipmentType].filter(Boolean).join(" · ") ||
-            "—",
-          item.kind || "—",
-          item.updatedAt
-            ? new Date(item.updatedAt).toLocaleDateString("pt-BR")
-            : "—",
-        ])}
+        headers={["Cert. / nº", "Cliente", "Tipo", "Status", "Atualizado"]}
+        empty="Nenhum certificado sincronizado do Campo."
+        rows={withNumber.slice(0, 200).map((item) => {
+          const osId = String(item.raw.osId || "").trim();
+          const href = osId
+            ? `/os/${osId}/certificados`
+            : `/certificados/${encodeURIComponent(item.id)}`;
+          return [
+            <Link
+              key={item.id}
+              href={href}
+              className="font-medium text-navy hover:underline"
+            >
+              {item.number}
+            </Link>,
+            item.clientName || "—",
+            kindLabel(item.kind),
+            item.status || "—",
+            item.updatedAt
+              ? new Date(item.updatedAt).toLocaleDateString("pt-BR")
+              : "—",
+          ];
+        })}
       />
     </div>
   );

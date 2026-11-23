@@ -287,6 +287,9 @@ function handle_(p) {
   if (action === 'listcalib' || action === 'calib.list' || action === 'calibrations') {
     return listCalibs_(ss);
   }
+  if (action === 'getcalib' || action === 'calib.get') {
+    return getCalib_(ss, p);
+  }
   if (action === 'deletecalib' || action === 'calib.delete' || action === 'deletecalibration') {
     return deleteCalib_(ss, p);
   }
@@ -1896,6 +1899,13 @@ function writeGenericPayload_(folderName, id, label, record, previousRaw) {
       status: clean.status || '',
       kind: clean.kind || '',
       clientName: clean.clientName || '',
+      osId: clean.osId || '',
+      osNumber: clean.osNumber || '',
+      calibrationSlotId: clean.calibrationSlotId || '',
+      equipmentTag: clean.equipmentTag || '',
+      equipmentType: clean.equipmentType || '',
+      serialNumber: clean.serialNumber || '',
+      calibrationDate: clean.calibrationDate || '',
       updatedAt: clean.updatedAt || new Date().toISOString(),
       ownerEmail: clean.ownerEmail || '',
       createdAt: clean.createdAt || '',
@@ -3145,6 +3155,35 @@ function listCalibs_(ss) {
     calibrations: readCalibs_(ss),
     deletedCalibrationIds: readCalibTombstones_(ss),
   });
+}
+
+/** Uma calibração completa (lê Drive se o JSON estiver offloaded). */
+function getCalib_(ss, p) {
+  const id = String(p.id || '').trim();
+  const number = String(p.n || p.number || p.cert || '')
+    .trim()
+    .toUpperCase();
+  if (!id && !number) {
+    return json_({ ok: false, error: 'Calibração sem id' });
+  }
+  const tombstones = readCalibTombstones_(ss) || [];
+  const sheet = ensureCalibsSheet_(ss);
+  const data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    const rowId = String(data[i][0] || '').trim();
+    const rowNum = String(data[i][1] || '').trim().toUpperCase();
+    if (tombstones.indexOf(rowId) >= 0) continue;
+    if ((id && rowId === id) || (number && rowNum === number)) {
+      const rec = readOrderRecord_(data[i][4], { forceFull: true });
+      if (!rec || typeof rec !== 'object') {
+        return json_({ ok: false, error: 'Certificado não encontrado.' });
+      }
+      if (!rec.id) rec.id = rowId;
+      if (!rec.number) rec.number = data[i][1];
+      return json_({ ok: true, calibration: rec });
+    }
+  }
+  return json_({ ok: false, error: 'Certificado não encontrado.' });
 }
 
 const FLUID_HEADERS = ['id', 'name', 'density', 'viscosity', 'json', 'atualizado_em'];

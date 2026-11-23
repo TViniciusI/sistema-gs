@@ -1,7 +1,29 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatCnpj, formatWorkOrderNumber } from "@gs/shared";
-import { PageHeader } from "@/components/ui";
-import { getCertificate } from "@/lib/demo/queries";
+import { PrintToolbar } from "@/components/os/print-toolbar";
+import { PageHeader, StatusPill } from "@/components/ui";
+import {
+  campoAppUrl,
+  getCampoPublicCertificate,
+  kindLabel,
+  listCampoCalibrations,
+  publicCertUrl,
+} from "@/lib/campo-data";
+
+export const dynamic = "force-dynamic";
+
+function Field({ label, value }: { label: string; value?: string }) {
+  const v = (value || "").trim();
+  if (!v) return null;
+  return (
+    <div>
+      <dt className="text-[11px] uppercase tracking-wide text-navy/45">
+        {label}
+      </dt>
+      <dd className="mt-1 text-sm font-medium text-navy">{v}</dd>
+    </div>
+  );
+}
 
 export default async function CertificadoDetailPage({
   params,
@@ -9,147 +31,168 @@ export default async function CertificadoDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const certificate = getCertificate(id);
-  if (!certificate) notFound();
+  const items = await listCampoCalibrations();
+  const job =
+    items.find((item) => item.id === id) ||
+    items.find((item) => item.number === id);
+  if (!job) notFound();
+
+  const osId = String(job.raw.osId || "").trim();
+  const publicCert = await getCampoPublicCertificate({
+    number: job.number,
+    jobId: job.id,
+    osId: osId || undefined,
+  });
+
+  const consultUrl = publicCertUrl({
+    number: job.number,
+    jobId: job.id,
+    osId: osId || undefined,
+  });
 
   return (
-    <div>
-      <PageHeader
-        title={`Certificado ${certificate.number}`}
-        description={
-          certificate.source === "field"
-            ? "Recebido do app de campo — planilha Excel anexada pelo técnico."
-            : "Prévia do documento que acompanha a planilha CERTIFICADO TESTE."
-        }
-        action={
-          certificate.fileBase64 ? (
+    <div className="space-y-6">
+      <div className="no-print">
+        <PageHeader
+          eyebrow={kindLabel(job.kind)}
+          title={job.number}
+          description={
+            publicCert?.kindLabel ||
+            "Certificado sincronizado do GS Campo."
+          }
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill
+                label={
+                  publicCert?.issued
+                    ? "Emitido"
+                    : job.status === "done"
+                      ? "Concluído"
+                      : job.status || "—"
+                }
+                tone={publicCert?.issued || job.status === "done" ? "ok" : "warn"}
+              />
+              <Link
+                href="/certificados"
+                className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+              >
+                Voltar
+              </Link>
+              {osId ? (
+                <Link
+                  href={`/os/${osId}/certificados`}
+                  className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+                >
+                  OS
+                </Link>
+              ) : null}
+              <a
+                href={campoAppUrl()}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-paper hover:bg-navy-2"
+              >
+                Abrir no Campo ↗
+              </a>
+            </div>
+          }
+        />
+      </div>
+
+      <PrintToolbar title={`Certificado ${job.number}`} />
+
+      {publicCert ? (
+        <article className="print-sheet space-y-4">
+          <section className="rounded-3xl border border-navy/10 bg-white p-6 text-center md:p-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+              {publicCert.kindLabel}
+            </p>
+            <h2 className="mt-2 font-serif text-3xl text-navy">
+              {publicCert.number || job.number}
+            </h2>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-paper px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wide text-navy/45">
+                  Calibrado em
+                </p>
+                <p className="mt-1 font-serif text-xl text-navy">
+                  {publicCert.calibrationDate || "—"}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-paper px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wide text-navy/45">
+                  Próxima calibração
+                </p>
+                <p className="mt-1 font-serif text-xl text-navy">
+                  {publicCert.nextCalibrationDate || "—"}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-navy/10 bg-white p-6">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+              Cliente
+            </h3>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="Cliente" value={publicCert.clientName} />
+              <Field label="Local" value={publicCert.site} />
+              <Field label="OS" value={publicCert.osNumber} />
+              <Field label="Responsável" value={publicCert.technicianName} />
+            </dl>
+          </section>
+
+          <section className="rounded-3xl border border-navy/10 bg-white p-6">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+              Instrumento
+            </h3>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="TAG" value={publicCert.equipmentTag} />
+              <Field label="Tipo" value={publicCert.equipmentType} />
+              <Field label="Fabricante" value={publicCert.manufacturer} />
+              <Field label="Modelo" value={publicCert.model} />
+              <Field label="N/S" value={publicCert.serialNumber} />
+              <Field label="Fluido" value={publicCert.fluid} />
+            </dl>
+          </section>
+
+          <div className="no-print">
             <a
-              href={`/api/campo/certificados/${certificate.id}/pdf`}
+              href={consultUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-[2px] bg-brass px-3.5 py-2 text-sm font-semibold tracking-wide text-black hover:bg-brass-2"
+              className="inline-flex rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:border-brass/40"
             >
-              Baixar anexo
+              Consulta pública ↗
             </a>
-          ) : undefined
-        }
-      />
-      <article className="mx-auto max-w-3xl border border-line bg-white p-8 shadow-[0_0_0_1px_rgba(0,0,0,0.02)]">
-        <header className="border-b border-navy pb-4">
-          <div className="text-xs uppercase tracking-[0.2em] text-brass">
-            GS Soluções Técnicas
           </div>
-          <h2 className="mt-2 font-serif text-2xl text-navy">
-            Certificado de calibração
-          </h2>
-          <p className="mt-1 text-sm text-muted">
-            Certificado nº {certificate.number} · Serviço de calibração volumétrica
+        </article>
+      ) : (
+        <section className="print-sheet rounded-3xl border border-navy/10 bg-white p-6">
+          <h2 className="font-serif text-2xl text-navy">{job.number}</h2>
+          <p className="mt-3 text-sm text-navy/60">
+            Registro na planilha do Campo ({kindLabel(job.kind)} · {job.status}
+            ). A consulta pública completa não retornou — confira se o
+            certificado foi sincronizado.
           </p>
-        </header>
-
-        <section className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-          <div>
-            <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
-              Dados do cliente
-            </h3>
-            <p>
-              {certificate.client?.legalName}
-              <br />
-              CNPJ {certificate.client ? formatCnpj(certificate.client.cnpj) : "—"}
-              <br />
-              Base {certificate.client?.alias}
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
-              Serviço
-            </h3>
-            <p>
-              OS{" "}
-              {certificate.workOrder
-                ? formatWorkOrderNumber(
-                    certificate.workOrder.number,
-                    certificate.workOrder.year,
-                  )
-                : "—"}
-              <br />
-              Emissão{" "}
-              {new Date(`${certificate.issuedAt}T00:00:00`).toLocaleDateString("pt-BR")}
-              <br />
-              Próxima calibração{" "}
-              {new Date(`${certificate.nextDue}T00:00:00`).toLocaleDateString("pt-BR")}
-            </p>
+          <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+            <Field label="Cliente" value={job.clientName} />
+            <Field label="TAG" value={job.equipmentTag} />
+            <Field label="Equipamento" value={job.equipmentType} />
+            <Field label="OS" value={String(job.raw.osNumber || "")} />
+          </dl>
+          <div className="no-print mt-6">
+            <a
+              href={consultUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:border-brass/40"
+            >
+              Tentar consulta pública ↗
+            </a>
           </div>
         </section>
-
-        <section className="mt-6 text-sm">
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
-            Instrumento calibrado
-          </h3>
-          <p>
-            {certificate.instrument}
-            <br />
-            Tag {certificate.tag} · Princípio {certificate.principle}
-          </p>
-        </section>
-
-        <section className="mt-6 text-sm">
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
-            Padrão envolvido
-          </h3>
-          <p>{certificate.standard}</p>
-          <p className="mt-2 text-muted">
-            Método: comparação direta · Procedimento PQ-30.005
-          </p>
-        </section>
-
-        <section className="mt-6">
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
-            Resultados (prévia)
-          </h3>
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-line text-muted">
-              <tr>
-                <th className="py-2 font-medium">Vazão (L/min)</th>
-                <th className="font-medium">Erro (%)</th>
-                <th className="font-medium">Repetib. (%)</th>
-                <th className="font-medium">U (k=2)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["400", "0,43", "0,08", "0,21"],
-                ["1100", "0,86", "0,11", "0,24"],
-                ["1700", "0,47", "0,07", "0,19"],
-                ["2250", "0,16", "0,06", "0,18"],
-              ].map((row) => (
-                <tr key={row[0]} className="border-b border-line">
-                  {row.map((cell) => (
-                    <td key={cell} className="py-2">
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <footer className="mt-8 grid gap-6 text-sm sm:grid-cols-2">
-          <div>
-            <div className="h-12 border-b border-ink/40 font-serif italic text-navy">
-              {certificate.signer}
-            </div>
-            <div className="mt-1 text-xs text-muted">Signatário autorizado</div>
-          </div>
-          <div>
-            <div className="h-12 border-b border-ink/40 font-serif italic text-navy">
-              {certificate.client?.manager.name}
-            </div>
-            <div className="mt-1 text-xs text-muted">Responsável da base</div>
-          </div>
-        </footer>
-      </article>
+      )}
     </div>
   );
 }
