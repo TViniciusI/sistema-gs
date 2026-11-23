@@ -151,4 +151,33 @@ button:not(:disabled):active {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+
+  .rdo-print-page {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .rdo-print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .rdo-doc {
+    box-shadow: none !important;
+  }
+
+  .rdo-doc img {
+    max-width: 100%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .rdo-section-bar {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+.rdo-section-bar {
+  background: #c6a03a;
 }

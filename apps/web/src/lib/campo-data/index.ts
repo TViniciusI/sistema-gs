@@ -9,20 +9,30 @@ export {
   calibrationsForOs,
   campoAppUrl,
   certificatesForOs,
+  DEFAULT_TECHNICIAN_CARGO,
+  formatRdoDate,
+  formatRdoSignedAt,
   getCampoPublicCertificate,
   groupCertificatesByKind,
   groupSlotsByKind,
+  GS_COMPANY_CNPJ,
+  GS_COMPANY_NAME,
   jobForSlot,
   kindLabel,
   parseOsCalibrationSlots,
+  parseOsRdoMeta,
   parseOsRdos,
+  personFirstKey,
   publicCertUrl,
+  splitTeamNames,
+  teamWithLead,
 } from "./os-docs";
 export type {
   CampoPublicCertificate,
   OsCalibrationSlotLite,
   OsCertificateRow,
   OsRdoLite,
+  OsRdoMeta,
 } from "./os-docs";
 export { listCampoUsers } from "./users";
 export { getCampoDriveStatus } from "./drive";

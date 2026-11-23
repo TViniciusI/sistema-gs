@@ -19,8 +19,38 @@ export type OsCalibrationSlotLite = {
 export type OsRdoLite = {
   id: string;
   date: string;
+  clockIn: string;
+  lunchStart: string;
+  lunchEnd: string;
+  clockOut: string;
   description: string;
+  notes: string;
+  responsibleName: string;
+  signedAt: string;
+  clientSignedName: string;
+  clientSignedAt: string;
+  signed: boolean;
 };
+
+export type OsRdoMeta = {
+  client: string;
+  cnpj: string;
+  site: string;
+  service: string;
+  systemType: string;
+  technicianCargo: string;
+  baseName: string;
+  baseCargo: string;
+  baseEmail: string;
+  basePhone: string;
+  technicianFuncoes: Record<string, string>;
+  technicianCargos: Record<string, string>;
+};
+
+export const DEFAULT_TECHNICIAN_CARGO =
+  "Técnico em Instrumentação Industrial";
+export const GS_COMPANY_NAME = "GS SOLUÇÕES LTDA.";
+export const GS_COMPANY_CNPJ = "64.949.495/0001-82";
 
 export type OsCertificateRow = {
   slot: OsCalibrationSlotLite;
@@ -132,6 +162,38 @@ export function parseOsCalibrationSlots(
     .filter(Boolean) as OsCalibrationSlotLite[];
 }
 
+function asStringMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    const k = text(key).toLowerCase();
+    const v = text(raw);
+    if (k && v) out[k] = v;
+  }
+  return out;
+}
+
+export function parseOsRdoMeta(os: CampoOrder): OsRdoMeta {
+  const rdo =
+    os.raw.rdo && typeof os.raw.rdo === "object"
+      ? (os.raw.rdo as Record<string, unknown>)
+      : {};
+  return {
+    client: text(rdo.client) || os.clientName,
+    cnpj: text(rdo.cnpj),
+    site: text(rdo.site) || [rdo.city, rdo.state].filter(Boolean).join("/"),
+    service: text(rdo.service),
+    systemType: text(rdo.systemType),
+    technicianCargo: text(rdo.technicianCargo) || DEFAULT_TECHNICIAN_CARGO,
+    baseName: text(rdo.baseName),
+    baseCargo: text(rdo.baseCargo),
+    baseEmail: text(rdo.baseEmail),
+    basePhone: text(rdo.basePhone),
+    technicianFuncoes: asStringMap(rdo.technicianFuncoes),
+    technicianCargos: asStringMap(rdo.technicianCargos),
+  };
+}
+
 export function parseOsRdos(os: CampoOrder): OsRdoLite[] {
   const raw = Array.isArray(os.raw.rdos) ? os.raw.rdos : [];
   return raw.map((item, index) => {
@@ -139,16 +201,100 @@ export function parseOsRdos(os: CampoOrder): OsRdoLite[] {
       return {
         id: `rdo-${index}`,
         date: "",
+        clockIn: "",
+        lunchStart: "",
+        lunchEnd: "",
+        clockOut: "",
         description: "Registro de campo",
+        notes: "",
+        responsibleName: "",
+        signedAt: "",
+        clientSignedName: "",
+        clientSignedAt: "",
+        signed: false,
       };
     }
     const r = item as Record<string, unknown>;
     return {
       id: text(r.id) || `rdo-${index}`,
       date: text(r.date || r.day),
-      description: text(r.description) || text(r.obs) || "Registro de campo",
+      clockIn: text(r.clockIn),
+      lunchStart: text(r.lunchStart),
+      lunchEnd: text(r.lunchEnd),
+      clockOut: text(r.clockOut),
+      description: text(r.description) || text(r.obs) || "",
+      notes: text(r.notes),
+      responsibleName: text(r.responsibleName),
+      signedAt: text(r.signedAt),
+      clientSignedName: text(r.clientSignedName),
+      clientSignedAt: text(r.clientSignedAt),
+      signed: r.signed === true || Boolean(text(r.responsibleName)),
     };
   });
+}
+
+/** Primeira palavra do nome, normalizada — chave das maps do app. */
+export function personFirstKey(name: string) {
+  return text(name)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split(/\s+/)[0] || "";
+}
+
+export function splitTeamNames(raw: string) {
+  const parts = raw
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const name of parts) {
+    const key = personFirstKey(name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out;
+}
+
+export function teamWithLead(names: string[], responsibleName: string) {
+  const lead = text(responsibleName);
+  if (!lead) return names.length ? names : ["-"];
+  const leadKey = personFirstKey(lead);
+  const rest = names.filter((n) => personFirstKey(n) !== leadKey);
+  return [lead, ...rest];
+}
+
+export function formatRdoDate(raw: string) {
+  const value = text(raw);
+  if (!value) return "";
+  const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value);
+  if (dmy) {
+    return `${dmy[1].padStart(2, "0")}/${dmy[2].padStart(2, "0")}/${dmy[3]}`;
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+export function formatRdoSignedAt(raw: string, fallbackDate?: string) {
+  const value = text(raw) || text(fallbackDate);
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  const date = d.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  // pt-BR locale often yields "dd/mm/yyyy, HH:mm:ss"
+  return `${date.replace(",", "")} -03:00`;
 }
 
 function jobBelongsToOs(

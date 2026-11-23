@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintToolbar } from "@/components/os/print-toolbar";
+import { RdoServiceReport } from "@/components/os/rdo-service-report";
 import { PageHeader } from "@/components/ui";
 import {
   campoAppUrl,
   getCampoOrder,
+  parseOsRdoMeta,
   parseOsRdos,
 } from "@/lib/campo-data";
 
@@ -12,17 +14,22 @@ export const dynamic = "force-dynamic";
 
 export default async function OsRdoPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ rdo?: string }>;
 }) {
   const { id } = await params;
+  const { rdo: rdoFilter } = await searchParams;
   const os = await getCampoOrder(id);
   if (!os) notFound();
+
+  const meta = parseOsRdoMeta(os);
   const rdos = parseOsRdos(os);
-  const rdoMeta =
-    os.raw.rdo && typeof os.raw.rdo === "object"
-      ? (os.raw.rdo as Record<string, unknown>)
-      : {};
+  const selected =
+    (rdoFilter
+      ? rdos.find((r) => r.id === rdoFilter)
+      : null) || rdos[0] || null;
 
   return (
     <div className="space-y-6">
@@ -30,7 +37,7 @@ export default async function OsRdoPage({
         <PageHeader
           eyebrow="Campo"
           title={`RDO · OS GS ${os.number}`}
-          description="Impressão consolidada no escritório. Preenchimento e assinatura continuam no GS Campo."
+          description="Relatório de Serviço no mesmo formato do GS Campo. Imprima ou salve em PDF."
           action={
             <div className="flex flex-wrap gap-2">
               <Link
@@ -52,69 +59,68 @@ export default async function OsRdoPage({
         />
       </div>
 
-      <PrintToolbar title={`RDO · OS GS ${os.number}`} />
-
-      <article className="print-sheet rounded-3xl border border-navy/10 bg-white p-6 md:p-8">
-        <header className="border-b border-navy/10 pb-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-            Relatório diário de obra
-          </p>
-          <h1 className="mt-2 font-serif text-3xl text-navy">
-            OS GS {os.number}
-          </h1>
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-muted">Cliente</dt>
-              <dd className="font-medium text-navy">
-                {os.clientName || String(rdoMeta.client || "—")}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">Técnicos</dt>
-              <dd className="font-medium text-navy">
-                {os.technicianName || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">Local</dt>
-              <dd className="font-medium text-navy">
-                {String(rdoMeta.site || "—")}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">Serviço</dt>
-              <dd className="font-medium text-navy">
-                {String(rdoMeta.service || "—")}
-              </dd>
-            </div>
-          </dl>
-        </header>
-
-        {rdos.length === 0 ? (
-          <p className="mt-8 text-sm text-muted">
-            Ainda não há RDO enviado nesta OS.
-          </p>
-        ) : (
-          <div className="mt-6 space-y-4">
-            {rdos.map((rdo, index) => (
-              <section
+      {rdos.length > 1 ? (
+        <div className="no-print flex flex-wrap gap-2">
+          {rdos.map((rdo, index) => {
+            const active = selected?.id === rdo.id;
+            return (
+              <Link
                 key={rdo.id}
-                className="rounded-2xl border border-navy/10 bg-paper/50 px-4 py-4"
+                href={`/os/${os.id}/rdo?rdo=${encodeURIComponent(rdo.id)}`}
+                className={[
+                  "rounded-xl px-3 py-2 text-sm font-medium transition",
+                  active
+                    ? "bg-navy text-paper"
+                    : "border border-navy/15 bg-white text-navy hover:border-brass/40",
+                ].join(" ")}
               >
-                <h2 className="font-semibold text-navy">
-                  RDO {index + 1}
-                  {rdo.date
-                    ? ` · ${new Date(rdo.date).toLocaleDateString("pt-BR")}`
-                    : ""}
-                </h2>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-navy/75">
-                  {rdo.description}
-                </p>
-              </section>
+                Dia {index + 1}
+                {rdo.date
+                  ? ` · ${new Date(rdo.date).toLocaleDateString("pt-BR")}`
+                  : ""}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <PrintToolbar
+        title={
+          selected
+            ? `Relatório de Serviço · OS ${os.number}`
+            : `RDO · OS GS ${os.number}`
+        }
+      />
+
+      {rdos.length === 0 || !selected ? (
+        <p className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
+          Ainda não há RDO nesta OS. Preencha e assine no GS Campo.
+        </p>
+      ) : (
+        <div className="space-y-8 print:space-y-0">
+          {/* Na tela: o selecionado; na impressão: todos os dias, um por página */}
+          <div className="print:hidden">
+            <RdoServiceReport
+              osNumber={os.number}
+              technicianName={os.technicianName}
+              meta={meta}
+              entry={selected}
+            />
+          </div>
+          <div className="hidden print:block">
+            {rdos.map((entry) => (
+              <div key={entry.id} className="rdo-print-page">
+                <RdoServiceReport
+                  osNumber={os.number}
+                  technicianName={os.technicianName}
+                  meta={meta}
+                  entry={entry}
+                />
+              </div>
             ))}
           </div>
-        )}
-      </article>
+        </div>
+      )}
     </div>
   );
 }
