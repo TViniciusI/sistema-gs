@@ -9,10 +9,7 @@ import { Icons } from "@/components/icons";
 const GROUPS = [
   {
     label: "Início",
-    items: [
-      { href: "/", label: "Área de trabalho", icon: Icons.home },
-      { href: "/agenda", label: "Agenda da semana", icon: Icons.calendar },
-    ],
+    items: [{ href: "/", label: "Área de trabalho", icon: Icons.home }],
   },
   {
     label: "Operação",
