@@ -28,8 +28,11 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10 flex flex-1 flex-col justify-center px-14 py-14">
-          <BrandLogo variant="onDark" className="h-[88px] w-auto" />
-          <h1 className="mt-8 max-w-[14ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
+          <BrandLogo variant="mark" className="h-[76px] w-auto" />
+          <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.36em] text-brass">
+            GS Soluções Técnicas
+          </p>
+          <h1 className="mt-5 max-w-[14ch] font-serif text-[2.75rem] leading-[1.15] tracking-tight">
             Escritório GS
           </h1>
           <p className="mt-5 max-w-[36ch] text-[15px] leading-7 text-paper/70">
