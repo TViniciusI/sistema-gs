@@ -10,7 +10,12 @@ export type {
   CampoClientWriteInput,
   CampoClientSystemInput,
 } from "./clients";
-export { listCampoOrders, getCampoOrder, saveCampoOrder } from "./orders";
+export {
+  listCampoOrders,
+  getCampoOrder,
+  resolveCampoOsNumber,
+  saveCampoOrder,
+} from "./orders";
 export {
   isExcludedFromTechLoad,
   isFieldTechnicianUser,

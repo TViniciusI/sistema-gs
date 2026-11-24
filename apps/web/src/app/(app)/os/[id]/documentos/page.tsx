@@ -14,6 +14,7 @@ import {
   listCampoOsDriveFiles,
   parseOsCalibrationSlots,
   parseOsRdos,
+  resolveCampoOsNumber,
 } from "@/lib/campo-data";
 import {
   campoOsStatusLabel,
@@ -28,13 +29,18 @@ export default async function OsDocumentosPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [os, calibrations, drive] = await Promise.all([
+  const osNumber = await resolveCampoOsNumber(id);
+  const [os, calibrations, drive, drivePrefetch] = await Promise.all([
     getCampoOrder(id),
     listCampoCalibrations(),
     getCampoDriveStatus(),
+    osNumber
+      ? listCampoOsDriveFiles(osNumber)
+      : Promise.resolve(null),
   ]);
   if (!os) notFound();
-  const driveListing = await listCampoOsDriveFiles(os.number);
+  const driveListing =
+    drivePrefetch ?? (await listCampoOsDriveFiles(os.number));
 
   const slots = parseOsCalibrationSlots(os);
   const rdos = parseOsRdos(os);

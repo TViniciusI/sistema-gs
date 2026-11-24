@@ -46,6 +46,20 @@ export const getCampoOrder = cache(async (id: string) => {
   )();
 });
 
+/**
+ * Número da OS a partir da lista cacheada — permite iniciar Drive
+ * em paralelo com `getCampoOrder` sem waterfall.
+ */
+export const resolveCampoOsNumber = cache(async (id: string) => {
+  const key = String(id || "").trim();
+  if (!key) return "";
+  const orders = await listCampoOrders();
+  const hit = orders.find((os) => os.id === key);
+  if (hit?.number) return hit.number;
+  const detail = await getCampoOrder(key);
+  return detail?.number || "";
+});
+
 /** Mesmo contrato do app: `action=saveos` com campos flat. */
 export async function saveCampoOrder(
   fields: Record<string, string>,

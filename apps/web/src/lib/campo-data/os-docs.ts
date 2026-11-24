@@ -1,3 +1,6 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
+import { CAMPO_TAGS } from "./cache";
 import { gateGet } from "./gate";
 import type { CampoCalibration } from "./catalog";
 import { kindLabel } from "./kind-labels";
@@ -441,20 +444,15 @@ export function campoAppUrl() {
   );
 }
 
-export async function getCampoPublicCertificate(input: {
-  number?: string;
-  jobId?: string;
-  osId?: string;
+async function fetchCampoPublicCertificate(input: {
+  number: string;
+  jobId: string;
+  osId: string;
 }): Promise<CampoPublicCertificate | null> {
-  const number = text(input.number);
-  const jobId = text(input.jobId);
-  const osId = text(input.osId);
-  if (!jobId && !(number && osId)) return null;
-
   const params: Record<string, string> = { action: "certpublic" };
-  if (number) params.n = number;
-  if (jobId) params.id = jobId;
-  if (osId) params.osId = osId;
+  if (input.number) params.n = input.number;
+  if (input.jobId) params.id = input.jobId;
+  if (input.osId) params.osId = input.osId;
 
   const payload = await gateGet(params, { withToken: false, timeoutMs: 45_000 });
   if (!payload || payload.ok !== true) return null;
@@ -503,3 +501,27 @@ export async function getCampoPublicCertificate(input: {
       .filter(Boolean) as CampoPublicCertificate["standards"],
   };
 }
+
+export async function getCampoPublicCertificate(input: {
+  number?: string;
+  jobId?: string;
+  osId?: string;
+}): Promise<CampoPublicCertificate | null> {
+  const number = text(input.number);
+  const jobId = text(input.jobId);
+  const osId = text(input.osId);
+  if (!jobId && !(number && osId)) return null;
+
+  const cacheKey = `${jobId}|${number}|${osId}`;
+  return getCachedPublicCertificate(cacheKey, number, jobId, osId);
+}
+
+const getCachedPublicCertificate = cache(
+  async (cacheKey: string, number: string, jobId: string, osId: string) => {
+    return unstable_cache(
+      () => fetchCampoPublicCertificate({ number, jobId, osId }),
+      ["getCampoPublicCertificate", cacheKey],
+      { revalidate: 60, tags: [CAMPO_TAGS.calibrations] },
+    )();
+  },
+);

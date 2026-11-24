@@ -11,6 +11,7 @@ import {
   listCampoOsDriveFiles,
   parseOsRdoMeta,
   parseOsRdos,
+  resolveCampoOsNumber,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -24,12 +25,19 @@ export default async function OsRdoPage({
 }) {
   const { id } = await params;
   const { rdo: rdoFilter } = await searchParams;
-  const os = await getCampoOrder(id);
+  const osNumber = await resolveCampoOsNumber(id);
+  const [os, drivePrefetch] = await Promise.all([
+    getCampoOrder(id),
+    osNumber
+      ? listCampoOsDriveFiles(osNumber)
+      : Promise.resolve(null),
+  ]);
   if (!os) notFound();
 
   const meta = parseOsRdoMeta(os);
   const rdos = parseOsRdos(os);
-  const drive = await listCampoOsDriveFiles(os.number);
+  const drive =
+    drivePrefetch ?? (await listCampoOsDriveFiles(os.number));
   const selected =
     (rdoFilter
       ? rdos.find((r) => r.id === rdoFilter)

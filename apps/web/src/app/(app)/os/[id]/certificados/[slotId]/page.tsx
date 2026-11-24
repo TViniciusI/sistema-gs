@@ -15,6 +15,7 @@ import {
   listCampoCalibrations,
   listCampoOsDriveFiles,
   publicCertUrl,
+  resolveCampoOsNumber,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -38,12 +39,17 @@ export default async function OsCertificadoDetailPage({
   params: Promise<{ id: string; slotId: string }>;
 }) {
   const { id, slotId } = await params;
-  const [os, calibrations] = await Promise.all([
+  const osNumber = await resolveCampoOsNumber(id);
+  const [os, calibrations, drivePrefetch] = await Promise.all([
     getCampoOrder(id),
     listCampoCalibrations(),
+    osNumber
+      ? listCampoOsDriveFiles(osNumber)
+      : Promise.resolve(null),
   ]);
   if (!os) notFound();
-  const listing = await listCampoOsDriveFiles(os.number);
+  const listing =
+    drivePrefetch ?? (await listCampoOsDriveFiles(os.number));
 
   const rows = certificatesForOs(os, calibrations);
   const row =
@@ -54,17 +60,18 @@ export default async function OsCertificadoDetailPage({
 
   const slot = row.slot;
   let job = row.job;
-  if (job?.id) {
-    const full = await getCampoCalibration(job.id);
-    if (full) job = full;
-  }
-  const publicCert = row.hasCalibration
-    ? await getCampoPublicCertificate({
-        number: slot.certificateNumber || job?.number,
-        jobId: job?.id || slot.jobId,
-        osId: os.id,
-      })
-    : null;
+  const jobId = job?.id || slot.jobId;
+  const [fullJob, publicCert] = await Promise.all([
+    jobId ? getCampoCalibration(jobId) : Promise.resolve(null),
+    row.hasCalibration
+      ? getCampoPublicCertificate({
+          number: slot.certificateNumber || job?.number,
+          jobId: jobId || undefined,
+          osId: os.id,
+        })
+      : Promise.resolve(null),
+  ]);
+  if (fullJob) job = fullJob;
 
   const consultUrl = publicCertUrl({
     number: slot.certificateNumber || job?.number || publicCert?.number,
