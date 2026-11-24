@@ -3,6 +3,9 @@ import {
   density20FromAmbient,
 } from "./derivados-tables";
 
+export { convertAlcool } from "./tabelas-alcool";
+export { loadInpmDensities } from "./inpm-table";
+
 export const GS_TABLES = [
   {
     id: "derivados",
@@ -61,6 +64,26 @@ export function convertDerivados(input: {
       ? undefined
       : (variance / input.volumeDanfe) * 100;
   return { density20, ctl, volume20, weight, variance, variancePercent };
+}
+
+/** Validação da calibração — mesma regra do app (`convertValidacao`). */
+export function convertValidacao(input: {
+  volumeBaseAmbient: number;
+  densityAmbient: number;
+  temperature: number;
+  volumeSistema: number;
+}) {
+  const base = convertDerivados({
+    densityAmbient: input.densityAmbient,
+    temperature: input.temperature,
+    volumeAmbient: input.volumeBaseAmbient,
+    temperatureCt: input.temperature,
+  });
+  const systemVol20 = input.volumeSistema;
+  const varianceLit = systemVol20 - base.volume20;
+  const variancePct =
+    base.volume20 === 0 ? 0 : (varianceLit / base.volume20) * 100;
+  return { base, systemVol20, varianceLit, variancePct };
 }
 
 function round2(value: number) {

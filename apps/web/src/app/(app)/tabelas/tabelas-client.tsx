@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Field, PageHeader, Panel } from "@/components/ui";
 import {
   GS_TABLES,
+  convertAlcool,
   convertDerivados,
+  convertValidacao,
   formatPt,
+  loadInpmDensities,
   parseBrNumber,
   type GsTableId,
 } from "@/lib/demo/tabelas";
@@ -18,7 +21,7 @@ export function TabelasClient() {
       <PageHeader
         eyebrow="Qualidade"
         title="Tabelas 20 °C"
-        description="Correção volumétrica da GS — derivados de petróleo e álcool. O mesmo módulo do app, em tela de escritório."
+        description="Correção volumétrica da GS — derivados de petróleo e álcool. O mesmo cálculo do app, em tela de escritório."
       />
 
       <div className="grid gap-3 lg:grid-cols-3">
@@ -72,20 +75,21 @@ function DerivadosPanel() {
   const [volumeAmbient, setVolumeAmbient] = useState("10000");
   const [temperatureCt, setTemperatureCt] = useState("25");
   const [volumeDanfe, setVolumeDanfe] = useState("9940");
+  const [showVariancePercent, setShowVariancePercent] = useState(false);
 
   const result = useMemo(() => {
     const d = parseBrNumber(densityAmbient);
     const t = parseBrNumber(temperature);
     const v = parseBrNumber(volumeAmbient);
     const tc = parseBrNumber(temperatureCt);
+    if (d == null || t == null || v == null || tc == null) return null;
     const danfe = parseBrNumber(volumeDanfe);
-    if (d == null || t == null || v == null || tc == null || danfe == null) return null;
     return convertDerivados({
       densityAmbient: d,
       temperature: t,
       volumeAmbient: v,
       temperatureCt: tc,
-      volumeDanfe: danfe,
+      volumeDanfe: danfe ?? undefined,
     });
   }, [densityAmbient, temperature, volumeAmbient, temperatureCt, volumeDanfe]);
 
@@ -96,57 +100,55 @@ function DerivadosPanel() {
         <Panel>
           <h3 className="mb-4 font-serif text-lg text-navy">Amostra</h3>
           <div className="space-y-3">
-            <Field
-              label="Densidade ambiente (kg/m³)"
-              name="damb"
-              defaultValue={densityAmbient}
-            >
+            <Field label="Densidade ambiente (kg/m³)" name="damb">
               <input
                 className="w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brass"
                 value={densityAmbient}
                 onChange={(event) => setDensityAmbient(event.target.value)}
               />
             </Field>
-            <Field label="Temperatura (°C)" name="temp" defaultValue={temperature}>
+            <Field label="Temperatura (°C)" name="temp">
               <input
                 className="w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brass"
                 value={temperature}
                 onChange={(event) => setTemperature(event.target.value)}
               />
             </Field>
-            <Field
-              label="Volume ambiente (L)"
-              name="vamb"
-              defaultValue={volumeAmbient}
-            >
+            <Field label="Volume ambiente (L)" name="vamb">
               <input
                 className="w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brass"
                 value={volumeAmbient}
                 onChange={(event) => setVolumeAmbient(event.target.value)}
               />
             </Field>
-            <Field
-              label="Temperatura do CT (°C)"
-              name="tct"
-              defaultValue={temperatureCt}
-            >
+            <Field label="Temperatura do CT (°C)" name="tct">
               <input
                 className="w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brass"
                 value={temperatureCt}
                 onChange={(event) => setTemperatureCt(event.target.value)}
               />
             </Field>
-            <Field
-              label="Volume a 20 °C — DANFE (L20)"
-              name="danfe"
-              defaultValue={volumeDanfe}
-            >
+            <Field label="Volume a 20 °C — objeto / DANFE (L20)" name="danfe">
               <input
                 className="w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brass"
                 value={volumeDanfe}
                 onChange={(event) => setVolumeDanfe(event.target.value)}
               />
             </Field>
+            <label className="flex items-start gap-3 pt-1 text-sm text-navy">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={showVariancePercent}
+                onChange={(e) => setShowVariancePercent(e.target.checked)}
+              />
+              <span>
+                Mostrar erro da comparação em %
+                <span className="mt-0.5 block text-xs text-muted">
+                  Exibe perda e sobra em percentual além dos litros.
+                </span>
+              </span>
+            </label>
           </div>
         </Panel>
         <Panel>
@@ -157,23 +159,35 @@ function DerivadosPanel() {
                 label="Densidade a 20 °C"
                 value={`${formatPt(result.density20, 3)} kg/m³`}
               />
-              <ResultRow label="Fator de correção (CTL)" value={formatPt(result.ctl, 4)} />
+              <ResultRow
+                label="Fator de correção (CTL)"
+                value={formatPt(result.ctl, 4)}
+              />
               <ResultRow
                 label="Volume a 20 °C"
-                value={`${formatPt(result.volume20, 1)} L20`}
+                value={`${formatPt(result.volume20, 2)} L20`}
               />
               <ResultRow label="Peso" value={`${formatPt(result.weight, 3)} kg`} />
-              <ResultRow
-                label="Perda & sobra"
-                value={`${formatPt(result.variance ?? 0, 1)} L20`}
-              />
+              {result.variance != null ? (
+                <ResultRow
+                  label="Perda & sobra"
+                  value={formatVariance(
+                    result.variance,
+                    result.variancePercent,
+                    showVariancePercent,
+                    2,
+                  )}
+                />
+              ) : null}
             </dl>
           ) : (
-            <p className="text-sm text-muted">Preencha os campos numéricos da amostra.</p>
+            <p className="text-sm text-muted">
+              Preencha os campos numéricos da amostra.
+            </p>
           )}
           <p className="mt-6 text-xs leading-5 text-muted">
-            Cálculo no sistema a partir das faixas DNS_20 e FCV_20 da planilha GS.
-            A planilha original permanece disponível para conferência.
+            Cálculo com tabelas DNS_20 e FCV_20 da planilha GS (ASTM 1520/2004) —
+            mesma regra do GS Campo.
           </p>
         </Panel>
       </div>
@@ -186,19 +200,60 @@ function AlcoolPanel() {
   const [densityAmbient, setDensityAmbient] = useState("800");
   const [temperature, setTemperature] = useState("29,45");
   const [volumeAmbient, setVolumeAmbient] = useState("10000");
+  const [temperatureCt, setTemperatureCt] = useState("29,45");
+  const [volumeDanfe, setVolumeDanfe] = useState("9900");
+  const [showVariancePercent, setShowVariancePercent] = useState(false);
+  const [inpmReady, setInpmReady] = useState(false);
+  const [inpmError, setInpmError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadInpmDensities()
+      .then(() => {
+        if (!cancelled) {
+          setInpmReady(true);
+          setInpmError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setInpmError(
+            err instanceof Error ? err.message : "Falha ao carregar tabela INPM.",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const result = useMemo(() => {
+    if (!inpmReady) return null;
     const d = parseBrNumber(densityAmbient);
     const t = parseBrNumber(temperature);
     const v = parseBrNumber(volumeAmbient);
-    if (d == null || t == null || v == null) return null;
-    return convertDerivados({
-      densityAmbient: d,
-      temperature: t,
-      volumeAmbient: v,
-      temperatureCt: t,
-    });
-  }, [densityAmbient, temperature, volumeAmbient]);
+    const tc = parseBrNumber(temperatureCt);
+    if (d == null || t == null || v == null || tc == null) return null;
+    const danfe = parseBrNumber(volumeDanfe);
+    try {
+      return convertAlcool({
+        densityAmbient: d,
+        temperature: t,
+        volumeAmbient: v,
+        temperatureCt: tc,
+        volumeDanfe: danfe ?? undefined,
+      });
+    } catch {
+      return null;
+    }
+  }, [
+    inpmReady,
+    densityAmbient,
+    temperature,
+    volumeAmbient,
+    temperatureCt,
+    volumeDanfe,
+  ]);
 
   return (
     <div>
@@ -229,28 +284,81 @@ function AlcoolPanel() {
                 onChange={(event) => setVolumeAmbient(event.target.value)}
               />
             </Field>
+            <Field label="Temperatura do CT (°C)" name="tct-alc">
+              <input
+                className="w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brass"
+                value={temperatureCt}
+                onChange={(event) => setTemperatureCt(event.target.value)}
+              />
+            </Field>
+            <Field label="Volume a 20 °C — objeto / DANFE (L20)" name="danfe-alc">
+              <input
+                className="w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brass"
+                value={volumeDanfe}
+                onChange={(event) => setVolumeDanfe(event.target.value)}
+              />
+            </Field>
+            <label className="flex items-start gap-3 pt-1 text-sm text-navy">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={showVariancePercent}
+                onChange={(e) => setShowVariancePercent(e.target.checked)}
+              />
+              <span>
+                Mostrar erro da comparação em %
+                <span className="mt-0.5 block text-xs text-muted">
+                  Exibe perda e sobra em percentual além dos litros.
+                </span>
+              </span>
+            </label>
           </div>
         </Panel>
         <Panel>
           <h3 className="mb-4 font-serif text-lg text-navy">Resultado a 20 °C</h3>
-          {result ? (
+          {inpmError ? (
+            <p className="text-sm text-red-700">{inpmError}</p>
+          ) : !inpmReady ? (
+            <p className="text-sm text-muted">Carregando tabela INPM…</p>
+          ) : result ? (
             <dl className="space-y-3 text-sm">
               <ResultRow
-                label="Densidade a 20 °C"
-                value={`${formatPt(result.density20, 2)} kg/m³`}
+                label="Grau INPM do álcool"
+                value={`${formatPt(result.inpm, 2)} % massa`}
               />
-              <ResultRow label="Fator de correção" value={formatPt(result.ctl, 4)} />
+              <ResultRow
+                label="Densidade a 20 °C"
+                value={`${formatPt(result.density20, 3)} kg/m³`}
+              />
+              <ResultRow
+                label="Fator de correção (CTL)"
+                value={formatPt(result.ctl, 4)}
+              />
               <ResultRow
                 label="Volume a 20 °C"
-                value={`${formatPt(result.volume20, 1)} L20`}
+                value={`${formatPt(result.volume20, 0)} L20`}
               />
+              <ResultRow label="Peso" value={`${formatPt(result.weight, 3)} kg`} />
+              {result.variance != null ? (
+                <ResultRow
+                  label="Perda & sobra"
+                  value={formatVariance(
+                    result.variance,
+                    result.variancePercent,
+                    showVariancePercent,
+                    0,
+                  )}
+                />
+              ) : null}
             </dl>
           ) : (
-            <p className="text-sm text-muted">Preencha densidade, temperatura e volume.</p>
+            <p className="text-sm text-muted">
+              Preencha densidade, temperatura, volume e temperatura do CT.
+            </p>
           )}
           <p className="mt-6 text-xs leading-5 text-muted">
-            A tabela INPM completa (cerca de 3 mil linhas) está no arquivo Excel.
-            Use o download para conferência ponto a ponto.
+            Cálculo NBR 5992 com tabela INPM da GS (misturas etanol-água) — mesma
+            regra do GS Campo.
           </p>
         </Panel>
       </div>
@@ -272,16 +380,12 @@ function ValidacaoPanel() {
     const t = parseBrNumber(temp);
     const vs = parseBrNumber(volSistema);
     if (vb == null || d == null || t == null || vs == null) return null;
-    const base = convertDerivados({
+    return convertValidacao({
+      volumeBaseAmbient: vb,
       densityAmbient: d,
       temperature: t,
-      volumeAmbient: vb,
-      temperatureCt: t,
+      volumeSistema: vs,
     });
-    const systemVol20 = vs;
-    const varianceLit = systemVol20 - base.volume20;
-    const variancePct = base.volume20 === 0 ? 0 : (varianceLit / base.volume20) * 100;
-    return { ...base, varianceLit, variancePct, systemVol20 };
   }, [volBase, densAmostra, temp, volSistema]);
 
   return (
@@ -340,12 +444,12 @@ function ValidacaoPanel() {
             <dl className="mt-6 space-y-3 text-sm">
               <ResultRow
                 label="Densidade a 20 °C"
-                value={`${formatPt(result.density20, 3)} kg/m³`}
+                value={`${formatPt(result.base.density20, 3)} kg/m³`}
               />
-              <ResultRow label="Fator CTL" value={formatPt(result.ctl, 4)} />
+              <ResultRow label="Fator CTL" value={formatPt(result.base.ctl, 4)} />
               <ResultRow
                 label="Volume a 20 °C da base"
-                value={`${formatPt(result.volume20, 2)} L`}
+                value={`${formatPt(result.base.volume20, 2)} L`}
               />
               <ResultRow
                 label="Perda & sobra"
@@ -357,6 +461,17 @@ function ValidacaoPanel() {
       </div>
     </div>
   );
+}
+
+function formatVariance(
+  variance: number,
+  variancePercent: number | undefined,
+  showPercent: boolean,
+  litDigits: number,
+) {
+  const lit = `${formatPt(variance, litDigits)} L20`;
+  if (!showPercent || variancePercent == null) return lit;
+  return `${formatPt(variancePercent, 3)} % · ${lit}`;
 }
 
 function ResultRow({ label, value }: { label: string; value: string }) {
