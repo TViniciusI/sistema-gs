@@ -1,3 +1,4 @@
+import { bumpCampoCache, cachedList, CAMPO_TAGS } from "./cache";
 import { gateGet, gatePost } from "./gate";
 
 export type CampoCalibration = {
@@ -72,17 +73,26 @@ function parseCalibration(raw: unknown): CampoCalibration | null {
   };
 }
 
-export async function listCampoCalibrations(): Promise<CampoCalibration[]> {
-  const payload = await gateGet({ action: "listcalib" }, { withToken: false });
-  if (!payload || payload.ok !== true) return [];
-  const list = Array.isArray(payload.calibrations) ? payload.calibrations : [];
-  return list
-    .map(parseCalibration)
-    .filter(Boolean)
-    .sort((a, b) =>
-      (b!.updatedAt || b!.createdAt).localeCompare(a!.updatedAt || a!.createdAt),
-    ) as CampoCalibration[];
-}
+export const listCampoCalibrations = cachedList(
+  "listCampoCalibrations",
+  [CAMPO_TAGS.calibrations],
+  async (): Promise<CampoCalibration[]> => {
+    const payload = await gateGet(
+      { action: "listcalib" },
+      { withToken: false, timeoutMs: 45_000 },
+    );
+    if (!payload || payload.ok !== true) return [];
+    const list = Array.isArray(payload.calibrations) ? payload.calibrations : [];
+    return list
+      .map(parseCalibration)
+      .filter(Boolean)
+      .sort((a, b) =>
+        (b!.updatedAt || b!.createdAt).localeCompare(
+          a!.updatedAt || a!.createdAt,
+        ),
+      ) as CampoCalibration[];
+  },
+);
 
 /** Lê uma calibração completa (forceFull no gate). Fallback: lista leve. */
 export async function getCampoCalibration(
@@ -146,6 +156,8 @@ export async function saveCampoCalibration(input: {
       error: String(result?.error || "Não foi possível salvar a calibração."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.calibrations);
+
   if (result.skipped === true) {
     return {
       ok: false,
@@ -164,55 +176,66 @@ export function newCalibrationId() {
   return `calib-${Date.now()}`;
 }
 
-export async function listCampoStandards(): Promise<CampoStandard[]> {
-  const payload = await gateGet(
-    { action: "liststandards" },
-    { withToken: false },
-  );
-  if (!payload || payload.ok !== true) return [];
-  const list = Array.isArray(payload.standards) ? payload.standards : [];
-  return list
-    .map((raw) => {
-      if (!raw || typeof raw !== "object") return null;
-      const s = raw as Record<string, unknown>;
-      const id = text(s.id);
-      if (!id) return null;
-      return {
-        id,
-        name: text(s.name) || id,
-        type: text(s.type),
-        serial: text(s.serial),
-        certificate: text(s.certificate),
-        validity: text(s.validity),
-        updatedAt: text(s.updatedAt),
-        raw: s,
-      } satisfies CampoStandard;
-    })
-    .filter(Boolean) as CampoStandard[];
-}
+export const listCampoStandards = cachedList(
+  "listCampoStandards",
+  [CAMPO_TAGS.standards],
+  async (): Promise<CampoStandard[]> => {
+    const payload = await gateGet(
+      { action: "liststandards" },
+      { withToken: false, timeoutMs: 45_000 },
+    );
+    if (!payload || payload.ok !== true) return [];
+    const list = Array.isArray(payload.standards) ? payload.standards : [];
+    return list
+      .map((raw) => {
+        if (!raw || typeof raw !== "object") return null;
+        const s = raw as Record<string, unknown>;
+        const id = text(s.id);
+        if (!id) return null;
+        return {
+          id,
+          name: text(s.name) || id,
+          type: text(s.type),
+          serial: text(s.serial),
+          certificate: text(s.certificate),
+          validity: text(s.validity),
+          updatedAt: text(s.updatedAt),
+          raw: s,
+        } satisfies CampoStandard;
+      })
+      .filter(Boolean) as CampoStandard[];
+  },
+);
 
-export async function listCampoFluids(): Promise<CampoFluid[]> {
-  const payload = await gateGet({ action: "listfluids" }, { withToken: false });
-  if (!payload || payload.ok !== true) return [];
-  const list = Array.isArray(payload.fluids) ? payload.fluids : [];
-  return list
-    .map((raw) => {
-      if (!raw || typeof raw !== "object") return null;
-      const f = raw as Record<string, unknown>;
-      const id = text(f.id);
-      if (!id) return null;
-      return {
-        id,
-        name: text(f.name) || id,
-        density: text(f.density),
-        viscosity: text(f.viscosity),
-        temperature: text(f.temperature) || text(f.densityRefTemp),
-        updatedAt: text(f.updatedAt),
-        raw: f,
-      } satisfies CampoFluid;
-    })
-    .filter(Boolean) as CampoFluid[];
-}
+export const listCampoFluids = cachedList(
+  "listCampoFluids",
+  [CAMPO_TAGS.fluids],
+  async (): Promise<CampoFluid[]> => {
+    const payload = await gateGet(
+      { action: "listfluids" },
+      { withToken: false, timeoutMs: 45_000 },
+    );
+    if (!payload || payload.ok !== true) return [];
+    const list = Array.isArray(payload.fluids) ? payload.fluids : [];
+    return list
+      .map((raw) => {
+        if (!raw || typeof raw !== "object") return null;
+        const f = raw as Record<string, unknown>;
+        const id = text(f.id);
+        if (!id) return null;
+        return {
+          id,
+          name: text(f.name) || id,
+          density: text(f.density),
+          viscosity: text(f.viscosity),
+          temperature: text(f.temperature) || text(f.densityRefTemp),
+          updatedAt: text(f.updatedAt),
+          raw: f,
+        } satisfies CampoFluid;
+      })
+      .filter(Boolean) as CampoFluid[];
+  },
+);
 
 export async function saveCampoStandard(fields: {
   id?: string;
@@ -246,6 +269,7 @@ export async function saveCampoStandard(fields: {
       error: String(payload?.error || "Falha ao salvar padrão."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.standards);
   return { ok: true, id };
 }
 
@@ -262,6 +286,7 @@ export async function deleteCampoStandard(
       error: String(payload?.error || "Falha ao apagar padrão."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.standards);
   return { ok: true };
 }
 
@@ -297,6 +322,7 @@ export async function saveCampoFluid(fields: {
       error: String(payload?.error || "Falha ao salvar fluido."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.fluids);
   return { ok: true, id };
 }
 
@@ -313,6 +339,7 @@ export async function deleteCampoFluid(
       error: String(payload?.error || "Falha ao apagar fluido."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.fluids);
   return { ok: true };
 }
 

@@ -102,15 +102,25 @@ export async function buildEquipeHorasRows(input: {
   const orders = await listCampoOrders();
   const candidates = orders
     .filter((os) => orderMentionsTech(os, selectedKeys))
-    .slice(0, 36);
+    .slice(0, 24);
 
-  const hydrated = await Promise.all(
-    candidates.map(async (os) => {
-      if (!os.payloadLight && Array.isArray(os.raw.rdos) && os.raw.rdos.length) {
-        return os;
-      }
-      return (await getCampoOrder(os.id)) || os;
-    }),
+  const needHydrate = candidates.filter(
+    (os) =>
+      os.payloadLight ||
+      !Array.isArray(os.raw.rdos) ||
+      os.raw.rdos.length === 0,
+  );
+  const hydratedMap = new Map<string, (typeof candidates)[number]>();
+  // Hidrata em lotes de 6 para não saturar o Apps Script.
+  for (let i = 0; i < needHydrate.length; i += 6) {
+    const batch = needHydrate.slice(i, i + 6);
+    const loaded = await Promise.all(
+      batch.map(async (os) => [(await getCampoOrder(os.id)) || os, os.id] as const),
+    );
+    for (const [os, id] of loaded) hydratedMap.set(id, os);
+  }
+  const hydrated = candidates.map(
+    (os) => hydratedMap.get(os.id) || os,
   );
 
   const rows: HorasRow[] = [];

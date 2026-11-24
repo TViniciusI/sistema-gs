@@ -4,9 +4,9 @@ import { PrintToolbar } from "@/components/os/print-toolbar";
 import { PageHeader, StatusPill } from "@/components/ui";
 import {
   campoAppUrl,
+  getCampoCalibration,
   getCampoPublicCertificate,
   kindLabel,
-  listCampoCalibrations,
   publicCertUrl,
 } from "@/lib/campo-data";
 
@@ -31,10 +31,7 @@ export default async function CertificadoDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const items = await listCampoCalibrations();
-  const job =
-    items.find((item) => item.id === id) ||
-    items.find((item) => item.number === id);
+  const job = await getCampoCalibration(id);
   if (!job) notFound();
 
   const osId = String(job.raw.osId || "").trim();

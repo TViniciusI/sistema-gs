@@ -28,13 +28,13 @@ export default async function OsDocumentosPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const os = await getCampoOrder(id);
-  if (!os) notFound();
-  const [calibrations, drive, driveListing] = await Promise.all([
+  const [os, calibrations, drive] = await Promise.all([
+    getCampoOrder(id),
     listCampoCalibrations(),
     getCampoDriveStatus(),
-    listCampoOsDriveFiles(os.number),
   ]);
+  if (!os) notFound();
+  const driveListing = await listCampoOsDriveFiles(os.number);
 
   const slots = parseOsCalibrationSlots(os);
   const rdos = parseOsRdos(os);

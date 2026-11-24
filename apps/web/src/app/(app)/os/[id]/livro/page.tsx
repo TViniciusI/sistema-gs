@@ -21,12 +21,12 @@ export default async function OsLivroPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const os = await getCampoOrder(id);
-  if (!os) notFound();
-  const [calibrations, driveListing] = await Promise.all([
+  const [os, calibrations] = await Promise.all([
+    getCampoOrder(id),
     listCampoCalibrations(),
-    listCampoOsDriveFiles(os.number),
   ]);
+  if (!os) notFound();
+  const driveListing = await listCampoOsDriveFiles(os.number);
 
   const rows = certificatesForOs(os, calibrations);
   const groups = groupCertificatesByKind(rows);

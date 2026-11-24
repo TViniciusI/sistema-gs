@@ -1,4 +1,5 @@
 import { digitsOnly, formatCnpj } from "@gs/shared";
+import { bumpCampoCache, cachedList, CAMPO_TAGS } from "./cache";
 import { gateGet, gatePost } from "./gate";
 import { parseClient } from "./parse";
 import type { CampoClient, CampoClientSystem } from "./types";
@@ -138,15 +139,23 @@ async function pushClientRecord(
       error: String(result?.error || "Não foi possível salvar na planilha."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.clients);
   return { ok: true, id };
 }
 
-export async function listCampoClients(): Promise<CampoClient[]> {
-  const payload = await gateGet({ action: "listclients" }, { withToken: false });
-  if (!payload || payload.ok !== true) return [];
-  const list = Array.isArray(payload.clients) ? payload.clients : [];
-  return list.map(parseClient).filter(Boolean) as CampoClient[];
-}
+export const listCampoClients = cachedList(
+  "listCampoClients",
+  [CAMPO_TAGS.clients],
+  async (): Promise<CampoClient[]> => {
+    const payload = await gateGet(
+      { action: "listclients" },
+      { withToken: false, timeoutMs: 45_000 },
+    );
+    if (!payload || payload.ok !== true) return [];
+    const list = Array.isArray(payload.clients) ? payload.clients : [];
+    return list.map(parseClient).filter(Boolean) as CampoClient[];
+  },
+);
 
 export async function getCampoClient(id: string): Promise<CampoClient | null> {
   const payload = await gateGet(

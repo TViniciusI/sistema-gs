@@ -4,18 +4,26 @@ import {
   passwordHashCandidates,
 } from "@/lib/campo-auth";
 import type { CampoGateUser } from "@/lib/campo-auth";
+import { bumpCampoCache, cachedList, CAMPO_TAGS } from "./cache";
 import { gateGet, gatePost } from "./gate";
 import { parseUser } from "./parse";
 import type { CampoUser } from "./types";
 
-export async function listCampoUsers(): Promise<CampoUser[]> {
-  const payload = await gateGet({ action: "users" }, { withToken: true });
-  if (!payload || payload.ok !== true) return [];
-  const list = Array.isArray(payload.users) ? payload.users : [];
-  return (list.map(parseUser).filter(Boolean) as CampoUser[]).sort((a, b) =>
-    a.name.localeCompare(b.name, "pt-BR"),
-  );
-}
+export const listCampoUsers = cachedList(
+  "listCampoUsers",
+  [CAMPO_TAGS.users],
+  async (): Promise<CampoUser[]> => {
+    const payload = await gateGet(
+      { action: "users" },
+      { withToken: true, timeoutMs: 45_000 },
+    );
+    if (!payload || payload.ok !== true) return [];
+    const list = Array.isArray(payload.users) ? payload.users : [];
+    return (list.map(parseUser).filter(Boolean) as CampoUser[]).sort((a, b) =>
+      a.name.localeCompare(b.name, "pt-BR"),
+    );
+  },
+);
 
 type GateOk = { ok: boolean; error?: string };
 
@@ -34,6 +42,7 @@ async function userGatePost(
       error: String(payload.error || payload.message || `Falha em ${action}.`),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.users);
   return { ok: true };
 }
 

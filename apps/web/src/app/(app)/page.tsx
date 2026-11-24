@@ -63,13 +63,22 @@ function Panel({
 }
 
 export default async function DashboardPage() {
-  const profile = await getProfile();
-  const [orders, clients, users, calibrations, standards] = await Promise.all([
+  const [
+    profile,
+    orders,
+    clients,
+    users,
+    calibrations,
+    standards,
+    greetFull,
+  ] = await Promise.all([
+    getProfile(),
     listCampoOrders(),
     listCampoClients(),
     listCampoUsers(),
     listCampoCalibrations(),
     listCampoStandards(),
+    getGreetWithFullName(),
   ]);
 
   const open = orders.filter((os) => {
@@ -84,7 +93,6 @@ export default async function DashboardPage() {
     return t - Date.now() < 1000 * 60 * 60 * 24 * 60;
   });
 
-  const greetFull = await getGreetWithFullName();
   const fullName = profile?.full_name || "GS";
   const firstName = greetFull ? fullName : fullName.split(/\s+/)[0];
   const statusSlices = buildStatusSlices(orders);
