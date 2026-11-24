@@ -334,6 +334,8 @@ class AccountResult {
     this.sent = false,
     this.wrongPassword = false,
     this.reachable = true,
+    this.skipped = false,
+    this.remoteUpdatedAt,
     this.user,
     this.users = const [],
     this.orders = const [],
@@ -369,6 +371,9 @@ class AccountResult {
   final bool sent;
   final bool wrongPassword;
   final bool reachable;
+  /// Gate preservou versão mais nova (ex.: exclusão no escritório).
+  final bool skipped;
+  final String? remoteUpdatedAt;
   final RemoteAccount? user;
   final List<RemoteAccount> users;
   final List<Map<String, dynamic>> orders;
@@ -1151,6 +1156,8 @@ class AccountApi {
       pending: payload['pending'] == true,
       wrongPassword: payload['wrongPassword'] == true,
       reachable: !unsupported,
+      skipped: payload['skipped'] == true,
+      remoteUpdatedAt: payload['updatedAt']?.toString(),
       user: user,
       users: users,
       orders: orders,

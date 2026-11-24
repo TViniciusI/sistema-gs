@@ -2690,6 +2690,38 @@ function saveClient_(ss, p) {
       break;
     }
   }
+
+  // Cópia antiga do telefone não pode ressuscitar sistema/equipamento
+  // apagado no notebook (certificado da adm com instrumento fantasma).
+  if (row > 0 && previousRaw && !yes_(p.restore)) {
+    var previousRec = null;
+    try {
+      previousRec = readClientRecord_(previousRaw, { forceFull: false });
+      // Stub leve: updatedAt já vem no resumo; full só se faltar data.
+      if (
+        previousRec &&
+        previousRec._fileId &&
+        !String(previousRec.updatedAt || '').trim()
+      ) {
+        previousRec = readClientRecord_(previousRaw, { forceFull: true });
+      }
+    } catch (error) {
+      previousRec = null;
+    }
+    if (
+      previousRec &&
+      parseTimeMs_(previousRec.updatedAt) > parseTimeMs_(record.updatedAt)
+    ) {
+      return json_({
+        ok: true,
+        id: id,
+        skipped: true,
+        reason: 'preserve_newer_client',
+        updatedAt: String(previousRec.updatedAt || ''),
+      });
+    }
+  }
+
   var cellJson;
   try {
     cellJson = writeClientPayload_(id, record, previousRaw);
@@ -2707,7 +2739,7 @@ function saveClient_(ss, p) {
       [id, record.name, record.cnpj, cellJson, now],
     ]);
   }
-  return json_({ ok: true, id: id });
+  return json_({ ok: true, id: id, updatedAt: record.updatedAt });
 }
 
 function readClients_(ss) {

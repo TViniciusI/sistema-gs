@@ -224,14 +224,22 @@ class ClientStore extends ChangeNotifier {
       final incoming = fetched.client;
       _staleIds.remove(incoming.id);
       _remoteIds.add(incoming.id);
-      _cloudStamp[incoming.id] = fetched.stamp;
-      await _saveMeta();
       final existing = byId(incoming.id);
       if (existing == null) {
+        _cloudStamp[incoming.id] = fetched.stamp;
+        await _saveMeta();
         _all = [incoming, ..._all];
       } else {
-        final merged = _absorbRemote(existing, incoming);
-        if (_dirtyIds.contains(existing.id)) unawaited(_pushRemote(merged));
+        final merged = _absorbRemote(
+          existing,
+          incoming,
+          remoteStamp: fetched.stamp,
+        );
+        // Só reenvia se a edição local ainda for a versão da nuvem.
+        // Se a nuvem mudou (ex.: exclusão no notebook), não empurra fantasmas.
+        if (_dirtyIds.contains(merged.id)) unawaited(_pushRemote(merged));
+        _cloudStamp[incoming.id] = fetched.stamp;
+        await _saveMeta();
         _all = [
           merged,
           ..._all.where(
@@ -274,8 +282,27 @@ class ClientStore extends ChangeNotifier {
   /// Une nuvem + aparelho. Cadastro completo da nuvem é a fonte da verdade
   /// (inclusive exclusões feitas noutro aparelho). Só preserva o local quando
   /// a nuvem veio vazia/resumo (stub Drive) — nunca porque o local é “maior”.
-  SavedClient _absorbRemote(SavedClient local, SavedClient remote) {
-    if (_dirtyIds.contains(local.id)) return _mergeRemoteClient(local, remote);
+  ///
+  /// Com edição suja (`_dirtyIds`): se a nuvem mudou de carimbo, o catálogo
+  /// remoto vence e a suja é limpa — evita o telefone reenviar ilha apagada
+  /// no notebook (certificado com instrumento fantasma).
+  SavedClient _absorbRemote(
+    SavedClient local,
+    SavedClient remote, {
+    String remoteStamp = '',
+  }) {
+    final stamp = remoteStamp.trim().isNotEmpty
+        ? remoteStamp.trim()
+        : remote.updatedAt.toIso8601String();
+    final known = (_cloudStamp[local.id] ?? '').trim();
+
+    if (_dirtyIds.contains(local.id)) {
+      if (_hasCatalog(remote) && stamp.isNotEmpty && stamp != known) {
+        _dirtyIds.remove(local.id);
+        return absorbRemoteClient(local: local, remote: remote);
+      }
+      return _mergeRemoteClient(local, remote);
+    }
     return absorbRemoteClient(local: local, remote: remote);
   }
 
@@ -587,13 +614,18 @@ class ClientStore extends ChangeNotifier {
           }
           continue;
         }
-        _cloudStamp[incoming.id] = stamp;
         if (existing == null) {
+          _cloudStamp[incoming.id] = stamp;
           _all = [incoming, ..._all];
           changed = true;
           continue;
         }
-        final merged = _absorbRemote(existing, incoming);
+        final merged = _absorbRemote(
+          existing,
+          incoming,
+          remoteStamp: stamp,
+        );
+        _cloudStamp[incoming.id] = stamp;
         if (merged.id != existing.id ||
             merged.updatedAt != existing.updatedAt ||
             merged.equipment.length != existing.equipment.length ||
@@ -628,20 +660,27 @@ class ClientStore extends ChangeNotifier {
   }
 
   /// Une cadastro local com a nuvem sem perder instrumentos da planilha.
+  /// Usado só quando a edição local ainda refere a **mesma** versão da nuvem
+  /// (push pendente). Contagem local maior nunca vence sozinha — isso
+  /// ressuscitava ilhas apagadas no escritório.
   SavedClient _mergeRemoteClient(SavedClient local, SavedClient remote) {
     final localEq = local.equipment.length;
     final remoteEq = remote.equipment.length;
+    final localSys = local.resolvedSystems.length;
+    final remoteSys = remote.resolvedSystems.length;
     final remoteNewer = remote.updatedAt.isAfter(local.updatedAt);
 
     // Cadastro com instrumentos na nuvem sempre prevalece sobre local vazio,
     // mesmo se o app local tiver updatedAt mais recente (ex.: OS aberta).
     // Nuvem mais nova com cadastro manda: outro aparelho pode ter
     // acrescentado, corrigido ou removido ilhas.
-    final remoteHasCatalog = remoteEq > 0 || remote.resolvedSystems.isNotEmpty;
+    final remoteHasCatalog = remoteEq > 0 || remoteSys > 0;
     final preferRemoteCatalog =
-        (remoteNewer && remoteHasCatalog) ||
-        (remoteEq > localEq) ||
-        (localEq == 0 && remoteEq > 0);
+        remoteHasCatalog &&
+        (remoteNewer ||
+            remoteEq > localEq ||
+            remoteSys > localSys ||
+            (localEq == 0 && localSys == 0));
 
     final catalog = preferRemoteCatalog ? remote : local;
     final contact = remoteNewer ? remote : local;
@@ -761,8 +800,17 @@ class ClientStore extends ChangeNotifier {
       if (result.ok) {
         _remoteIds.add(client.id);
         _dirtyIds.remove(client.id);
-        _cloudStamp[client.id] = client.updatedAt.toIso8601String();
-        await _saveMeta();
+        if (result.skipped) {
+          // Planilha mais nova (ex.: apagou no notebook): baixa de novo.
+          final stamp = (result.remoteUpdatedAt ?? '').trim();
+          if (stamp.isNotEmpty) _cloudStamp[client.id] = stamp;
+          _staleIds.add(client.id);
+          await _saveMeta();
+          unawaited(ensureFull(client.id, force: true));
+        } else {
+          _cloudStamp[client.id] = client.updatedAt.toIso8601String();
+          await _saveMeta();
+        }
       }
       if (!result.ok && result.reachable) {
         debugPrint('ClientStore push: ${result.error}');

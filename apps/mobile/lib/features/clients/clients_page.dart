@@ -60,7 +60,9 @@ class _ClientsPageState extends State<ClientsPage> {
   }
 
   Future<SavedClient> _fullClient(SavedClient client) async {
-    return await ClientStore.instance.ensureFull(client.id) ?? client;
+    // force: exclusões feitas no notebook precisam chegar ao abrir o card.
+    return await ClientStore.instance.ensureFull(client.id, force: true) ??
+        client;
   }
 
   Future<void> _downloadExcel(SavedClient client) async {
@@ -283,7 +285,11 @@ class _ClientCard extends StatelessWidget {
             ? null
             : () async {
                 final full =
-                    await ClientStore.instance.ensureFull(client.id) ?? client;
+                    await ClientStore.instance.ensureFull(
+                      client.id,
+                      force: true,
+                    ) ??
+                    client;
                 if (!context.mounted) return;
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(

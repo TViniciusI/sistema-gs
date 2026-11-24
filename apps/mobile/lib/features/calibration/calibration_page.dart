@@ -481,7 +481,9 @@ class _CalibrationPageState extends State<CalibrationPage> {
           '${client.name} ${client.cnpj} ${client.city} ${[for (final eq in client.equipment) eq.tag].join(' ')}',
     );
     if (picked == null || !mounted) return;
-    final full = await ClientStore.instance.ensureFull(picked.id) ?? picked;
+    final full =
+        await ClientStore.instance.ensureFull(picked.id, force: true) ??
+        picked;
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => ClientEditPage(existing: full)),
