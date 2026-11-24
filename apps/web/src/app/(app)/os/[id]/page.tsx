@@ -96,19 +96,11 @@ export default async function OsDetailPage({
         }
       />
 
-      <OsStatusActions
-        osId={os.id}
-        osNumber={os.number}
-        status={os.status}
-        hasRdos={rdos.length > 0}
-        hasTechnicians={hasTechnicians}
-      />
-
       <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-              {campoOsStatusLabel(os.status)}
+              Resumo
             </p>
             <h2 className="mt-1 font-serif text-3xl text-navy">
               {os.clientName || text(rdo.client) || "—"}
@@ -123,7 +115,16 @@ export default async function OsDetailPage({
               Técnicos: {os.technicianName || "—"}
             </p>
           </div>
+          <OsStatusActions
+            osId={os.id}
+            osNumber={os.number}
+            status={os.status}
+            hasRdos={rdos.length > 0}
+            hasTechnicians={hasTechnicians}
+            compact
+          />
         </div>
+
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-paper px-4 py-3">
             <p className="text-[10px] uppercase tracking-wide text-navy/45">
@@ -148,19 +149,22 @@ export default async function OsDetailPage({
         </div>
       </section>
 
-      <OsDrivePanel listing={driveListing} />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <OsDrivePanel
+          listing={driveListing}
+          variant="summary"
+          docsHref={`/os/${os.id}/documentos`}
+        />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-            Calibração nesta OS
+            Escritório
           </p>
           <h2 className="mt-1 font-serif text-xl text-navy">
-            Certificados, livro e RDO
+            Documentos e atalhos
           </h2>
           <p className="mt-2 text-sm leading-6 text-navy/60">
-            PDFs oficiais vêm do GS Campo (Drive). No escritório você lê
-            volumétrica, temperatura e densidade, abre o book e imprime o RDO.
+            Certificados, livro e RDO — mesmos PDFs do Drive.
           </p>
           <div className="mt-4">
             <OsDocActions
@@ -169,46 +173,52 @@ export default async function OsDetailPage({
               hasRdos={rdos.length > 0}
               driveUrl={driveListing.folderUrl || drive.folderUrl}
               campoUrl={campoAppUrl()}
+              showHubLink={false}
             />
           </div>
         </section>
-
-        <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-            Itens
-          </p>
-          <h2 className="mt-1 font-serif text-xl text-navy">
-            Slots de calibração
-          </h2>
-          {groups.length === 0 ? (
-            <p className="mt-6 rounded-2xl border border-dashed border-navy/15 px-4 py-10 text-center text-sm text-muted">
-              Sem slots nesta OS.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {groups.map((group) => (
-                <div
-                  key={group.kind}
-                  className="flex items-center justify-between rounded-2xl border border-navy/10 bg-paper/70 px-4 py-3"
-                >
-                  <div>
-                    <p className="font-semibold text-navy">
-                      {group.label} · {group.items.length}
-                    </p>
-                    <p className="mt-0.5 text-xs text-navy/45">{group.stats}</p>
-                  </div>
-                  <Link
-                    href={`/os/${os.id}/certificados?kind=${encodeURIComponent(group.kind)}`}
-                    className="text-xs font-medium text-navy/50 hover:text-navy"
-                  >
-                    Ver →
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
+
+      <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+              Calibração
+            </p>
+            <h2 className="mt-1 font-serif text-xl text-navy">
+              Slots nesta OS
+            </h2>
+          </div>
+          {slotsCount > 0 ? (
+            <Link
+              href={`/os/${os.id}/certificados`}
+              className="text-sm font-semibold text-navy/60 hover:text-navy"
+            >
+              Ver certificados →
+            </Link>
+          ) : null}
+        </div>
+        {groups.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-dashed border-navy/15 px-4 py-10 text-center text-sm text-muted">
+            Sem slots nesta OS.
+          </p>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {groups.map((group) => (
+              <Link
+                key={group.kind}
+                href={`/os/${os.id}/certificados?kind=${encodeURIComponent(group.kind)}`}
+                className="rounded-2xl border border-navy/10 bg-paper/70 px-4 py-3 transition hover:border-brass/40"
+              >
+                <p className="font-semibold text-navy">
+                  {group.label} · {group.items.length}
+                </p>
+                <p className="mt-0.5 text-xs text-navy/45">{group.stats}</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
       <Panel>
         <h2 className="mb-1 font-serif text-xl text-navy">Enviar por e-mail</h2>
@@ -220,18 +230,18 @@ export default async function OsDetailPage({
           osId={os.id}
           osNumber={os.number}
           defaultBody={(() => {
-            const groups = driveFilesByKind(driveListing.files);
+            const fileGroups = driveFilesByKind(driveListing.files);
             const lines = [
               `Documentos da OS GS ${os.number} — ${os.clientName || ""}.`,
               "",
               driveListing.folderUrl
                 ? `Pasta da OS: ${driveListing.folderUrl}`
                 : "",
-              ...groups.rdos.map((f) => `RDO: ${f.name}\n${f.url}`),
-              ...groups.certificates
+              ...fileGroups.rdos.map((f) => `RDO: ${f.name}\n${f.url}`),
+              ...fileGroups.certificates
                 .slice(0, 20)
                 .map((f) => `Certificado: ${f.name}\n${f.url}`),
-              ...groups.books.map((f) => `Book: ${f.name}\n${f.url}`),
+              ...fileGroups.books.map((f) => `Book: ${f.name}\n${f.url}`),
               "",
               "GS Soluções Técnicas",
             ].filter(Boolean);
