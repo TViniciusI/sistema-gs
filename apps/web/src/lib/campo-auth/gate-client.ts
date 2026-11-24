@@ -2,7 +2,7 @@ import { appBuild, loginGateUrl } from "./config";
 import { passwordHash, passwordHashCandidates } from "./password";
 import type { CampoGateUser, CampoLoginResult } from "./types";
 
-function asUser(raw: unknown): CampoGateUser | null {
+export function parseCampoGateUser(raw: unknown): CampoGateUser | null {
   if (!raw || typeof raw !== "object") return null;
   const u = raw as Record<string, unknown>;
   const email = String(u.email ?? "").trim().toLowerCase();
@@ -22,6 +22,10 @@ function asUser(raw: unknown): CampoGateUser | null {
     permissoes: String(u.permissoes ?? u.permissions ?? "geral").trim(),
     jornada: String(u.jornada ?? "").trim(),
   };
+}
+
+function asUser(raw: unknown): CampoGateUser | null {
+  return parseCampoGateUser(raw);
 }
 
 async function gateGet(

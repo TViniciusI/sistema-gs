@@ -47,12 +47,14 @@ export type {
   OsRdoMeta,
 } from "./os-docs";
 export {
+  changeCampoPassword,
   decideCampoUser,
   listCampoUsers,
   setCampoUserActive,
   setCampoUserCargo,
   setCampoUserPermissions,
   setCampoUserRole,
+  updateCampoProfile,
 } from "./users";
 export {
   summarizeCalibrationResults,

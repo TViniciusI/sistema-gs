@@ -18,6 +18,7 @@ export type Profile = {
   role: Role;
   is_active: boolean;
   login?: string;
+  phone?: string;
   permissions?: string;
   cargo?: string;
   /** Rótulo amigável do papel (planilha / shell) */
@@ -37,6 +38,7 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
       role: campo.role,
       is_active: campo.active,
       login: campo.login,
+      phone: campo.phone,
       permissions: campo.permissions,
       cargo: campo.cargo,
       role_label: campoRoleLabel(campo.campoRole, campo.role),

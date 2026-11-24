@@ -1,5 +1,6 @@
-export { loginWithCampoGate } from "./gate-client";
+export { loginWithCampoGate, parseCampoGateUser } from "./gate-client";
 export { mapCampoRole, toSessionUser, campoRoleLabel } from "./map-role";
+export { passwordHash, passwordHashCandidates } from "./password";
 export {
   CAMPO_SESSION_COOKIE,
   campoSessionCookieOptions,

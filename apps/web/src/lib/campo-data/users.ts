@@ -1,3 +1,9 @@
+import {
+  parseCampoGateUser,
+  passwordHash,
+  passwordHashCandidates,
+} from "@/lib/campo-auth";
+import type { CampoGateUser } from "@/lib/campo-auth";
 import { gateGet, gatePost } from "./gate";
 import { parseUser } from "./parse";
 import type { CampoUser } from "./types";
@@ -91,5 +97,89 @@ export async function setCampoUserCargo(input: {
     email: input.email || "",
     login: input.login || "",
     cargo: input.cargo.slice(0, 80),
+  });
+}
+
+type AccountOk =
+  | { ok: true; user: CampoGateUser }
+  | { ok: false; error: string; wrongPassword?: boolean };
+
+async function accountGatePost(
+  action: string,
+  fields: Record<string, string>,
+): Promise<AccountOk> {
+  const payload = await gatePost(
+    { action, cmd: action, ...fields },
+    { timeoutMs: 45_000 },
+  );
+  if (!payload) return { ok: false, error: "Sem resposta do gate." };
+  if (payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload.error || payload.message || `Falha em ${action}.`),
+      wrongPassword: payload.wrongPassword === true,
+    };
+  }
+  const user = parseCampoGateUser(payload.user);
+  if (!user) {
+    return { ok: false, error: "Resposta do gate sem usuário." };
+  }
+  return { ok: true, user };
+}
+
+/** Atualiza nome/login/e-mail/telefone — mesmo `setperfil` do app. */
+export async function updateCampoProfile(input: {
+  email: string;
+  login: string;
+  password: string;
+  name: string;
+  newLogin: string;
+  newEmail: string;
+  phone: string;
+}): Promise<AccountOk> {
+  const login = input.login.trim().toLowerCase();
+  const email = input.email.trim().toLowerCase();
+  const newLogin = input.newLogin.trim().toLowerCase();
+  const hashes = passwordHashCandidates({
+    password: input.password,
+    login,
+    email,
+  });
+  return accountGatePost("setperfil", {
+    email,
+    login,
+    passHash: passwordHash(login, input.password),
+    passHashes: hashes.join(","),
+    name: input.name.trim(),
+    newLogin,
+    newEmail: input.newEmail.trim().toLowerCase(),
+    phone: input.phone.trim(),
+    newPassHash: input.password
+      ? passwordHash(newLogin, input.password)
+      : "",
+  });
+}
+
+/** Troca senha — mesmo `setsenha` do app. */
+export async function changeCampoPassword(input: {
+  email: string;
+  login: string;
+  currentPassword: string;
+  newPassword: string;
+}): Promise<AccountOk> {
+  const login = input.login.trim().toLowerCase();
+  const email = input.email.trim().toLowerCase();
+  const hashes = passwordHashCandidates({
+    password: input.currentPassword,
+    login,
+    email,
+  });
+  return accountGatePost("setsenha", {
+    email,
+    login,
+    passHash: passwordHash(login, input.currentPassword),
+    passHashes: hashes.join(","),
+    newLogin: login,
+    newPassHash: passwordHash(login, input.newPassword),
   });
 }

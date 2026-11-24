@@ -25,6 +25,7 @@ import {
   campoOsStatusLabel,
   campoOsStatusTone,
 } from "@/lib/campo-data/labels";
+import { getGreetWithFullName } from "@/lib/prefs";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,9 @@ export default async function DashboardPage() {
     return t - Date.now() < 1000 * 60 * 60 * 24 * 60;
   });
 
-  const firstName = (profile?.full_name || "GS").split(/\s+/)[0];
+  const greetFull = await getGreetWithFullName();
+  const fullName = profile?.full_name || "GS";
+  const firstName = greetFull ? fullName : fullName.split(/\s+/)[0];
   const statusSlices = buildStatusSlices(orders);
   const weekBuckets = buildWeekBuckets(orders, 8);
   const techLoad = buildTechLoad(orders);
