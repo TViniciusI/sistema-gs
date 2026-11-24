@@ -298,8 +298,12 @@ export default async function DashboardPage() {
                 icon: Icons.shield,
               },
               { href: "/arquivos", label: "Drive", icon: Icons.clipboard },
-              { href: "/equipe", label: "Equipe", icon: Icons.users },
-              { href: "/equipe/horas", label: "Horas de campo", icon: Icons.clock },
+              { href: "/equipe", label: "Funcionários", icon: Icons.users },
+              {
+                href: "/equipe?tab=horas",
+                label: "Horas de campo",
+                icon: Icons.clock,
+              },
               { href: "/vencimentos", label: "Vencimentos", icon: Icons.clock },
               { href: "/campo", label: "App campo", icon: Icons.phone },
             ].map((item) => (
