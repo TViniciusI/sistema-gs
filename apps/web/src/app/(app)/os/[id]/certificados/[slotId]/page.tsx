@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CalibResultsPanel } from "@/components/os/calib-results-panel";
 import { PrintToolbar } from "@/components/os/print-toolbar";
 import { PageHeader, StatusPill } from "@/components/ui";
 import {
@@ -13,6 +14,7 @@ import {
   listCampoCalibrations,
   listCampoOsDriveFiles,
   publicCertUrl,
+  summarizeCalibrationResults,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -73,6 +75,7 @@ export default async function OsCertificadoDetailPage({
     listing.files,
     slot.certificateNumber || job?.number || "",
   );
+  const results = summarizeCalibrationResults(job?.raw);
 
   return (
     <div className="space-y-6">
@@ -274,6 +277,8 @@ export default async function OsCertificadoDetailPage({
             </section>
           ) : null}
 
+          <CalibResultsPanel summary={results} />
+
           <div className="no-print">
             <a
               href={consultUrl}
@@ -286,31 +291,43 @@ export default async function OsCertificadoDetailPage({
           </div>
         </article>
       ) : (
-        <section className="print-sheet rounded-3xl border border-navy/10 bg-white p-6 md:p-8">
-          <h2 className="font-serif text-2xl text-navy">
-            {slot.certificateNumber || job?.number}
-          </h2>
-          <p className="mt-3 text-sm text-navy/60">
-            Há registro na planilha ({job?.status || "—"}), mas a consulta
-            pública ainda não retornou os dados. Confira o sync no GS Campo.
-          </p>
-          <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Field label="Tipo" value={kindLabel(slot.kind || job?.kind || "")} />
-            <Field label="Cliente" value={job?.clientName || os.clientName} />
-            <Field label="TAG" value={job?.equipmentTag || slot.equipmentTag} />
-            <Field label="Equipamento" value={job?.equipmentType || slot.equipmentType} />
-            <Field label="Status" value={job?.status} />
-          </dl>
-          <div className="no-print mt-6">
-            <a
-              href={consultUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:border-brass/40"
-            >
-              Tentar consulta pública ↗
-            </a>
+        <section className="print-sheet space-y-4">
+          <div className="rounded-3xl border border-navy/10 bg-white p-6 md:p-8">
+            <h2 className="font-serif text-2xl text-navy">
+              {slot.certificateNumber || job?.number}
+            </h2>
+            <p className="mt-3 text-sm text-navy/60">
+              Há registro na planilha ({job?.status || "—"}), mas a consulta
+              pública ainda não retornou os dados. Confira o sync no GS Campo.
+            </p>
+            <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Tipo"
+                value={kindLabel(slot.kind || job?.kind || "")}
+              />
+              <Field label="Cliente" value={job?.clientName || os.clientName} />
+              <Field
+                label="TAG"
+                value={job?.equipmentTag || slot.equipmentTag}
+              />
+              <Field
+                label="Equipamento"
+                value={job?.equipmentType || slot.equipmentType}
+              />
+              <Field label="Status" value={job?.status} />
+            </dl>
+            <div className="no-print mt-6">
+              <a
+                href={consultUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:border-brass/40"
+              >
+                Tentar consulta pública ↗
+              </a>
+            </div>
           </div>
+          <CalibResultsPanel summary={results} />
         </section>
       )}
     </div>

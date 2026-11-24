@@ -34,7 +34,13 @@ export type {
   OsRdoLite,
   OsRdoMeta,
 } from "./os-docs";
-export { listCampoUsers } from "./users";
+export { decideCampoUser, listCampoUsers } from "./users";
+export { summarizeCalibrationResults } from "./calib-results";
+export type {
+  CalibFlowPointRow,
+  CalibGenericPointRow,
+  CalibResultsSummary,
+} from "./calib-results";
 export { getCampoDriveStatus } from "./drive";
 export {
   CAMPO_DRIVE_ROOT_ID,

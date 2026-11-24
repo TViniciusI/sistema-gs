@@ -4,6 +4,12 @@ import { listCampoStaffDocs } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
 
+function staffDocDriveUrl(fileId: string) {
+  const id = fileId.trim();
+  if (!id) return "";
+  return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`;
+}
+
 export default async function DocumentosPage() {
   const [profile, docs] = await Promise.all([
     getProfile(),
@@ -24,29 +30,58 @@ export default async function DocumentosPage() {
         description="Mesmos documentos RH do app (holerite, anexos, assinatura)."
       />
       <DataTable
-        headers={["Documento", "Colaborador", "Tipo", "Criado", "Assinatura"]}
+        headers={[
+          "Documento",
+          "Colaborador",
+          "Tipo",
+          "Criado",
+          "Assinatura",
+          "Arquivo",
+        ]}
         empty="Nenhum documento encontrado."
-        rows={visible.map((doc) => [
-          doc.name,
-          doc.staffEmail || "—",
-          doc.kind || "—",
-          doc.createdAt
-            ? new Date(doc.createdAt).toLocaleDateString("pt-BR")
-            : "—",
-          <StatusPill
-            key={doc.id}
-            label={
-              doc.signedAt
-                ? "Assinado"
-                : doc.requiresSignature
-                  ? "Pendente"
-                  : "—"
-            }
-            tone={
-              doc.signedAt ? "ok" : doc.requiresSignature ? "warn" : "neutral"
-            }
-          />,
-        ])}
+        rows={visible.map((doc) => {
+          const url = staffDocDriveUrl(doc.path);
+          return [
+            doc.name,
+            doc.staffEmail || "—",
+            doc.kind || "—",
+            doc.createdAt
+              ? new Date(doc.createdAt).toLocaleDateString("pt-BR", {
+                  timeZone: "America/Sao_Paulo",
+                })
+              : "—",
+            <StatusPill
+              key={doc.id}
+              label={
+                doc.signedAt
+                  ? "Assinado"
+                  : doc.requiresSignature
+                    ? "Pendente"
+                    : "—"
+              }
+              tone={
+                doc.signedAt
+                  ? "ok"
+                  : doc.requiresSignature
+                    ? "warn"
+                    : "neutral"
+              }
+            />,
+            url ? (
+              <a
+                key={`${doc.id}-file`}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-navy hover:underline"
+              >
+                Abrir ↗
+              </a>
+            ) : (
+              "—"
+            ),
+          ];
+        })}
       />
     </div>
   );

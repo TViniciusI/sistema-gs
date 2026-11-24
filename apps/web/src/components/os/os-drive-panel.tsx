@@ -39,10 +39,14 @@ export function OsDrivePanel({
   const showRdo = focus === "all" || focus === "rdo";
   const showCerts = focus === "all" || focus === "certificates";
   const showBook = focus === "all" || focus === "book";
+  const showExtras = focus === "all";
   const totalShown =
     (showRdo ? groups.rdos.length : 0) +
     (showCerts ? groups.certificates.length : 0) +
-    (showBook ? groups.books.length : 0);
+    (showBook ? groups.books.length : 0) +
+    (showExtras
+      ? groups.labels.length + groups.photos.length + groups.other.length
+      : 0);
 
   return (
     <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
@@ -172,6 +176,57 @@ export function OsDrivePanel({
                     +{groups.certificates.length - 80} no Drive
                   </p>
                 ) : null}
+              </div>
+            </div>
+          ) : null}
+          {showExtras && groups.labels.length > 0 ? (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-navy/45">
+                Etiquetas ({groups.labels.length})
+              </p>
+              <div className="space-y-2">
+                {groups.labels.map((file) => (
+                  <FileLink
+                    key={file.id}
+                    href={file.url}
+                    label={file.name}
+                    hint="Abrir ↗"
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {showExtras && groups.photos.length > 0 ? (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-navy/45">
+                Fotos ({groups.photos.length})
+              </p>
+              <div className="space-y-2">
+                {groups.photos.slice(0, 40).map((file) => (
+                  <FileLink
+                    key={file.id}
+                    href={file.url}
+                    label={file.name}
+                    hint="Abrir ↗"
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {showExtras && groups.other.length > 0 ? (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-navy/45">
+                Anexos / outros ({groups.other.length})
+              </p>
+              <div className="space-y-2">
+                {groups.other.slice(0, 40).map((file) => (
+                  <FileLink
+                    key={file.id}
+                    href={file.url}
+                    label={file.path !== file.name ? file.path : file.name}
+                    hint="Abrir ↗"
+                  />
+                ))}
               </div>
             </div>
           ) : null}
