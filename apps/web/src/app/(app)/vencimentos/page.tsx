@@ -1,71 +1,51 @@
 import Link from "next/link";
-import { DataTable, PageHeader, StatusPill } from "@/components/ui";
+import { VencimentosBoard } from "@/components/vencimentos/vencimentos-board";
+import { PageHeader } from "@/components/ui";
 import { listCampoStandards } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
 
-function toneFor(validity: string): "ok" | "warn" | "danger" | "neutral" {
-  const t = Date.parse(validity);
-  if (!Number.isFinite(t)) {
-    const br = validity.trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
-    if (!br) return "neutral";
-    const d = Number(br[1]);
-    const m = Number(br[2]);
-    let y = Number(br[3]);
-    if (y < 100) y += 2000;
-    const dt = new Date(y, m - 1, d).getTime();
-    if (!Number.isFinite(dt)) return "neutral";
-    const days = (dt - Date.now()) / (1000 * 60 * 60 * 24);
-    if (days < 0) return "danger";
-    if (days < 60) return "warn";
-    return "ok";
-  }
-  const days = (t - Date.now()) / (1000 * 60 * 60 * 24);
-  if (days < 0) return "danger";
-  if (days < 60) return "warn";
-  return "ok";
+function text(value: unknown) {
+  return String(value ?? "").trim();
 }
 
 export default async function VencimentosPage() {
   const standards = await listCampoStandards();
-  const rows = standards
-    .filter((s) => s.validity)
-    .sort((a, b) => Date.parse(a.validity) - Date.parse(b.validity));
 
   return (
-    <div>
+    <div className="space-y-5">
       <PageHeader
         eyebrow="Qualidade"
         title="Vencimentos"
-        description="Validade dos padrões cadastrados no GS Campo."
+        description="Padrões vencidos ou a vencer — priorize a recalibração antes da próxima OS."
         action={
-          <Link
-            href="/padroes"
-            className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
-          >
-            Gerenciar padrões
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/padroes"
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Padrões
+            </Link>
+            <Link
+              href="/calibracao"
+              className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
+            >
+              Calibração
+            </Link>
+          </div>
         }
       />
-      <DataTable
-        headers={["Padrão", "Tipo", "N/S", "Validade", "Situação"]}
-        empty="Nenhum padrão com validade cadastrada."
-        rows={rows.map((item) => {
-          const tone = toneFor(item.validity);
-          const label =
-            tone === "danger"
-              ? "Vencido"
-              : tone === "warn"
-                ? "A vencer"
-                : "Em dia";
-          return [
-            item.name,
-            item.type || "—",
-            item.serial || "—",
-            new Date(item.validity).toLocaleDateString("pt-BR"),
-            <StatusPill key={item.id} label={label} tone={tone} />,
-          ];
-        })}
+      <VencimentosBoard
+        items={standards.map((item) => ({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          serial: item.serial,
+          certificate: item.certificate,
+          validity: item.validity,
+          uncertainty: text(item.raw.uncertainty),
+          coverageK: text(item.raw.coverageK) || text(item.raw.k),
+        }))}
       />
     </div>
   );
