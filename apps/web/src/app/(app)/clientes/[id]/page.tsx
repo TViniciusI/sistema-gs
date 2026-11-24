@@ -4,6 +4,7 @@ import { formatCnpj } from "@gs/shared";
 import { PageHeader } from "@/components/ui";
 import { getCampoClient } from "@/lib/campo-data";
 import { kindLabel } from "@/lib/campo-data/labels";
+import { AddSystemForm } from "@/components/clientes/add-system-form";
 import { DeleteSystemButton } from "../delete-system-button";
 import { ClientEditForm } from "./edit-form";
 
@@ -188,13 +189,16 @@ export default async function ClienteDetailPage({
               Sistemas e instrumentos
             </h2>
             <p className="mt-1 text-sm text-navy/55">
-              Exclusões aqui atualizam a planilha e o GS Campo após o sync.
+              Inclusões e exclusões gravam na planilha — o GS Campo recebe no
+              sync.
             </p>
           </div>
           <p className="text-sm text-navy/50">
             {client.systems.length} conjunto(s)
           </p>
         </div>
+
+        {!client.payloadLight ? <AddSystemForm clientId={client.id} /> : null}
 
         {client.systems.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">

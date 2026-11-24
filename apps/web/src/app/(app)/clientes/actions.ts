@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  addCampoClientSystem,
+  createCampoClient,
   deleteCampoClientSystem,
   updateCampoClientFields,
+  type CampoClientSystemInput,
+  type CampoClientWriteInput,
 } from "@/lib/campo-data";
 
 export type DeleteSystemState = { error?: string; ok?: boolean };
@@ -41,6 +45,29 @@ export async function updateClienteAction(input: {
   sites: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const result = await updateCampoClientFields(input);
+  if (result.ok) {
+    revalidatePath(`/clientes/${input.clientId}`);
+    revalidatePath("/clientes");
+  }
+  return result;
+}
+
+export async function createClienteAction(
+  input: CampoClientWriteInput,
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const result = await createCampoClient(input);
+  if (result.ok && result.id) {
+    revalidatePath("/clientes");
+    revalidatePath(`/clientes/${result.id}`);
+  }
+  return result;
+}
+
+export async function addClienteSystemAction(input: {
+  clientId: string;
+  system: CampoClientSystemInput;
+}): Promise<{ ok: boolean; error?: string }> {
+  const result = await addCampoClientSystem(input.clientId, input.system);
   if (result.ok) {
     revalidatePath(`/clientes/${input.clientId}`);
     revalidatePath("/clientes");

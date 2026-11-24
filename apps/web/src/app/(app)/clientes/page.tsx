@@ -17,9 +17,9 @@ export default async function ClientesPage() {
         action={
           <Link
             href="/clientes/novo"
-            className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
           >
-            Novo no Campo
+            Novo cliente
           </Link>
         }
       />

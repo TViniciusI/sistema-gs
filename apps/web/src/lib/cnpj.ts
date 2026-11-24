@@ -11,6 +11,11 @@ export type CnpjLookupResult = {
   email: string;
   source: "local" | "brasilapi";
   clientId?: string;
+  cep?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
 };
 
 export type LocalCnpjRecord = {
@@ -85,6 +90,7 @@ async function fetchFromBrasilApi(cnpjDigits: string): Promise<CnpjLookupResult>
 
   const data: BrasilApiCnpjResponse = await response.json();
 
+  const cepDigits = digitsOnly(data.cep ?? "").slice(0, 8);
   return {
     cnpj: cnpjDigits,
     razaoSocial: data.razao_social ?? "",
@@ -96,6 +102,11 @@ async function fetchFromBrasilApi(cnpjDigits: string): Promise<CnpjLookupResult>
       formatApiPhone(data.ddd_telefone_1) || formatApiPhone(data.ddd_telefone_2),
     email: data.email ?? "",
     source: "brasilapi",
+    cep: cepDigits,
+    street: data.logradouro ?? "",
+    number: data.numero ?? "",
+    complement: data.complemento ?? "",
+    neighborhood: data.bairro ?? "",
   };
 }
 

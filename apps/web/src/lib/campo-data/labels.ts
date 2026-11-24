@@ -36,7 +36,21 @@ export function campoRoleLabel(role: string): string {
 export function kindLabel(kind: string): string {
   const value = kind.trim().toLowerCase();
   if (value === "preset") return "Preset";
+  if (value === "transmitter") return "Transmissor";
+  if (value === "presetandtransmitter") return "Preset + transmissor";
+  if (value === "pt100") return "PT100";
+  if (value === "densimeter") return "Densímetro";
+  if (value === "mesh") return "Malha";
   if (value === "ilha") return "Ilha";
   if (value === "skid") return "Skid";
   return kind || "Conjunto";
 }
+
+export const CLIENT_ASSEMBLY_KINDS = [
+  { value: "preset", label: "Preset" },
+  { value: "transmitter", label: "Transmissor" },
+  { value: "presetAndTransmitter", label: "Preset + transmissor" },
+  { value: "pt100", label: "PT100" },
+  { value: "densimeter", label: "Densímetro" },
+  { value: "mesh", label: "Malha" },
+] as const;

@@ -1,8 +1,14 @@
 export {
   listCampoClients,
   getCampoClient,
+  createCampoClient,
+  addCampoClientSystem,
   deleteCampoClientSystem,
   updateCampoClientFields,
+} from "./clients";
+export type {
+  CampoClientWriteInput,
+  CampoClientSystemInput,
 } from "./clients";
 export { listCampoOrders, getCampoOrder, saveCampoOrder } from "./orders";
 export {
