@@ -53,12 +53,26 @@ export {
   setCampoUserPermissions,
   setCampoUserRole,
 } from "./users";
-export { summarizeCalibrationResults } from "./calib-results";
+export {
+  summarizeCalibrationResults,
+  buildCalibrationWorkbench,
+} from "./calib-results";
 export type {
   CalibFlowPointRow,
   CalibGenericPointRow,
   CalibResultsSummary,
+  CalibWorkbench,
+  CalibFlowPointDetail,
+  CalibStandardUsed,
 } from "./calib-results";
+export {
+  meterFactor,
+  volumetricErrorPercent,
+  repeatabilityPercent,
+  linearityPercent,
+  formatCalibNumber,
+  formatPercent,
+} from "./calibration-math";
 export { getCampoDriveStatus } from "./drive";
 export {
   CAMPO_DRIVE_ROOT_ID,

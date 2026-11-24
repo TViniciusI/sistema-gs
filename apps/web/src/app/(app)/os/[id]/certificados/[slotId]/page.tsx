@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalibResultsPanel } from "@/components/os/calib-results-panel";
+import { CalibWorkbenchView } from "@/components/calibracao/calib-workbench";
 import { PrintToolbar } from "@/components/os/print-toolbar";
 import { PageHeader, StatusPill } from "@/components/ui";
 import {
+  buildCalibrationWorkbench,
   campoAppUrl,
   certificatesForOs,
   findDriveCertForNumber,
@@ -14,7 +15,6 @@ import {
   listCampoCalibrations,
   listCampoOsDriveFiles,
   publicCertUrl,
-  summarizeCalibrationResults,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +75,7 @@ export default async function OsCertificadoDetailPage({
     listing.files,
     slot.certificateNumber || job?.number || "",
   );
-  const results = summarizeCalibrationResults(job?.raw);
+  const workbench = buildCalibrationWorkbench(job?.raw);
 
   return (
     <div className="space-y-6">
@@ -277,7 +277,7 @@ export default async function OsCertificadoDetailPage({
             </section>
           ) : null}
 
-          <CalibResultsPanel summary={results} />
+          {workbench.hasAny ? <CalibWorkbenchView data={workbench} /> : null}
 
           <div className="no-print">
             <a
@@ -327,7 +327,7 @@ export default async function OsCertificadoDetailPage({
               </a>
             </div>
           </div>
-          <CalibResultsPanel summary={results} />
+          {workbench.hasAny ? <CalibWorkbenchView data={workbench} /> : null}
         </section>
       )}
     </div>
