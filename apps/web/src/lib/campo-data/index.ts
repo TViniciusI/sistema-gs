@@ -61,12 +61,19 @@ export {
   osFolderKey,
 } from "./drive-os-folders";
 export {
+  classifyDriveFile,
+  driveFileCoverUrl,
+  driveFileKindLabel,
   driveFilesByKind,
   findDriveCertForNumber,
   findDriveRdoForDate,
   listCampoOsDriveFiles,
 } from "./os-drive";
-export type { CampoOsDriveFile, CampoOsDriveListing } from "./os-drive";
+export type {
+  CampoOsDriveFile,
+  CampoOsDriveListing,
+  DriveFileKind,
+} from "./os-drive";
 export {
   deleteCampoFluid,
   deleteCampoStandard,

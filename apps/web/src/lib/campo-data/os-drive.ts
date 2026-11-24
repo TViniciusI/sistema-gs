@@ -177,6 +177,63 @@ export function driveFilesByKind(files: CampoOsDriveFile[]) {
   return { rdos, certificates, books, labels, photos, other };
 }
 
+export type DriveFileKind =
+  | "rdo"
+  | "certificate"
+  | "book"
+  | "label"
+  | "photo"
+  | "other";
+
+export function classifyDriveFile(file: CampoOsDriveFile): DriveFileKind {
+  const path = `${file.folder}/${file.name}`.toLowerCase();
+  const name = file.name.toLowerCase();
+  if (path.includes("/backup") || name.endsWith(".json")) return "other";
+  if (path.includes("/rdo") || path.startsWith("rdo/") || name.startsWith("rdo_")) {
+    return "rdo";
+  }
+  if (path.includes("etiqueta") || name.includes("adesivo")) return "label";
+  if (path.includes("/book") || name.includes("livro") || name.startsWith("book_")) {
+    return "book";
+  }
+  if (
+    name.startsWith("certificado_") ||
+    path.includes("certificados de calibração") ||
+    /gs-(vol|temp|dens|press|cond|tel)/i.test(name)
+  ) {
+    return "certificate";
+  }
+  if (path.includes("/fotos") || file.mimeType.startsWith("image/")) {
+    return "photo";
+  }
+  return "other";
+}
+
+export function driveFileKindLabel(kind: DriveFileKind) {
+  const map: Record<DriveFileKind, string> = {
+    rdo: "RDO",
+    certificate: "Certificado",
+    book: "Livro",
+    label: "Etiqueta",
+    photo: "Foto",
+    other: "Anexo",
+  };
+  return map[kind];
+}
+
+/** Capa / preview do Drive (PDF e imagens). */
+export function driveFileCoverUrl(file: CampoOsDriveFile) {
+  const id = text(file.id);
+  if (!id) return "";
+  if (file.mimeType.startsWith("image/")) {
+    return (
+      text(file.url) ||
+      `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w640`
+    );
+  }
+  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w640`;
+}
+
 export function findDriveCertForNumber(
   files: CampoOsDriveFile[],
   certificateNumber: string,
