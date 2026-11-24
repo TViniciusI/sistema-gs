@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatCnpj } from "@gs/shared";
-import { PageHeader, Panel } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { getCampoClient } from "@/lib/campo-data";
 import { kindLabel } from "@/lib/campo-data/labels";
 import { DeleteSystemButton } from "../delete-system-button";
@@ -71,114 +71,146 @@ export default async function ClienteDetailPage({
     grouped.set(key, list);
   }
 
+  const place =
+    [client.city, client.state].filter(Boolean).join("/") || "—";
+  const baseLine = [
+    client.baseName,
+    client.baseCargo,
+    client.basePhone,
+    client.baseEmail,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
-        title={client.name}
+        eyebrow="Cadastros"
+        title={client.name || "Cliente"}
         description={
           client.cnpj
             ? `CNPJ ${formatCnpj(client.cnpj)} · cadastro GS Campo`
             : "Cadastro GS Campo"
         }
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {client.payloadLight ? (
+              <span className="rounded-full bg-warn/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-warn">
+                Resumo
+              </span>
+            ) : null}
+            <Link
+              href="/clientes"
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Voltar
+            </Link>
+          </div>
+        }
       />
 
-      <div className="mb-4">
-        <Link href="/clientes" className="text-sm text-navy/60 hover:text-navy">
-          ← Voltar aos clientes
-        </Link>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
-        <div className="space-y-4">
-          <Panel>
-            <h2 className="mb-3 font-serif text-lg text-navy">Dados</h2>
-            <dl className="space-y-3 text-sm">
-              <div>
-                <dt className="text-muted">CNPJ</dt>
-                <dd>{client.cnpj ? formatCnpj(client.cnpj) : "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted">Solicitante</dt>
-                <dd>{client.requester || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted">Cidade</dt>
-                <dd>
-                  {[client.city, client.state].filter(Boolean).join("/") || "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">Responsável da base</dt>
-                <dd>
-                  {client.baseName || "—"}
-                  {client.baseCargo ? ` · ${client.baseCargo}` : ""}
-                  <br />
-                  {[client.basePhone, client.baseEmail]
-                    .filter(Boolean)
-                    .join(" · ") || null}
-                </dd>
-              </div>
-              {client.sites.length > 0 ? (
-                <div>
-                  <dt className="text-muted">Bases / sites</dt>
-                  <dd>{client.sites.join(", ")}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </Panel>
-
-          <Panel>
-            <h2 className="mb-3 font-serif text-lg text-navy">Editar cadastro</h2>
-            <ClientEditForm
-              clientId={client.id}
-              defaults={{
-                name: client.name,
-                requester: client.requester,
-                city: client.city,
-                state: client.state,
-                baseName: client.baseName,
-                baseCargo: client.baseCargo,
-                baseEmail: client.baseEmail,
-                basePhone: client.basePhone,
-                sites: client.sites.join("|"),
-              }}
-            />
-          </Panel>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <h2 className="font-serif text-lg text-navy">
-                Sistemas e instrumentos
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                Fonte da verdade da planilha — exclusões aqui atualizam o GS
-                Campo após o sync do aparelho.
-              </p>
-            </div>
-            <p className="text-sm text-navy/50">
-              {client.systems.length} conjunto(s)
+      <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+          Resumo
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl bg-paper px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wide text-navy/45">
+              Cidade
+            </p>
+            <p className="mt-1 text-sm font-medium text-navy">{place}</p>
+          </div>
+          <div className="rounded-2xl bg-paper px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wide text-navy/45">
+              Solicitante
+            </p>
+            <p className="mt-1 text-sm font-medium text-navy">
+              {client.requester || "—"}
             </p>
           </div>
+          <div className="rounded-2xl bg-paper px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wide text-navy/45">
+              Base
+            </p>
+            <p className="mt-1 text-sm font-medium text-navy">
+              {baseLine || "—"}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-paper px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wide text-navy/45">
+              Sistemas
+            </p>
+            <p className="mt-1 text-sm font-medium text-navy">
+              {client.payloadLight
+                ? "Abrir carregou resumo"
+                : `${client.systems.length} conjunto(s)`}
+            </p>
+          </div>
+        </div>
+        {client.sites.length > 0 ? (
+          <p className="mt-4 text-sm text-navy/55">
+            Sites: {client.sites.join(", ")}
+          </p>
+        ) : null}
+      </section>
 
-          {client.systems.length === 0 ? (
-            <Panel>
-              <p className="text-sm text-muted">
-                Nenhum sistema neste cliente
-                {client.payloadLight ? " (resumo incompleto no Drive)." : "."}
-              </p>
-            </Panel>
-          ) : (
-            [...grouped.entries()].map(([type, systems]) => (
-              <section key={type} className="space-y-3">
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brass">
-                  {type}
-                </h3>
+      <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+          Cadastro
+        </p>
+        <h2 className="mt-1 font-serif text-xl text-navy">Editar dados</h2>
+        <p className="mt-2 mb-4 text-sm text-navy/55">
+          Contato e base — grava na mesma planilha do GS Campo.
+        </p>
+        <ClientEditForm
+          clientId={client.id}
+          defaults={{
+            name: client.name,
+            requester: client.requester,
+            city: client.city,
+            state: client.state,
+            baseName: client.baseName,
+            baseCargo: client.baseCargo,
+            baseEmail: client.baseEmail,
+            basePhone: client.basePhone,
+            sites: client.sites.join("|"),
+          }}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+              Equipamentos
+            </p>
+            <h2 className="mt-1 font-serif text-xl text-navy">
+              Sistemas e instrumentos
+            </h2>
+            <p className="mt-1 text-sm text-navy/55">
+              Exclusões aqui atualizam a planilha e o GS Campo após o sync.
+            </p>
+          </div>
+          <p className="text-sm text-navy/50">
+            {client.systems.length} conjunto(s)
+          </p>
+        </div>
+
+        {client.systems.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
+            Nenhum sistema neste cliente
+            {client.payloadLight ? " (resumo incompleto no Drive)." : "."}
+          </div>
+        ) : (
+          [...grouped.entries()].map(([type, systems]) => (
+            <div key={type} className="space-y-3">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brass">
+                {type} · {systems.length}
+              </h3>
+              <div className="grid gap-3 lg:grid-cols-2">
                 {systems.map((system) => {
                   const title = systemTitle(system);
                   const crumb = [
-                    system.systemType,
                     system.installLocation,
                     kindLabel(system.kind),
                   ]
@@ -192,46 +224,19 @@ export default async function ClienteDetailPage({
                   return (
                     <article
                       key={system.id}
-                      className="rounded-xl border border-line bg-white px-5 py-4 shadow-[0_1px_0_rgba(12,31,51,0.04)]"
+                      className="rounded-2xl border border-navy/10 bg-white p-4 shadow-[0_8px_24px_rgba(12,31,51,0.04)]"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h4 className="font-serif text-xl text-navy">
-                            {system.systemType || title}
-                          </h4>
-                          <p className="mt-1 text-sm text-muted">{crumb}</p>
-                          <p className="mt-3 text-[15px] font-medium text-navy">
+                          <h4 className="font-serif text-lg text-navy">
                             {title}
-                          </p>
-                          <p className="mt-1 text-sm leading-6 text-navy/70">
+                          </h4>
+                          {crumb ? (
+                            <p className="mt-1 text-xs text-navy/45">{crumb}</p>
+                          ) : null}
+                          <p className="mt-2 text-sm leading-6 text-navy/70">
                             {systemMeta(system) || "Sem detalhes cadastrados."}
                           </p>
-                          {instruments.length > 0 ? (
-                            <ul className="mt-3 space-y-1.5 border-t border-navy/8 pt-3 text-sm text-navy/75">
-                              {instruments.map((raw, index) => {
-                                const item =
-                                  raw && typeof raw === "object"
-                                    ? (raw as Record<string, unknown>)
-                                    : {};
-                                const tag = String(
-                                  item.tag || item.equipmentTag || "",
-                                );
-                                const serial = String(
-                                  item.serialNumber || item.serial || "",
-                                );
-                                const kind = String(
-                                  item.kind || item.equipmentType || "",
-                                );
-                                return (
-                                  <li key={`${system.id}-eq-${index}`}>
-                                    {[kind, tag && `TAG ${tag}`, serial && `N/S ${serial}`]
-                                      .filter(Boolean)
-                                      .join(" · ") || "Instrumento"}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : null}
                         </div>
                         <DeleteSystemButton
                           clientId={client.id}
@@ -239,14 +244,44 @@ export default async function ClienteDetailPage({
                           label={title}
                         />
                       </div>
+                      {instruments.length > 0 ? (
+                        <ul className="mt-3 space-y-1.5 border-t border-navy/8 pt-3 text-sm text-navy/75">
+                          {instruments.map((raw, index) => {
+                            const item =
+                              raw && typeof raw === "object"
+                                ? (raw as Record<string, unknown>)
+                                : {};
+                            const tag = String(
+                              item.tag || item.equipmentTag || "",
+                            );
+                            const serial = String(
+                              item.serialNumber || item.serial || "",
+                            );
+                            const kind = String(
+                              item.kind || item.equipmentType || "",
+                            );
+                            return (
+                              <li key={`${system.id}-eq-${index}`}>
+                                {[
+                                  kind,
+                                  tag && `TAG ${tag}`,
+                                  serial && `N/S ${serial}`,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ") || "Instrumento"}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
                     </article>
                   );
                 })}
-              </section>
-            ))
-          )}
-        </div>
-      </div>
+              </div>
+            </div>
+          ))
+        )}
+      </section>
     </div>
   );
 }

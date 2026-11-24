@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { formatCnpj } from "@gs/shared";
-import { DataTable, PageHeader } from "@/components/ui";
+import { ClientesBoard } from "@/components/clientes/clientes-board";
+import { PageHeader } from "@/components/ui";
 import { listCampoClients } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -12,34 +12,29 @@ export default async function ClientesPage() {
     <div>
       <PageHeader
         eyebrow="Cadastros"
-        title="Clientes e sistemas"
-        description="Cadastro compartilhado com o GS Campo — sistemas, instrumentos e bases."
-      />
-      <DataTable
-        headers={["Cliente", "CNPJ", "Sistemas", "Cidade", "Atualizado"]}
-        empty="Nenhum cliente na planilha."
-        rows={clients.map((client) => [
+        title="Clientes"
+        description="Cadastro compartilhado com o GS Campo — busca, sistemas e bases."
+        action={
           <Link
-            key={client.id}
-            href={`/clientes/${client.id}`}
-            className="font-medium text-navy hover:underline"
+            href="/clientes/novo"
+            className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
           >
-            {client.name}
-            {client.payloadLight ? (
-              <span className="ml-2 text-[11px] font-normal text-muted">
-                (resumo)
-              </span>
-            ) : null}
-          </Link>,
-          client.cnpj ? formatCnpj(client.cnpj) : "—",
-          client.payloadLight
-            ? "Abrir para carregar"
-            : String(client.systems.length),
-          [client.city, client.state].filter(Boolean).join("/") || "—",
-          client.updatedAt
-            ? new Date(client.updatedAt).toLocaleString("pt-BR")
-            : "—",
-        ])}
+            Novo no Campo
+          </Link>
+        }
+      />
+      <ClientesBoard
+        clients={clients.map((client) => ({
+          id: client.id,
+          name: client.name,
+          cnpj: client.cnpj,
+          city: client.city,
+          state: client.state,
+          systemCount: client.systems.length,
+          payloadLight: client.payloadLight,
+          updatedAt: client.updatedAt,
+          requester: client.requester,
+        }))}
       />
     </div>
   );

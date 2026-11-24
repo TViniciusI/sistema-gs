@@ -31,9 +31,21 @@ export function ClientEditForm({
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
+  const fields = [
+    ["name", "Razão / nome", "md:col-span-2"],
+    ["requester", "Solicitante", ""],
+    ["city", "Cidade", ""],
+    ["state", "UF", ""],
+    ["baseName", "Responsável base", ""],
+    ["baseCargo", "Cargo", ""],
+    ["baseEmail", "E-mail", ""],
+    ["basePhone", "Telefone", ""],
+    ["sites", "Sites (separados por |)", "md:col-span-2"],
+  ] as const;
+
   return (
     <form
-      className="space-y-3"
+      className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
@@ -52,39 +64,31 @@ export function ClientEditForm({
         });
       }}
     >
-      {(
-        [
-          ["name", "Razão / nome"],
-          ["requester", "Solicitante"],
-          ["city", "Cidade"],
-          ["state", "UF"],
-          ["baseName", "Responsável base"],
-          ["baseCargo", "Cargo"],
-          ["baseEmail", "E-mail"],
-          ["basePhone", "Telefone"],
-          ["sites", "Sites (separados por |)"],
-        ] as const
-      ).map(([key, label]) => (
-        <label key={key} className="block text-sm">
-          <span className="text-[11px] uppercase tracking-wide text-navy/45">
-            {label}
-          </span>
-          <input
-            value={values[key]}
-            onChange={(e) => set(key, e.target.value)}
-            className="mt-1 w-full rounded-xl border border-navy/15 bg-white px-3 py-2 text-navy"
-          />
-        </label>
-      ))}
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
-      >
-        {pending ? "Salvando…" : "Salvar cadastro"}
-      </button>
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      {ok ? <p className="text-sm text-ok">Salvo na planilha.</p> : null}
+      <div className="grid gap-3 md:grid-cols-2">
+        {fields.map(([key, label, span]) => (
+          <label key={key} className={`block text-sm ${span}`}>
+            <span className="text-[11px] uppercase tracking-wide text-navy/45">
+              {label}
+            </span>
+            <input
+              value={values[key]}
+              onChange={(e) => set(key, e.target.value)}
+              className="mt-1 w-full rounded-xl border border-navy/15 bg-white px-3 py-2 text-navy outline-none focus:border-brass"
+            />
+          </label>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
+        >
+          {pending ? "Salvando…" : "Salvar cadastro"}
+        </button>
+        {error ? <p className="text-sm text-red-700">{error}</p> : null}
+        {ok ? <p className="text-sm text-ok">Salvo na planilha.</p> : null}
+      </div>
     </form>
   );
 }
