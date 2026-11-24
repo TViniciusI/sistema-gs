@@ -2116,13 +2116,34 @@ CalibrationJob newCalibrationJob({
   );
 }
 
+/// Técnico do certificado: prioriza a equipe da OS.
+/// Conta de desenvolvedor (ex.: Vinicius em testes) não entra como responsável.
+String preferredCalibrationTechnician({
+  required String osTechnicianName,
+  required String userName,
+  bool userIsDeveloper = false,
+}) {
+  final fromOs = osTechnicianName.trim();
+  if (fromOs.isNotEmpty) return fromOs;
+  if (userIsDeveloper) return '';
+  final fromUser = userName.trim();
+  final lower = fromUser.toLowerCase();
+  if (lower.contains('vinicius') && lower.contains('magalh')) return '';
+  if (lower == 'vinicius') return '';
+  return fromUser;
+}
+
 CalibrationJob jobFromOsCalibrationSlot({
   required SavedOs os,
   required OsCalibrationSlot slot,
   required String technicianName,
 }) {
   final kind = calibrationKindFrom(slot.kind);
-  final base = newCalibrationJob(kind: kind, technicianName: technicianName);
+  final resolvedTech = preferredCalibrationTechnician(
+    osTechnicianName: os.technicianName,
+    userName: technicianName,
+  );
+  final base = newCalibrationJob(kind: kind, technicianName: resolvedTech);
   final site = os.rdo.site.trim().isNotEmpty
       ? os.rdo.site
       : slot.installLocation;

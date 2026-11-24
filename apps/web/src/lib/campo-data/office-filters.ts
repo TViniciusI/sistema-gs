@@ -15,8 +15,21 @@ export function isExcludedFromTechLoad(name: string) {
   if (!n) return true;
   if (n.includes("vinicius") && n.includes("magalhaes")) return true;
   if (n === "vinicius") return true;
+  if (n.includes("viniciusmagalhaes")) return true;
   if (n.includes("teste") && n.includes("vini")) return true;
   return false;
+}
+
+/**
+ * Remove nomes de teste/dev de listas "Técnico1, Técnico2".
+ * Usado na leitura do escritório para não mostrar Vinicius em OS/certificados.
+ */
+export function stripDevTestPersonNames(value: string) {
+  return value
+    .split(/[,;|/]+/)
+    .map((part) => part.trim())
+    .filter((part) => part && !isExcludedFromTechLoad(part))
+    .join(", ");
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   repeatabilityPercent,
   volumetricErrorPercent,
 } from "./calibration-math";
+import { stripDevTestPersonNames } from "./office-filters";
 
 function text(value: unknown) {
   return String(value ?? "").trim();
@@ -323,8 +324,9 @@ export function buildCalibrationWorkbench(
     manufacturer: text(data.manufacturer),
     model: text(data.model),
     serialNumber: text(data.serialNumber),
-    technicianName:
+    technicianName: stripDevTestPersonNames(
       text(data.technicianName) || text(data.fieldTechnicianName),
+    ),
     calibrationDate: text(data.calibrationDate),
     nextCalibrationDate: text(data.nextCalibrationDate),
     site: text(data.site),

@@ -60,7 +60,12 @@ class _CalibrationPageState extends State<CalibrationPage> {
 
   Future<void> _openNew(CalibrationKind kind) async {
     final user = AuthSession.instance.user;
-    var job = newCalibrationJob(kind: kind, technicianName: user?.name ?? '');
+    final tech = preferredCalibrationTechnician(
+      osTechnicianName: '',
+      userName: user?.name ?? '',
+      userIsDeveloper: user?.isDeveloper == true,
+    );
+    var job = newCalibrationJob(kind: kind, technicianName: tech);
     job = await CalibrationStore.instance.save(job);
     if (!mounted) return;
     await Navigator.of(context).push(

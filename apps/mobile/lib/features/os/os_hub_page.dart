@@ -392,7 +392,11 @@ class _OsHubPageState extends State<OsHubPage> {
     var job = jobFromOsCalibrationSlot(
       os: os,
       slot: slot,
-      technicianName: user?.name ?? '',
+      technicianName: preferredCalibrationTechnician(
+        osTechnicianName: os.technicianName,
+        userName: user?.name ?? '',
+        userIsDeveloper: user?.isDeveloper == true,
+      ),
     );
     job = resolveCalibrationJobInstrument(job, slot: slot);
     if (job.calibrationDate.trim().isEmpty) {

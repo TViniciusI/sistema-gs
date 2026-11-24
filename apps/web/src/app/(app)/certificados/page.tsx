@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CertificadosBoard } from "@/components/certificados/certificados-board";
 import { PageHeader } from "@/components/ui";
-import { listCampoCalibrations } from "@/lib/campo-data";
+import { listCampoCalibrations, stripDevTestPersonNames } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -50,8 +50,9 @@ export default async function CertificadosPage() {
             serialNumber: text(raw.serialNumber),
             manufacturer: text(raw.manufacturer),
             model: text(raw.model),
-            technicianName:
+            technicianName: stripDevTestPersonNames(
               text(raw.technicianName) || text(raw.fieldTechnicianName),
+            ),
             calibrationDate: text(raw.calibrationDate),
             nextCalibrationDate: text(raw.nextCalibrationDate),
             osId: text(raw.osId),

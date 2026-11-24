@@ -15,6 +15,7 @@ export {
   isExcludedFromTechLoad,
   isFieldTechnicianUser,
   isOfficeHiddenOrder,
+  stripDevTestPersonNames,
 } from "./office-filters";
 export {
   calibrationsForOs,

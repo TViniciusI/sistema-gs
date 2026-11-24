@@ -11,6 +11,7 @@ import {
   groupCertificatesByKind,
   listCampoCalibrations,
   listCampoOsDriveFiles,
+  stripDevTestPersonNames,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -127,8 +128,9 @@ export default async function OsCertificadosPage({
               pdfUrl: pdf?.url || "",
               calibrationDate: text(raw.calibrationDate),
               nextCalibrationDate: text(raw.nextCalibrationDate),
-              technicianName:
+              technicianName: stripDevTestPersonNames(
                 text(raw.technicianName) || text(raw.fieldTechnicianName),
+              ),
               jobId: job?.id || "",
             };
           }),

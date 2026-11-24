@@ -279,7 +279,11 @@ class _CalibrationFromOsPageState extends State<CalibrationFromOsPage> {
     var job = jobFromOsCalibrationSlot(
       os: os,
       slot: slot,
-      technicianName: user?.name ?? '',
+      technicianName: preferredCalibrationTechnician(
+        osTechnicianName: os.technicianName,
+        userName: user?.name ?? '',
+        userIsDeveloper: user?.isDeveloper == true,
+      ),
     );
     setState(() => _busy = true);
     try {

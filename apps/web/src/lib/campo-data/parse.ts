@@ -1,3 +1,4 @@
+import { stripDevTestPersonNames } from "./office-filters";
 import type {
   CampoClient,
   CampoClientSystem,
@@ -98,7 +99,7 @@ export function parseOrder(raw: unknown): CampoOrder | null {
     number: text(o.number) || id,
     status: text(o.status) || "—",
     clientName,
-    technicianName: text(o.technicianName),
+    technicianName: stripDevTestPersonNames(text(o.technicianName)),
     startsAt: text(o.startsAt) || text(o.createdAt),
     updatedAt: text(o.updatedAt),
     rdoCount: rdos.length,
