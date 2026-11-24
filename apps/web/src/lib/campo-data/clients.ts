@@ -1,4 +1,6 @@
 import { digitsOnly, formatCnpj } from "@gs/shared";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { bumpCampoCache, cachedList, CAMPO_TAGS } from "./cache";
 import { gateGet, gatePost } from "./gate";
 import { parseClient } from "./parse";
@@ -157,15 +159,26 @@ export const listCampoClients = cachedList(
   },
 );
 
-export async function getCampoClient(id: string): Promise<CampoClient | null> {
+async function fetchCampoClient(id: string): Promise<CampoClient | null> {
   const payload = await gateGet(
     { action: "getclient", id },
-    { withToken: false, timeoutMs: 90_000 },
+    { withToken: false, timeoutMs: 60_000 },
   );
   if (!payload || payload.ok !== true) return null;
-  const raw = payload.client ?? (Array.isArray(payload.clients) ? payload.clients[0] : null);
+  const raw =
+    payload.client ?? (Array.isArray(payload.clients) ? payload.clients[0] : null);
   return parseClient(raw);
 }
+
+export const getCampoClient = cache(async (id: string) => {
+  const key = String(id || "").trim();
+  if (!key) return null;
+  return unstable_cache(
+    () => fetchCampoClient(key),
+    ["getCampoClient", key],
+    { revalidate: 45, tags: [CAMPO_TAGS.clients] },
+  )();
+});
 
 /** Cria cliente novo na mesma planilha/Drive do GS Campo (`saveclient`). */
 export async function createCampoClient(

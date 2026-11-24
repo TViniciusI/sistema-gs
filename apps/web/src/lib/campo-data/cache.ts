@@ -14,8 +14,8 @@ export const CAMPO_TAGS = {
 
 export type CampoCacheTag = (typeof CAMPO_TAGS)[keyof typeof CAMPO_TAGS];
 
-/** TTL curto: navegar entre telas reaproveita; save invalida na hora. */
-export const CAMPO_LIST_REVALIDATE_SECONDS = 45;
+/** TTL: navegar entre telas reaproveita; save invalida na hora. */
+export const CAMPO_LIST_REVALIDATE_SECONDS = 90;
 
 export function bumpCampoCache(...tags: CampoCacheTag[]) {
   for (const tag of tags) {
