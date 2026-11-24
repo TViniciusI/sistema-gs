@@ -95,9 +95,9 @@ export function DriveFileCard({
           </a>
           <a
             href={docsHref}
-            className="rounded-lg border border-navy/15 bg-paper px-2.5 py-1.5 text-[11px] font-semibold text-navy hover:border-brass/40"
+            className="rounded-lg border border-navy/15 bg-paper px-2.5 py-1.5 text-[11px] font-medium text-navy/70 hover:border-brass/40 hover:text-navy"
           >
-            Pasta OS
+            OS
           </a>
         </div>
       </div>
