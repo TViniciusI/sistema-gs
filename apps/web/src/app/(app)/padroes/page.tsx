@@ -1,55 +1,53 @@
-import { CatalogDeleteButton } from "@/components/qualidade/catalog-delete-button";
-import { DataTable, PageHeader, Panel } from "@/components/ui";
+import Link from "next/link";
+import { PadroesBoard } from "@/components/padroes/padroes-board";
+import { PageHeader } from "@/components/ui";
 import { listCampoStandards } from "@/lib/campo-data";
-import { deletePadraoAction, savePadraoAction } from "./actions";
-import { PadraoForm } from "./padrao-form";
 
 export const dynamic = "force-dynamic";
+
+function text(value: unknown) {
+  return String(value ?? "").trim();
+}
 
 export default async function PadroesPage() {
   const items = await listCampoStandards();
 
   return (
-    <div>
+    <div className="space-y-5">
       <PageHeader
         eyebrow="Qualidade"
         title="Padrões"
-        description="Cadastro de padrões — mesma planilha do GS Campo."
+        description="Cadastro usado nas calibrações — filtre por tipo e validade, edite no card."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/vencimentos"
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Vencimentos
+            </Link>
+            <Link
+              href="/calibracao"
+              className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
+            >
+              Calibração
+            </Link>
+          </div>
+        }
       />
-      <Panel>
-        <h2 className="mb-3 font-serif text-lg text-navy">Novo / atualizar</h2>
-        <PadraoForm action={savePadraoAction} />
-      </Panel>
-      <div className="mt-6">
-        <DataTable
-          headers={[
-            "Código / nome",
-            "Tipo",
-            "N/S",
-            "Certificado",
-            "Validade",
-            "",
-          ]}
-          empty="Nenhum padrão cadastrado."
-          rows={items.map((item) => [
-            item.name,
-            item.type || "—",
-            item.serial || "—",
-            item.certificate || "—",
-            item.validity
-              ? new Date(item.validity).toLocaleDateString("pt-BR", {
-                  timeZone: "America/Sao_Paulo",
-                })
-              : "—",
-            <CatalogDeleteButton
-              key={item.id}
-              id={item.id}
-              label={item.name}
-              onDelete={deletePadraoAction}
-            />,
-          ])}
-        />
-      </div>
+      <PadroesBoard
+        items={items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          serial: item.serial,
+          certificate: item.certificate,
+          validity: item.validity,
+          uncertainty: text(item.raw.uncertainty),
+          coverageK: text(item.raw.coverageK) || text(item.raw.coverageFactor),
+          updatedAt: item.updatedAt,
+        }))}
+      />
     </div>
   );
 }
