@@ -1,53 +1,54 @@
-import { CatalogDeleteButton } from "@/components/qualidade/catalog-delete-button";
-import { DataTable, PageHeader, Panel } from "@/components/ui";
+import Link from "next/link";
+import { FluidosBoard } from "@/components/fluidos/fluidos-board";
+import { PageHeader } from "@/components/ui";
 import { listCampoFluids } from "@/lib/campo-data";
-import { deleteFluidoAction, saveFluidoAction } from "./actions";
-import { FluidoForm } from "./fluido-form";
 
 export const dynamic = "force-dynamic";
+
+function text(value: unknown) {
+  return String(value ?? "").trim();
+}
 
 export default async function FluidosPage() {
   const items = await listCampoFluids();
 
   return (
-    <div>
+    <div className="space-y-5">
       <PageHeader
         eyebrow="Qualidade"
         title="Fluidos"
-        description="Cadastro de fluidos — mesma planilha do GS Campo."
+        description="Produtos da calibração — densidade, viscosidade e temperaturas de referência."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/padroes"
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Padrões
+            </Link>
+            <Link
+              href="/calibracao"
+              className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
+            >
+              Calibração
+            </Link>
+          </div>
+        }
       />
-      <Panel>
-        <h2 className="mb-3 font-serif text-lg text-navy">Novo / atualizar</h2>
-        <FluidoForm action={saveFluidoAction} />
-      </Panel>
-      <div className="mt-6">
-        <DataTable
-          headers={["Fluido", "Densidade", "Viscosidade", "Temperatura", ""]}
-          empty="Nenhum fluido cadastrado."
-          rows={items.map((item) => [
-            item.name,
-            item.density ||
-              [item.raw.densityMin, item.raw.densityMax]
-                .map((v) => String(v ?? "").trim())
-                .filter(Boolean)
-                .join(" a ") ||
-              "—",
-            item.viscosity ||
-              [item.raw.viscosityMin, item.raw.viscosityMax]
-                .map((v) => String(v ?? "").trim())
-                .filter(Boolean)
-                .join(" a ") ||
-              "—",
-            item.temperature || "—",
-            <CatalogDeleteButton
-              key={item.id}
-              id={item.id}
-              label={item.name}
-              onDelete={deleteFluidoAction}
-            />,
-          ])}
-        />
-      </div>
+      <FluidosBoard
+        items={items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          densityMin: text(item.raw.densityMin) || text(item.density),
+          densityMax: text(item.raw.densityMax),
+          viscosityMin: text(item.raw.viscosityMin) || text(item.viscosity),
+          viscosityMax: text(item.raw.viscosityMax),
+          densityRefTemp:
+            text(item.raw.densityRefTemp) || text(item.temperature) || "20 °C",
+          viscosityRefTemp: text(item.raw.viscosityRefTemp) || "40 °C",
+          updatedAt: item.updatedAt,
+        }))}
+      />
     </div>
   );
 }
