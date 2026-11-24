@@ -125,7 +125,7 @@ export default async function ArquivosPage() {
       <PageHeader
         eyebrow="Operação"
         title="Arquivos / Drive"
-        description="Escolha a OS e veja RDO, certificados e fotos com capa — sem lista solta de pastas."
+        description="Escolha a OS no topo e veja RDO, certificados e fotos com capa — sem sidebar nem pastas soltas."
       />
       <ArquivosBrowser
         driveEmail={drive.ownerEmail || ""}

@@ -31,7 +31,7 @@ const KIND_FILTERS: Array<{ key: "all" | DriveFileKind; label: string }> = [
 ];
 
 const PAGE_SIZE = 12;
-const OS_PAGE_SIZE = 8;
+const OS_PAGE_SIZE = 6;
 
 export function ArquivosBrowser({
   driveEmail,
@@ -93,7 +93,7 @@ export function ArquivosBrowser({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -101,11 +101,11 @@ export function ArquivosBrowser({
               Google Drive
             </p>
             <h2 className="mt-1 font-serif text-xl text-navy">
-              Uma pasta por OS
+              Arquivos por OS
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-navy/60">
-              Conta {driveEmail || "—"}. Escolha a OS à esquerda; os arquivos
-              (RDO, certificados, fotos) aparecem com capa à direita.
+              Conta {driveEmail || "—"}. Escolha a ordem abaixo e veja RDO,
+              certificados e fotos com capa.
             </p>
           </div>
           <a
@@ -117,11 +117,9 @@ export function ArquivosBrowser({
             Drive raiz ↗
           </a>
         </div>
-      </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-        <aside className="rounded-3xl border border-navy/10 bg-white p-3 md:p-4">
-          <div className="mb-3 flex items-center justify-between gap-2 px-1">
+        <div className="mt-5 border-t border-navy/10 pt-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brass">
               Ordens
             </p>
@@ -136,193 +134,193 @@ export function ArquivosBrowser({
               {showClosed ? "Só abertas" : "Ver encerradas"}
             </button>
           </div>
-          <div className="space-y-1">
-            {shownOs.map((bundle) => {
-              const active = bundle.osId === selected?.osId;
-              return (
-                <button
-                  key={bundle.osId}
-                  type="button"
-                  onClick={() => pickOs(bundle.osId)}
-                  className={[
-                    "flex w-full flex-col rounded-2xl px-3 py-2.5 text-left transition",
-                    active
-                      ? "bg-navy text-paper"
-                      : "hover:bg-paper text-navy",
-                  ].join(" ")}
-                >
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="font-serif text-lg">
-                      GS {bundle.osNumber}
+
+          {osList.length === 0 ? (
+            <p className="py-4 text-sm text-muted">Nenhuma OS.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {shownOs.map((bundle) => {
+                const active = bundle.osId === selected?.osId;
+                return (
+                  <button
+                    key={bundle.osId}
+                    type="button"
+                    onClick={() => pickOs(bundle.osId)}
+                    title={bundle.clientName || undefined}
+                    className={[
+                      "rounded-2xl px-3.5 py-2.5 text-left transition",
+                      active
+                        ? "bg-navy text-paper"
+                        : "border border-navy/12 bg-paper text-navy hover:border-brass/40",
+                    ].join(" ")}
+                  >
+                    <span className="flex items-baseline gap-2">
+                      <span className="font-serif text-base leading-none">
+                        GS {bundle.osNumber}
+                      </span>
+                      <span
+                        className={[
+                          "text-[10px] font-semibold",
+                          active ? "text-brass" : "text-navy/40",
+                        ].join(" ")}
+                      >
+                        {bundle.items.length}
+                      </span>
                     </span>
                     <span
                       className={[
-                        "text-[10px] font-semibold uppercase tracking-wide",
-                        active ? "text-brass" : "text-navy/40",
+                        "mt-1 block max-w-[11rem] truncate text-[11px]",
+                        active ? "text-paper/65" : "text-navy/50",
                       ].join(" ")}
                     >
-                      {bundle.items.length}
+                      {bundle.clientName || "—"}
                     </span>
+                  </button>
+                );
+              })}
+              {shownOs.length < osList.length ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOsVisibleCount((n) => n + OS_PAGE_SIZE)
+                  }
+                  className="rounded-2xl border border-dashed border-navy/20 bg-white px-3.5 py-2.5 text-xs font-semibold text-navy/70 hover:border-brass/40 hover:text-navy"
+                >
+                  Mais OS
+                  <span className="mt-1 block text-[10px] font-medium text-navy/40">
+                    +{osList.length - shownOs.length}
                   </span>
-                  <span
-                    className={[
-                      "mt-0.5 line-clamp-1 text-xs",
-                      active ? "text-paper/65" : "text-navy/50",
-                    ].join(" ")}
-                  >
-                    {bundle.clientName || "—"}
+                </button>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {selected ? (
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+                {selected.statusLabel}
+              </p>
+              <h2 className="mt-1 font-serif text-2xl text-navy">
+                GS {selected.osNumber}
+              </h2>
+              <p className="mt-1 text-sm text-navy/55">
+                {selected.clientName || "—"} · {selected.items.length}{" "}
+                arquivo(s)
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/os/${selected.osId}/documentos`}
+                className="rounded-xl bg-navy px-3 py-2 text-sm font-semibold text-paper hover:bg-navy-2"
+              >
+                Documentos da OS
+              </Link>
+              {selected.folderUrl ? (
+                <a
+                  href={selected.folderUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl border border-navy/15 bg-white px-3 py-2 text-sm font-semibold text-navy hover:border-brass/40"
+                >
+                  Pasta no Drive ↗
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {KIND_FILTERS.map((chip) => {
+              const count = kindCounts[chip.key] || 0;
+              if (chip.key !== "all" && count === 0) return null;
+              const active = kind === chip.key;
+              return (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={() => {
+                    setKind(chip.key);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
+                  className={[
+                    "rounded-xl px-3 py-2 text-sm font-medium transition",
+                    active
+                      ? "bg-navy text-paper"
+                      : "border border-navy/15 bg-white text-navy hover:border-brass/40",
+                  ].join(" ")}
+                >
+                  {chip.label}
+                  <span className={active ? "text-brass" : "text-navy/40"}>
+                    {" "}
+                    · {count}
                   </span>
                 </button>
               );
             })}
-            {osList.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-muted">
-                Nenhuma OS.
-              </p>
-            ) : null}
-            {shownOs.length < osList.length ? (
-              <button
-                type="button"
-                onClick={() =>
-                  setOsVisibleCount((n) => n + OS_PAGE_SIZE)
-                }
-                className="mt-2 w-full rounded-xl border border-navy/15 bg-paper px-3 py-2 text-xs font-semibold text-navy hover:border-brass/40"
-              >
-                Mais OS ({osList.length - shownOs.length})
-              </button>
-            ) : null}
           </div>
-        </aside>
 
-        <div className="min-w-0 space-y-4">
-          {selected ? (
-            <>
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-                    {selected.statusLabel}
-                  </p>
-                  <h2 className="mt-1 font-serif text-2xl text-navy">
-                    GS {selected.osNumber}
-                  </h2>
-                  <p className="mt-1 text-sm text-navy/55">
-                    {selected.clientName || "—"} · {selected.items.length}{" "}
-                    arquivo(s)
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    href={`/os/${selected.osId}/documentos`}
-                    className="rounded-xl bg-navy px-3 py-2 text-sm font-semibold text-paper hover:bg-navy-2"
-                  >
-                    Documentos da OS
-                  </Link>
-                  {selected.folderUrl ? (
-                    <a
-                      href={selected.folderUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-xl border border-navy/15 bg-white px-3 py-2 text-sm font-semibold text-navy hover:border-brass/40"
-                    >
-                      Pasta no Drive ↗
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {KIND_FILTERS.map((chip) => {
-                  const count = kindCounts[chip.key] || 0;
-                  if (chip.key !== "all" && count === 0) return null;
-                  const active = kind === chip.key;
-                  return (
-                    <button
-                      key={chip.key}
-                      type="button"
-                      onClick={() => {
-                        setKind(chip.key);
-                        setVisibleCount(PAGE_SIZE);
-                      }}
-                      className={[
-                        "rounded-xl px-3 py-2 text-sm font-medium transition",
-                        active
-                          ? "bg-navy text-paper"
-                          : "border border-navy/15 bg-white text-navy hover:border-brass/40",
-                      ].join(" ")}
-                    >
-                      {chip.label}
-                      <span className={active ? "text-brass" : "text-navy/40"}>
-                        {" "}
-                        · {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {filtered.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
-                  Sem arquivos deste tipo nesta OS.
-                  {selected.folderUrl ? (
-                    <>
-                      {" "}
-                      <a
-                        href={selected.folderUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-navy underline"
-                      >
-                        Abrir pasta no Drive
-                      </a>
-                    </>
-                  ) : null}
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm text-navy/55">
-                    {filtered.length}{" "}
-                    {kind === "all"
-                      ? "arquivo(s)"
-                      : driveFileKindLabel(kind).toLowerCase()}
-                    {shown.length < filtered.length
-                      ? ` · mostrando ${shown.length}`
-                      : ""}
-                  </p>
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {shown.map((item) => (
-                      <DriveFileCard
-                        key={`${item.osId}-${item.file.id}`}
-                        file={item.file}
-                        kind={item.kind}
-                        osNumber={item.osNumber}
-                        clientName={item.clientName}
-                        docsHref={`/os/${item.osId}/documentos`}
-                      />
-                    ))}
-                  </div>
-                  {shown.length < filtered.length ? (
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setVisibleCount((n) => n + PAGE_SIZE)
-                        }
-                        className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-semibold text-navy hover:border-brass/40"
-                      >
-                        Mostrar mais ({filtered.length - shown.length})
-                      </button>
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </>
-          ) : (
+          {filtered.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
-              Nenhuma OS com pasta/arquivos para listar.
+              Sem arquivos deste tipo nesta OS.
+              {selected.folderUrl ? (
+                <>
+                  {" "}
+                  <a
+                    href={selected.folderUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-navy underline"
+                  >
+                    Abrir pasta no Drive
+                  </a>
+                </>
+              ) : null}
             </p>
+          ) : (
+            <>
+              <p className="text-sm text-navy/55">
+                {filtered.length}{" "}
+                {kind === "all"
+                  ? "arquivo(s)"
+                  : driveFileKindLabel(kind).toLowerCase()}
+                {shown.length < filtered.length
+                  ? ` · mostrando ${shown.length}`
+                  : ""}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {shown.map((item) => (
+                  <DriveFileCard
+                    key={`${item.osId}-${item.file.id}`}
+                    file={item.file}
+                    kind={item.kind}
+                    osNumber={item.osNumber}
+                    clientName={item.clientName}
+                    docsHref={`/os/${item.osId}/documentos`}
+                  />
+                ))}
+              </div>
+              {shown.length < filtered.length ? (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                    className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-semibold text-navy hover:border-brass/40"
+                  >
+                    Mostrar mais ({filtered.length - shown.length})
+                  </button>
+                </div>
+              ) : null}
+            </>
           )}
-        </div>
-      </div>
+        </section>
+      ) : (
+        <p className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
+          Nenhuma OS com pasta/arquivos para listar.
+        </p>
+      )}
     </div>
   );
 }
