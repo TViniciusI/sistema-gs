@@ -1,33 +1,36 @@
-import { Button, ErrorText, Field, FormGrid, PageHeader, Panel } from "@/components/ui";
-import { createEmployeeRecord } from "../../cadastros/actions";
+import Link from "next/link";
+import { PageHeader, Panel } from "@/components/ui";
+import { campoAppUrl } from "@/lib/campo-data";
 
-export default async function NovoEquipePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-
+export default function NovoEquipePage() {
   return (
     <div>
       <PageHeader
         title="Novo integrante"
-        description="Nesta demonstração o cadastro fica só nesta sessão do navegador."
+        description="Aprovação e papéis ficam na planilha do GS Campo — não no cadastro demo."
       />
       <Panel>
-        <form action={createEmployeeRecord} className="space-y-6">
-          <ErrorText message={error} />
-          <FormGrid>
-            <Field label="Nome" name="full_name" required />
-            <Field label="Cargo" name="job_title" />
-            <Field label="Telefone" name="phone" />
-          </FormGrid>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="is_technician" defaultChecked className="accent-navy" />
-            Atua em campo (técnico)
-          </label>
-          <Button type="submit">Salvar</Button>
-        </form>
+        <p className="text-sm leading-6 text-navy/70">
+          Use o app de campo (ou a aba de usuários do gate) para cadastrar /
+          aprovar funcionários. O escritório lista o mesmo time e as horas de
+          RDO.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <a
+            href={campoAppUrl()}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-paper hover:bg-navy-2"
+          >
+            Abrir GS Campo ↗
+          </a>
+          <Link
+            href="/equipe"
+            className="rounded-xl border border-navy/15 bg-paper px-4 py-2.5 text-sm font-medium text-navy hover:border-brass/40"
+          >
+            Voltar à equipe
+          </Link>
+        </div>
       </Panel>
     </div>
   );

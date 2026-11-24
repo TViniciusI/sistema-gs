@@ -18,6 +18,7 @@ const GROUPS = [
       { href: "/arquivos", label: "Arquivos / Drive", icon: Icons.clipboard },
       { href: "/clientes", label: "Clientes e sistemas", icon: Icons.building },
       { href: "/equipe", label: "Funcionários", icon: Icons.users },
+      { href: "/equipe/horas", label: "Horas de campo", icon: Icons.clock },
       { href: "/documentos", label: "Documentos RH", icon: Icons.users },
     ],
   },

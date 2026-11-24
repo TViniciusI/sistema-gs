@@ -45,6 +45,7 @@ export {
 export {
   driveFilesByKind,
   findDriveCertForNumber,
+  findDriveRdoForDate,
   listCampoOsDriveFiles,
 } from "./os-drive";
 export type { CampoOsDriveFile, CampoOsDriveListing } from "./os-drive";
@@ -68,3 +69,9 @@ export type {
   CampoFluid,
   CampoStaffDoc,
 } from "./catalog";
+export {
+  formatWorkedHours,
+  normalizePersonKey,
+  parseClockMinutes,
+  rdoWorkedMinutes,
+} from "./work-hours";

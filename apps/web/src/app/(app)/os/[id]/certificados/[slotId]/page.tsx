@@ -5,10 +5,13 @@ import { PageHeader, StatusPill } from "@/components/ui";
 import {
   campoAppUrl,
   certificatesForOs,
+  findDriveCertForNumber,
+  getCampoCalibration,
   getCampoOrder,
   getCampoPublicCertificate,
   kindLabel,
   listCampoCalibrations,
+  listCampoOsDriveFiles,
   publicCertUrl,
 } from "@/lib/campo-data";
 
@@ -38,6 +41,7 @@ export default async function OsCertificadoDetailPage({
     listCampoCalibrations(),
   ]);
   if (!os) notFound();
+  const listing = await listCampoOsDriveFiles(os.number);
 
   const rows = certificatesForOs(os, calibrations);
   const row =
@@ -47,7 +51,11 @@ export default async function OsCertificadoDetailPage({
   if (!row) notFound();
 
   const slot = row.slot;
-  const job = row.job;
+  let job = row.job;
+  if (job?.id) {
+    const full = await getCampoCalibration(job.id);
+    if (full) job = full;
+  }
   const publicCert = row.hasCalibration
     ? await getCampoPublicCertificate({
         number: slot.certificateNumber || job?.number,
@@ -61,6 +69,10 @@ export default async function OsCertificadoDetailPage({
     jobId: job?.id || slot.jobId,
     osId: os.id,
   });
+  const drivePdf = findDriveCertForNumber(
+    listing.files,
+    slot.certificateNumber || job?.number || "",
+  );
 
   return (
     <div className="space-y-6">
@@ -93,6 +105,16 @@ export default async function OsCertificadoDetailPage({
                       : "neutral"
                 }
               />
+              {drivePdf ? (
+                <a
+                  href={drivePdf.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
+                >
+                  PDF Drive ↗
+                </a>
+              ) : null}
               <Link
                 href={`/os/${os.id}/certificados?kind=${encodeURIComponent(slot.kind)}`}
                 className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"

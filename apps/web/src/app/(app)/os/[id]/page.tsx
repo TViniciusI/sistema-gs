@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OsDocActions } from "@/components/os/os-doc-actions";
+import { OsStatusActions } from "@/components/os/os-status-actions";
 import { PageHeader, StatusPill } from "@/components/ui";
 import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import {
@@ -53,6 +54,11 @@ export default async function OsDetailPage({
     [rdo.city, rdo.state].filter(Boolean).join("/") ||
     text(rdo.baseName) ||
     "—";
+  const hasTechnicians = Boolean(
+    text(os.raw.technicianEmails) ||
+      text(os.raw.technicianEmail) ||
+      text(os.technicianName),
+  );
 
   return (
     <div className="space-y-6">
@@ -80,6 +86,14 @@ export default async function OsDetailPage({
             </Link>
           </div>
         }
+      />
+
+      <OsStatusActions
+        osId={os.id}
+        osNumber={os.number}
+        status={os.status}
+        hasRdos={rdos.length > 0}
+        hasTechnicians={hasTechnicians}
       />
 
       <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">

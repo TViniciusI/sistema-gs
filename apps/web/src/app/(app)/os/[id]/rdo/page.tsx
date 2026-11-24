@@ -6,6 +6,7 @@ import { RdoServiceReport } from "@/components/os/rdo-service-report";
 import { PageHeader } from "@/components/ui";
 import {
   campoAppUrl,
+  findDriveRdoForDate,
   getCampoOrder,
   listCampoOsDriveFiles,
   parseOsRdoMeta,
@@ -33,6 +34,9 @@ export default async function OsRdoPage({
     (rdoFilter
       ? rdos.find((r) => r.id === rdoFilter)
       : null) || rdos[0] || null;
+  const selectedPdf = selected
+    ? findDriveRdoForDate(drive.files, selected.date)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -96,6 +100,18 @@ export default async function OsRdoPage({
           selected
             ? `Relatório de Serviço · OS ${os.number}`
             : `RDO · OS GS ${os.number}`
+        }
+        extra={
+          selectedPdf ? (
+            <a
+              href={selectedPdf.url}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-xl border border-navy/15 bg-paper px-4 py-2.5 text-sm font-semibold text-navy hover:border-brass/40"
+            >
+              PDF oficial do dia ↗
+            </a>
+          ) : null
         }
       />
 

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
-import { saveCampoOrder } from "@/lib/campo-data";
+import { getCampoOrder, parseOsRdos, saveCampoOrder } from "@/lib/campo-data";
 
 const SERVICE_PRESETS: Record<string, string> = {
   manutencao: "Manutenção",
@@ -16,9 +16,87 @@ function clip(value: string, max = 240) {
   return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
 }
 
+function normalizeStatus(status: string) {
+  return status.trim().toLowerCase().replace(/\s+/g, "");
+}
+
 export type CreateOsState = {
   error?: string;
 };
+
+export type UpdateOsStatusResult = {
+  ok: boolean;
+  error?: string;
+  status?: string;
+};
+
+/** Mesmo ciclo do FieldStore: dispatch / encerrar serviço / encerrar OS / reativar. */
+export async function updateCampoOsStatus(input: {
+  osId: string;
+  intent: "dispatch" | "serviceDone" | "close" | "reopen";
+}): Promise<UpdateOsStatusResult> {
+  const profile = await getProfile();
+  if (!profile) {
+    return { ok: false, error: "Sessão expirada. Entre de novo." };
+  }
+
+  const osId = String(input.osId || "").trim();
+  if (!osId) return { ok: false, error: "OS sem id." };
+
+  const os = await getCampoOrder(osId);
+  if (!os) return { ok: false, error: "OS não encontrada." };
+
+  const current = normalizeStatus(os.status);
+  const hasRdos = parseOsRdos(os).length > 0;
+  const techEmails = String(os.raw.technicianEmails || os.raw.technicianEmail || "")
+    .split(/[,;|]/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  let nextStatus = "";
+  if (input.intent === "dispatch") {
+    if (current !== "rascunho") {
+      return { ok: false, error: "Só rascunho pode ser enviado ao técnico." };
+    }
+    if (techEmails.length === 0) {
+      return { ok: false, error: "Escolha pelo menos um técnico nesta OS." };
+    }
+    nextStatus = hasRdos ? "emAndamento" : "comTecnico";
+  } else if (input.intent === "serviceDone") {
+    if (!hasRdos) {
+      return {
+        ok: false,
+        error: "Salve pelo menos um RDO antes de encerrar o serviço.",
+      };
+    }
+    nextStatus = "servicoEncerrado";
+  } else if (input.intent === "close") {
+    nextStatus = "encerrada";
+  } else if (input.intent === "reopen") {
+    if (current !== "encerrada" && current !== "servicoencerrado") {
+      return {
+        ok: false,
+        error: "Esta OS já está aberta — não precisa reativar.",
+      };
+    }
+    nextStatus = hasRdos ? "emAndamento" : "comTecnico";
+  } else {
+    return { ok: false, error: "Ação inválida." };
+  }
+
+  const result = await saveCampoOrder({
+    id: os.id,
+    number: os.number,
+    status: nextStatus,
+    updatedAt: new Date().toISOString(),
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error || "Não foi possível salvar a OS." };
+  }
+
+  return { ok: true, status: nextStatus };
+}
 
 export async function createCampoOs(
   _prev: CreateOsState,

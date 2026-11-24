@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui";
 import {
   campoAppUrl,
   certificatesForOs,
+  findDriveCertForNumber,
   getCampoOrder,
   groupCertificatesByKind,
   kindLabel,
@@ -108,13 +109,16 @@ export default async function OsCertificadosPage({
           {activeGroup.items.map((row) => {
             const slot = row.slot;
             const href = `/os/${os.id}/certificados/${encodeURIComponent(slot.id)}`;
+            const pdf = findDriveCertForNumber(
+              driveListing.files,
+              slot.certificateNumber || row.job?.number || "",
+            );
             return (
-              <Link
+              <div
                 key={slot.id}
-                href={href}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-navy/10 bg-white px-4 py-4 transition hover:border-brass/40"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-navy/10 bg-white px-4 py-4"
               >
-                <div className="min-w-0">
+                <Link href={href} className="min-w-0 flex-1 hover:opacity-90">
                   <p className="font-serif text-xl text-navy">
                     {slot.certificateNumber || "Sem número"}
                   </p>
@@ -127,18 +131,30 @@ export default async function OsCertificadosPage({
                       .filter(Boolean)
                       .join(" · ") || kindLabel(slot.kind)}
                   </p>
+                </Link>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  {pdf ? (
+                    <a
+                      href={pdf.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg bg-navy px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-brass hover:bg-navy-2"
+                    >
+                      PDF Drive
+                    </a>
+                  ) : null}
+                  <span
+                    className={[
+                      "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                      row.hasCalibration
+                        ? "bg-ok/15 text-ok"
+                        : "bg-warn/15 text-warn",
+                    ].join(" ")}
+                  >
+                    {row.hasCalibration ? "Com calibração" : "Sem calibração"}
+                  </span>
                 </div>
-                <span
-                  className={[
-                    "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
-                    row.hasCalibration
-                      ? "bg-ok/15 text-ok"
-                      : "bg-warn/15 text-warn",
-                  ].join(" ")}
-                >
-                  {row.hasCalibration ? "Com calibração" : "Sem calibração"}
-                </span>
-              </Link>
+              </div>
             );
           })}
         </div>

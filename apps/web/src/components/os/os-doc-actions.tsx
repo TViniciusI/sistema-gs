@@ -37,20 +37,20 @@ export function OsDocActions({
   actions.push(
     {
       href: `/os/${osId}/certificados`,
-      label: "Gerar / ver certificados",
+      label: "Ver certificados / PDF Drive",
       tone: "primary",
       disabled: !hasSlots,
       hint: hasSlots ? undefined : "Sem slots de calibração nesta OS",
     },
     {
       href: `/os/${osId}/livro`,
-      label: "Gerar livro de certificados",
+      label: "Ver livro de certificados",
       tone: "ghost",
       disabled: !hasSlots,
     },
     {
       href: `/os/${osId}/rdo`,
-      label: "Gerar / imprimir RDO",
+      label: "Ver / imprimir RDO",
       tone: "ghost",
       disabled: !hasRdos,
       hint: hasRdos ? undefined : "Ainda sem RDO nesta OS",

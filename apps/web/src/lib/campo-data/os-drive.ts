@@ -141,28 +141,38 @@ export function driveFilesByKind(files: CampoOsDriveFile[]) {
   for (const file of files) {
     const path = `${file.folder}/${file.name}`.toLowerCase();
     const name = file.name.toLowerCase();
-    if (path.includes("/rdo") || path.startsWith("rdo") || name.startsWith("rdo_")) {
+    if (path.includes("/backup") || name.endsWith(".json")) {
+      other.push(file);
+      continue;
+    }
+    if (path.includes("/rdo") || path.startsWith("rdo/") || name.startsWith("rdo_")) {
       rdos.push(file);
     } else if (path.includes("etiqueta") || name.includes("adesivo")) {
       labels.push(file);
-    } else if (path.includes("/book") || name.includes("livro") || name.includes("book")) {
+    } else if (
+      path.includes("/book") ||
+      name.includes("livro") ||
+      name.startsWith("book_")
+    ) {
       books.push(file);
     } else if (
-      path.includes("certificado") ||
-      name.startsWith("gs-vol") ||
-      name.startsWith("gs-temp") ||
-      name.startsWith("gs-dens") ||
-      name.startsWith("gs-press") ||
-      name.startsWith("gs-cond") ||
-      name.startsWith("gs-tel")
+      name.startsWith("certificado_") ||
+      path.includes("certificados de calibração") ||
+      /gs-(vol|temp|dens|press|cond|tel)/i.test(name)
     ) {
       certificates.push(file);
-    } else if (path.includes("foto") || file.mimeType.startsWith("image/")) {
+    } else if (path.includes("/fotos") || file.mimeType.startsWith("image/")) {
       photos.push(file);
     } else {
       other.push(file);
     }
   }
+
+  const byName = (a: CampoOsDriveFile, b: CampoOsDriveFile) =>
+    a.name.localeCompare(b.name, "pt-BR");
+  rdos.sort(byName);
+  certificates.sort(byName);
+  books.sort(byName);
 
   return { rdos, certificates, books, labels, photos, other };
 }
@@ -173,11 +183,38 @@ export function findDriveCertForNumber(
 ) {
   const needle = text(certificateNumber).toLowerCase();
   if (!needle) return null;
-  const { certificates, books, other } = driveFilesByKind(files);
-  const pool = [...certificates, ...books, ...other];
+  const { certificates } = driveFilesByKind(files);
   return (
-    pool.find((f) => f.name.toLowerCase().includes(needle)) ||
-    pool.find((f) => f.path.toLowerCase().includes(needle)) ||
+    certificates.find((f) => f.name.toLowerCase().includes(needle)) ||
+    certificates.find((f) => f.path.toLowerCase().includes(needle)) ||
     null
   );
 }
+
+/** RDO_OS_046-26_221126.pdf → casa com data 22/11/2026. */
+export function findDriveRdoForDate(
+  files: CampoOsDriveFile[],
+  dateRaw: string,
+) {
+  const { rdos } = driveFilesByKind(files);
+  if (!rdos.length || !text(dateRaw)) return null;
+  const d = new Date(dateRaw);
+  if (Number.isNaN(d.getTime())) return null;
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const yy = String(d.getUTCFullYear()).slice(-2);
+  // App usa fuso local; tenta UTC e America/Sao_Paulo.
+  const local = new Date(
+    d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+  );
+  const ldd = String(local.getDate()).padStart(2, "0");
+  const lmm = String(local.getMonth() + 1).padStart(2, "0");
+  const lyy = String(local.getFullYear()).slice(-2);
+  const needles = [`_${dd}${mm}${yy}`, `_${ldd}${lmm}${lyy}`];
+  return (
+    rdos.find((f) =>
+      needles.some((n) => f.name.toLowerCase().includes(n.toLowerCase())),
+    ) || null
+  );
+}
+
