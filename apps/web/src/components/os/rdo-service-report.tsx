@@ -9,7 +9,7 @@ import {
   teamWithLead,
   type OsRdoLite,
   type OsRdoMeta,
-} from "@/lib/campo-data";
+} from "@/lib/campo-data/os-docs";
 
 function Field({ label, value }: { label: string; value?: string }) {
   return (

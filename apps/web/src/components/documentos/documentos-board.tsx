@@ -47,7 +47,15 @@ function signatureState(doc: DocumentoBoardItem) {
   return "sem_assinatura" as const;
 }
 
-export function DocumentosBoard({ docs }: { docs: DocumentoBoardItem[] }) {
+export function DocumentosBoard({
+  docs,
+  hideStaffEmail = false,
+  emptyLabel = "Nenhum documento neste filtro.",
+}: {
+  docs: DocumentoBoardItem[];
+  hideStaffEmail?: boolean;
+  emptyLabel?: string;
+}) {
   const pendingCount = docs.filter(
     (d) => signatureState(d) === "pendentes",
   ).length;
@@ -180,7 +188,7 @@ export function DocumentosBoard({ docs }: { docs: DocumentoBoardItem[] }) {
 
       {filtered.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-navy/15 bg-white px-4 py-14 text-center text-sm text-muted">
-          Nenhum documento neste filtro.
+          {emptyLabel}
         </div>
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -201,9 +209,11 @@ export function DocumentosBoard({ docs }: { docs: DocumentoBoardItem[] }) {
                     <h3 className="mt-1 font-serif text-xl text-navy">
                       {doc.name}
                     </h3>
-                    <p className="mt-1 text-sm text-navy/55">
-                      {doc.staffEmail || "Colaborador —"}
-                    </p>
+                    {hideStaffEmail ? null : (
+                      <p className="mt-1 text-sm text-navy/55">
+                        {doc.staffEmail || "Colaborador —"}
+                      </p>
+                    )}
                     <p className="mt-1 text-xs text-navy/40">
                       Criado {formatDatePt(doc.createdAt)}
                       {doc.signedAt

@@ -72,7 +72,7 @@ export default async function EquipePage({
       <PageHeader
         eyebrow="Cadastros"
         title="Funcionários"
-        description="Acessos, ativos/inativos e banco de horas dos técnicos de campo — mesma planilha do GS Campo."
+        description="Abra a ficha de cada pessoa para anexar holerites, fotos e registros. O funcionário assina em Documentos RH com o login dele."
         action={
           tab !== "horas" ? (
             <Link

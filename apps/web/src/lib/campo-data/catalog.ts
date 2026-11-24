@@ -365,34 +365,111 @@ export async function signCampoStaffDoc(input: {
   return { ok: true };
 }
 
-export async function listCampoStaffDocs(): Promise<CampoStaffDoc[]> {
-  const payload = await gateGet(
-    { action: "liststaffdocs" },
-    { withToken: true },
-  );
+function parseStaffDoc(raw: unknown): CampoStaffDoc | null {
+  if (!raw || typeof raw !== "object") return null;
+  const d = raw as Record<string, unknown>;
+  const id = text(d.id);
+  if (!id) return null;
+  return {
+    id,
+    staffEmail: text(d.staffEmail).toLowerCase(),
+    name: text(d.name) || id,
+    kind: text(d.kind),
+    createdAt: text(d.createdAt),
+    requiresSignature:
+      d.requiresSignature === true ||
+      String(d.requiresSignature || "").toLowerCase() === "sim",
+    signedAt: text(d.signedAt),
+    signedBy: text(d.signedBy),
+    path: text(d.path) || text(d.fileId),
+    raw: d,
+  };
+}
+
+export async function listCampoStaffDocs(
+  staffEmail?: string,
+): Promise<CampoStaffDoc[]> {
+  const email = text(staffEmail).toLowerCase();
+  const params: Record<string, string> = { action: "liststaffdocs" };
+  if (email) params.staffEmail = email;
+  const payload = await gateGet(params, {
+    withToken: true,
+    timeoutMs: 45_000,
+  });
   if (!payload || payload.ok !== true) return [];
   const list = Array.isArray(payload.docs) ? payload.docs : [];
   return list
-    .map((raw) => {
-      if (!raw || typeof raw !== "object") return null;
-      const d = raw as Record<string, unknown>;
-      const id = text(d.id);
-      if (!id) return null;
-      return {
-        id,
-        staffEmail: text(d.staffEmail).toLowerCase(),
-        name: text(d.name) || id,
-        kind: text(d.kind),
-        createdAt: text(d.createdAt),
-        requiresSignature: d.requiresSignature === true,
-        signedAt: text(d.signedAt),
-        signedBy: text(d.signedBy),
-        path: text(d.path),
-        raw: d,
-      } satisfies CampoStaffDoc;
-    })
+    .map(parseStaffDoc)
     .filter(Boolean)
     .sort((a, b) =>
       (b!.createdAt || "").localeCompare(a!.createdAt || ""),
     ) as CampoStaffDoc[];
+}
+
+function guessMime(fileName: string) {
+  const n = fileName.toLowerCase();
+  if (n.endsWith(".pdf")) return "application/pdf";
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".heic")) return "image/heic";
+  return "application/octet-stream";
+}
+
+/** Anexa holerite / foto / registro no mesmo fluxo do GS Campo (`savestaffdoc`). */
+export async function saveCampoStaffDoc(input: {
+  id?: string;
+  staffEmail: string;
+  name: string;
+  kind?: string;
+  requiresSignature?: boolean;
+  mime?: string;
+  /** Base64 sem prefixo data: */
+  data: string;
+}): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const staffEmail = text(input.staffEmail).toLowerCase();
+  const name = text(input.name);
+  const data = text(input.data);
+  if (!staffEmail) return { ok: false, error: "Informe o e-mail do funcionário." };
+  if (!name) return { ok: false, error: "Informe o nome do arquivo." };
+  if (!data) return { ok: false, error: "Arquivo vazio." };
+  const id = text(input.id) || `staffdoc-${Date.now()}`;
+  const kind = text(input.kind) || "anexo";
+  const payload = await gatePost(
+    {
+      action: "savestaffdoc",
+      id,
+      staffEmail,
+      name,
+      kind,
+      requiresSignature: input.requiresSignature ? "sim" : "nao",
+      createdAt: new Date().toISOString(),
+      mime: text(input.mime) || guessMime(name),
+      data,
+    },
+    { timeoutMs: 120_000 },
+  );
+  if (!payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload?.error || "Falha ao enviar documento RH."),
+    };
+  }
+  return { ok: true, id: text(payload.id) || id };
+}
+
+export async function deleteCampoStaffDoc(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const payload = await gatePost(
+    { action: "deletestaffdoc", id: text(id) },
+    { timeoutMs: 45_000 },
+  );
+  if (!payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload?.error || "Falha ao apagar documento."),
+    };
+  }
+  return { ok: true };
 }

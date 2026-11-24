@@ -6,7 +6,7 @@ import {
   driveFileKindLabel,
   type CampoOsDriveFile,
   type DriveFileKind,
-} from "@/lib/campo-data";
+} from "@/lib/campo-data/os-drive-ui";
 
 const KIND_TONE: Record<DriveFileKind, string> = {
   rdo: "from-[#1a3a5c] to-[#0c1f33]",

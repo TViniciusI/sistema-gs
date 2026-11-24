@@ -8,7 +8,7 @@ import { CnpjField } from "@/components/cnpj-field";
 import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
 import { CLIENT_ASSEMBLY_KINDS } from "@/lib/campo-data/labels";
 import { createClienteAction } from "@/app/(app)/clientes/actions";
-import type { CampoClientSystemInput } from "@/lib/campo-data";
+import type { CampoClientSystemInput } from "@/lib/campo-data/clients";
 
 type SystemDraft = CampoClientSystemInput;
 

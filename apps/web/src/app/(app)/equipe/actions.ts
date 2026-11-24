@@ -32,12 +32,25 @@ export async function decideEquipeUser(input: {
   if (!email && !input.login) {
     return { ok: false, error: "Usuário sem e-mail/login." };
   }
-  return decideCampoUser({
+  const decided = await decideCampoUser({
     email,
     login: input.login,
     status: input.status,
     role: input.role,
   });
+  if (!decided.ok) return decided;
+  // Libera "Meus documentos" / Documentos RH no app e no escritório.
+  if (input.status === "aprovado") {
+    const role = (input.role || "tecnico").toLowerCase();
+    if (role === "tecnico" || role === "campo") {
+      await setCampoUserPermissions({
+        email,
+        login: input.login,
+        permissions: "tecnico,documentos",
+      });
+    }
+  }
+  return { ok: true };
 }
 
 export async function updateEquipeUser(input: {

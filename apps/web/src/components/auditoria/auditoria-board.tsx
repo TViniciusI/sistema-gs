@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { CampoAuditEntry } from "@/lib/campo-data";
+import type { CampoAuditEntry } from "@/lib/campo-data/audit-format";
 import {
   actionLabel,
   entityLabel,
   formatAuditActor,
-} from "@/lib/campo-data";
+} from "@/lib/campo-data/audit-format";
 import { StatusPill } from "@/components/ui";
 
 type EntityFilter = "todos" | string;

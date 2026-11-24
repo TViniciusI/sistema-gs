@@ -11,6 +11,9 @@ export async function signDocumentoAction(id: string) {
     id,
     signedBy: profile.full_name || profile.email || profile.login || "escritorio",
   });
-  if (result.ok) revalidatePath("/documentos");
+  if (result.ok) {
+    revalidatePath("/documentos");
+    revalidatePath("/equipe");
+  }
   return result;
 }

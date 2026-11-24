@@ -5,7 +5,7 @@ import {
   driveFileKindLabel,
   type CampoOsDriveFile,
   type DriveFileKind,
-} from "@/lib/campo-data";
+} from "@/lib/campo-data/os-drive-ui";
 import { DriveFileCard } from "./drive-file-card";
 
 export type ArquivoGalleryItem = {

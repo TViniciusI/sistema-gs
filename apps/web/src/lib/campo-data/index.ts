@@ -56,8 +56,6 @@ export {
   setCampoUserRole,
   updateCampoProfile,
 } from "./users";
-export { bumpCampoCache, CAMPO_TAGS } from "./cache";
-export type { CampoCacheTag } from "./cache";
 export {
   summarizeCalibrationResults,
   buildCalibrationWorkbench,
@@ -131,11 +129,13 @@ export {
   getCampoCalibration,
   listCampoCalibrations,
   listCampoFluids,
+  deleteCampoStaffDoc,
   listCampoStaffDocs,
   listCampoStandards,
   newCalibrationId,
   saveCampoCalibration,
   saveCampoFluid,
+  saveCampoStaffDoc,
   saveCampoStandard,
   signCampoStaffDoc,
 } from "./catalog";

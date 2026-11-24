@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { kindLabel } from "@/lib/campo-data";
+import { kindLabel } from "@/lib/campo-data/kind-labels";
 
 export type OsCertRow = {
   slotId: string;

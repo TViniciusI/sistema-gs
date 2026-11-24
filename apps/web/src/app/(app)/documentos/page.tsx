@@ -29,8 +29,10 @@ export default async function DocumentosPage() {
         title="Documentos RH"
         description={
           pending > 0
-            ? `${pending} pendente(s) de assinatura — holerites e anexos da mesma planilha do GS Campo.`
-            : "Holerites, anexos e assinatura — mesmos documentos do app."
+            ? `${pending} pendente(s) de assinatura — entre com o seu login e use Assinar nos cards.`
+            : isOffice
+              ? "Holerites e anexos — anexe na ficha do funcionário em Funcionários."
+              : "Seus holerites e documentos — assine os pendentes com o mesmo login do GS Campo."
         }
       />
       <DocumentosBoard

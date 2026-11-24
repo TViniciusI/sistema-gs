@@ -5,28 +5,30 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { saveCalibracaoAction } from "@/app/(app)/calibracao/actions";
 import {
-  buildCalibrationWorkbench,
   CALIBRATION_KINDS,
-  correctedMeterFactor,
   defaultMeasurementUnit,
   defaultWorkingPrinciple,
-  formatCalibNumber,
-  formatPercent,
   isGenericKind,
   isTelemetryKind,
   isTemperatureFamily,
   isVolumetricKind,
-  meanOf,
-  meterFactor,
   normalizeCalibrationKind,
-  parseCalibNumber,
   pointsSectionHint,
   pointsSectionTitle,
-  repeatabilityPercent,
   suggestedMeasurementUnits,
+} from "@/lib/campo-data/calibration-kinds";
+import {
+  correctedMeterFactor,
+  formatCalibNumber,
+  formatPercent,
+  meanOf,
+  meterFactor,
+  parseCalibNumber,
+  repeatabilityPercent,
   volumetricErrorPercent,
-} from "@/lib/campo-data";
-import type { CampoStandard } from "@/lib/campo-data";
+} from "@/lib/campo-data/calibration-math";
+import { buildCalibrationWorkbench } from "@/lib/campo-data/calib-results";
+import type { CampoStandard } from "@/lib/campo-data/catalog";
 
 const inputClass =
   "mt-1 w-full rounded-xl border border-navy/15 bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brass";

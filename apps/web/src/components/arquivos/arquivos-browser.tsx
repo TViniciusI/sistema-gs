@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   driveFileKindLabel,
   type DriveFileKind,
-} from "@/lib/campo-data";
+} from "@/lib/campo-data/os-drive-ui";
 import { DriveFileCard } from "./drive-file-card";
 import type { ArquivoGalleryItem } from "./arquivos-gallery";
 

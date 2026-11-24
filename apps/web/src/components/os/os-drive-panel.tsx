@@ -1,12 +1,12 @@
 import Link from "next/link";
+import { CAMPO_DRIVE_ROOT_URL } from "@/lib/campo-data/drive-os-folders";
 import {
-  CAMPO_DRIVE_ROOT_URL,
   classifyDriveFile,
   driveFileKindLabel,
   driveFilesByKind,
   type CampoOsDriveListing,
   type DriveFileKind,
-} from "@/lib/campo-data";
+} from "@/lib/campo-data/os-drive-ui";
 
 type CountRow = { kind: DriveFileKind; count: number };
 

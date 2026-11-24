@@ -1,4 +1,4 @@
-import { formatChangeMeta } from "@/lib/campo-data";
+import { formatChangeMeta } from "@/lib/campo-data/audit-format";
 
 export function ChangeMeta({
   raw,
