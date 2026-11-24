@@ -221,17 +221,17 @@ export function driveFileKindLabel(kind: DriveFileKind) {
   return map[kind];
 }
 
-/** Capa / preview do Drive (PDF e imagens). */
+/** Capa / preview do Drive. PDFs costumam falhar sem sessão Google → só tenta em imagens. */
 export function driveFileCoverUrl(file: CampoOsDriveFile) {
   const id = text(file.id);
   if (!id) return "";
-  if (file.mimeType.startsWith("image/")) {
-    return (
-      text(file.url) ||
-      `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w640`
-    );
+  const mime = text(file.mimeType).toLowerCase();
+  if (mime.startsWith("image/")) {
+    return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w640`;
   }
-  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w640`;
+  // PDF/Office: thumbnail do Drive costuma quebrar no escritório (ícone quebrado).
+  // O card usa o gradiente tipográfico como capa.
+  return "";
 }
 
 export function findDriveCertForNumber(

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   driveFileKindLabel,
   type DriveFileKind,
@@ -33,6 +34,15 @@ const KIND_FILTERS: Array<{ key: "all" | DriveFileKind; label: string }> = [
 const PAGE_SIZE = 12;
 const OS_PAGE_SIZE = 6;
 
+const KIND_KEYS = new Set(KIND_FILTERS.map((f) => f.key));
+
+function parseKind(raw: string | null): "all" | DriveFileKind {
+  if (raw && KIND_KEYS.has(raw as "all" | DriveFileKind)) {
+    return raw as "all" | DriveFileKind;
+  }
+  return "all";
+}
+
 export function ArquivosBrowser({
   driveEmail,
   driveRootUrl,
@@ -42,18 +52,37 @@ export function ArquivosBrowser({
   driveRootUrl: string;
   bundles: ArquivoOsBundle[];
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const withFiles = bundles.filter((b) => b.items.length > 0);
-  const initial =
+  const fallbackOsId =
     withFiles.find((b) => b.open)?.osId ||
     withFiles[0]?.osId ||
     bundles[0]?.osId ||
     "";
 
-  const [osId, setOsId] = useState(initial);
-  const [kind, setKind] = useState<"all" | DriveFileKind>("all");
+  const paramOs = searchParams.get("os") || "";
+  const osFromParam = bundles.some((b) => b.osId === paramOs)
+    ? paramOs
+    : bundles.some((b) => b.osNumber === paramOs)
+      ? bundles.find((b) => b.osNumber === paramOs)!.osId
+      : "";
+
+  const [osId, setOsId] = useState(osFromParam || fallbackOsId);
+  const [kind, setKind] = useState<"all" | DriveFileKind>(() =>
+    parseKind(searchParams.get("kind")),
+  );
   const [showClosed, setShowClosed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [osVisibleCount, setOsVisibleCount] = useState(OS_PAGE_SIZE);
+
+  useEffect(() => {
+    if (osFromParam && osFromParam !== osId) setOsId(osFromParam);
+    const nextKind = parseKind(searchParams.get("kind"));
+    setKind((prev) => (prev === nextKind ? prev : nextKind));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync from URL only
+  }, [osFromParam, searchParams]);
 
   const osList = useMemo(() => {
     const open = bundles.filter((b) => b.open);
@@ -61,13 +90,16 @@ export function ArquivosBrowser({
     return showClosed ? [...open, ...closed] : open.length ? open : bundles;
   }, [bundles, showClosed]);
 
-  const shownOs = osList.slice(0, osVisibleCount);
+  const shownOs = useMemo(() => {
+    const slice = osList.slice(0, osVisibleCount);
+    if (osId && !slice.some((b) => b.osId === osId)) {
+      const missing = osList.find((b) => b.osId === osId);
+      if (missing) return [missing, ...slice].slice(0, osVisibleCount + 1);
+    }
+    return slice;
+  }, [osList, osVisibleCount, osId]);
 
-  const selected =
-    bundles.find((b) => b.osId === osId) ||
-    shownOs[0] ||
-    bundles[0] ||
-    null;
+  const selected = bundles.find((b) => b.osId === osId) || null;
 
   const kindCounts = useMemo(() => {
     const map: Record<string, number> = { all: selected?.items.length || 0 };
@@ -86,10 +118,25 @@ export function ArquivosBrowser({
 
   const shown = filtered.slice(0, visibleCount);
 
+  function writeQuery(nextOs: string, nextKind: "all" | DriveFileKind) {
+    const params = new URLSearchParams();
+    if (nextOs) params.set("os", nextOs);
+    if (nextKind !== "all") params.set("kind", nextKind);
+    const qs = params.toString();
+    router.replace(qs ? `/arquivos?${qs}` : "/arquivos", { scroll: false });
+  }
+
   function pickOs(id: string) {
     setOsId(id);
     setKind("all");
     setVisibleCount(PAGE_SIZE);
+    writeQuery(id, "all");
+  }
+
+  function pickKind(next: "all" | DriveFileKind) {
+    setKind(next);
+    setVisibleCount(PAGE_SIZE);
+    writeQuery(osId, next);
   }
 
   return (
@@ -147,6 +194,7 @@ export function ArquivosBrowser({
                     type="button"
                     onClick={() => pickOs(bundle.osId)}
                     title={bundle.clientName || undefined}
+                    aria-pressed={active}
                     className={[
                       "rounded-2xl px-3.5 py-2.5 text-left transition",
                       active
@@ -241,10 +289,8 @@ export function ArquivosBrowser({
                 <button
                   key={chip.key}
                   type="button"
-                  onClick={() => {
-                    setKind(chip.key);
-                    setVisibleCount(PAGE_SIZE);
-                  }}
+                  aria-pressed={active}
+                  onClick={() => pickKind(chip.key)}
                   className={[
                     "rounded-xl px-3 py-2 text-sm font-medium transition",
                     active

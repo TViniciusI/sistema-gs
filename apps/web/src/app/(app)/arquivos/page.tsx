@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ArquivosBrowser } from "@/components/arquivos/arquivos-browser";
 import type { ArquivoOsBundle } from "@/components/arquivos/arquivos-browser";
 import type { ArquivoGalleryItem } from "@/components/arquivos/arquivos-gallery";
@@ -127,11 +128,19 @@ export default async function ArquivosPage() {
         title="Arquivos / Drive"
         description="Escolha a OS no topo e veja RDO, certificados e fotos com capa — sem sidebar nem pastas soltas."
       />
-      <ArquivosBrowser
-        driveEmail={drive.ownerEmail || ""}
-        driveRootUrl={drive.folderUrl || CAMPO_DRIVE_ROOT_URL}
-        bundles={bundles}
-      />
+      <Suspense
+        fallback={
+          <p className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
+            Carregando arquivos…
+          </p>
+        }
+      >
+        <ArquivosBrowser
+          driveEmail={drive.ownerEmail || ""}
+          driveRootUrl={drive.folderUrl || CAMPO_DRIVE_ROOT_URL}
+          bundles={bundles}
+        />
+      </Suspense>
     </div>
   );
 }
