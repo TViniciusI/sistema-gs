@@ -1,4 +1,4 @@
-import { gateGet } from "./gate";
+import { gateGet, gatePost } from "./gate";
 
 export type CampoCalibration = {
   id: string;
@@ -153,6 +153,130 @@ export async function listCampoFluids(): Promise<CampoFluid[]> {
       } satisfies CampoFluid;
     })
     .filter(Boolean) as CampoFluid[];
+}
+
+export async function saveCampoStandard(fields: {
+  id?: string;
+  name: string;
+  type?: string;
+  serial?: string;
+  certificate?: string;
+  validity?: string;
+  uncertainty?: string;
+  coverageK?: string;
+}): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const id = text(fields.id) || `std-${Date.now()}`;
+  const payload = await gatePost(
+    {
+      action: "savestandard",
+      id,
+      name: text(fields.name),
+      type: text(fields.type) || "Outro",
+      serial: text(fields.serial),
+      certificate: text(fields.certificate),
+      validity: text(fields.validity),
+      uncertainty: text(fields.uncertainty),
+      coverageK: text(fields.coverageK),
+      updatedAt: new Date().toISOString(),
+    },
+    { timeoutMs: 60_000 },
+  );
+  if (!payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload?.error || "Falha ao salvar padrão."),
+    };
+  }
+  return { ok: true, id };
+}
+
+export async function deleteCampoStandard(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const payload = await gatePost(
+    { action: "deletestandard", id: text(id) },
+    { timeoutMs: 45_000 },
+  );
+  if (!payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload?.error || "Falha ao apagar padrão."),
+    };
+  }
+  return { ok: true };
+}
+
+export async function saveCampoFluid(fields: {
+  id?: string;
+  name: string;
+  densityMin?: string;
+  densityMax?: string;
+  viscosityMin?: string;
+  viscosityMax?: string;
+  densityRefTemp?: string;
+  viscosityRefTemp?: string;
+}): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const id = text(fields.id) || `fluid-${Date.now()}`;
+  const payload = await gatePost(
+    {
+      action: "savefluid",
+      id,
+      name: text(fields.name),
+      densityMin: text(fields.densityMin),
+      densityMax: text(fields.densityMax),
+      viscosityMin: text(fields.viscosityMin),
+      viscosityMax: text(fields.viscosityMax),
+      densityRefTemp: text(fields.densityRefTemp) || "20 °C",
+      viscosityRefTemp: text(fields.viscosityRefTemp) || "40 °C",
+      updatedAt: new Date().toISOString(),
+    },
+    { timeoutMs: 60_000 },
+  );
+  if (!payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload?.error || "Falha ao salvar fluido."),
+    };
+  }
+  return { ok: true, id };
+}
+
+export async function deleteCampoFluid(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const payload = await gatePost(
+    { action: "deletefluid", id: text(id) },
+    { timeoutMs: 45_000 },
+  );
+  if (!payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload?.error || "Falha ao apagar fluido."),
+    };
+  }
+  return { ok: true };
+}
+
+export async function signCampoStaffDoc(input: {
+  id: string;
+  signedBy: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const payload = await gatePost(
+    {
+      action: "signstaffdoc",
+      id: text(input.id),
+      signedBy: text(input.signedBy),
+      signedAt: new Date().toISOString(),
+    },
+    { timeoutMs: 60_000 },
+  );
+  if (!payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: String(payload?.error || "Falha ao assinar documento."),
+    };
+  }
+  return { ok: true };
 }
 
 export async function listCampoStaffDocs(): Promise<CampoStaffDoc[]> {

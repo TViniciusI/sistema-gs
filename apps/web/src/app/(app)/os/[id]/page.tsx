@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OsDocActions } from "@/components/os/os-doc-actions";
+import { OsMailForm } from "@/components/os/os-mail-form";
 import { OsStatusActions } from "@/components/os/os-status-actions";
-import { PageHeader, StatusPill } from "@/components/ui";
+import { PageHeader, Panel, StatusPill } from "@/components/ui";
 import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import {
   campoAppUrl,
   certificatesForOs,
+  driveFilesByKind,
   getCampoDriveStatus,
   getCampoOrder,
   groupCertificatesByKind,
@@ -72,6 +74,12 @@ export default async function OsDetailPage({
               label={campoOsStatusLabel(os.status)}
               tone={campoOsStatusTone(os.status)}
             />
+            <Link
+              href={`/os/${os.id}/editar`}
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Editar
+            </Link>
             <Link
               href={`/os/${os.id}/documentos`}
               className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
@@ -201,6 +209,36 @@ export default async function OsDetailPage({
           )}
         </section>
       </div>
+
+      <Panel>
+        <h2 className="mb-1 font-serif text-xl text-navy">Enviar por e-mail</h2>
+        <p className="mb-4 text-sm text-navy/60">
+          Mesmo <code className="text-xs">sendmail</code> do app — corpo com
+          links dos PDFs oficiais no Drive (sem reanexar base64).
+        </p>
+        <OsMailForm
+          osId={os.id}
+          osNumber={os.number}
+          defaultBody={(() => {
+            const groups = driveFilesByKind(driveListing.files);
+            const lines = [
+              `Documentos da OS GS ${os.number} — ${os.clientName || ""}.`,
+              "",
+              driveListing.folderUrl
+                ? `Pasta da OS: ${driveListing.folderUrl}`
+                : "",
+              ...groups.rdos.map((f) => `RDO: ${f.name}\n${f.url}`),
+              ...groups.certificates
+                .slice(0, 20)
+                .map((f) => `Certificado: ${f.name}\n${f.url}`),
+              ...groups.books.map((f) => `Book: ${f.name}\n${f.url}`),
+              "",
+              "GS Soluções Técnicas",
+            ].filter(Boolean);
+            return lines.join("\n");
+          })()}
+        />
+      </Panel>
     </div>
   );
 }

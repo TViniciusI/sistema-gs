@@ -5,6 +5,7 @@ import { PageHeader, Panel } from "@/components/ui";
 import { getCampoClient } from "@/lib/campo-data";
 import { kindLabel } from "@/lib/campo-data/labels";
 import { DeleteSystemButton } from "../delete-system-button";
+import { ClientEditForm } from "./edit-form";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,19 @@ function systemMeta(system: {
     parts.push(`${system.densimeterCount} densímetro(s)`);
   }
   return parts.join(" · ");
+}
+
+function instrumentsForSystem(
+  equipment: unknown[],
+  systemId: string,
+  systemInstruments: unknown[] | undefined,
+) {
+  const fromSystem = Array.isArray(systemInstruments) ? systemInstruments : [];
+  const fromEquipment = equipment.filter((item) => {
+    if (!item || typeof item !== "object") return false;
+    return String((item as Record<string, unknown>).systemId ?? "") === systemId;
+  });
+  return [...fromSystem, ...fromEquipment];
 }
 
 export default async function ClienteDetailPage({
@@ -75,51 +89,72 @@ export default async function ClienteDetailPage({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
-        <Panel>
-          <h2 className="mb-3 font-serif text-lg text-navy">Dados</h2>
-          <dl className="space-y-3 text-sm">
-            <div>
-              <dt className="text-muted">CNPJ</dt>
-              <dd>{client.cnpj ? formatCnpj(client.cnpj) : "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Solicitante</dt>
-              <dd>{client.requester || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Cidade</dt>
-              <dd>
-                {[client.city, client.state].filter(Boolean).join("/") || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">Responsável da base</dt>
-              <dd>
-                {client.baseName || "—"}
-                {client.baseCargo ? ` · ${client.baseCargo}` : ""}
-                <br />
-                {[client.basePhone, client.baseEmail].filter(Boolean).join(" · ") ||
-                  null}
-              </dd>
-            </div>
-            {client.sites.length > 0 ? (
+        <div className="space-y-4">
+          <Panel>
+            <h2 className="mb-3 font-serif text-lg text-navy">Dados</h2>
+            <dl className="space-y-3 text-sm">
               <div>
-                <dt className="text-muted">Bases / sites</dt>
-                <dd>{client.sites.join(", ")}</dd>
+                <dt className="text-muted">CNPJ</dt>
+                <dd>{client.cnpj ? formatCnpj(client.cnpj) : "—"}</dd>
               </div>
-            ) : null}
-          </dl>
-        </Panel>
+              <div>
+                <dt className="text-muted">Solicitante</dt>
+                <dd>{client.requester || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Cidade</dt>
+                <dd>
+                  {[client.city, client.state].filter(Boolean).join("/") || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">Responsável da base</dt>
+                <dd>
+                  {client.baseName || "—"}
+                  {client.baseCargo ? ` · ${client.baseCargo}` : ""}
+                  <br />
+                  {[client.basePhone, client.baseEmail]
+                    .filter(Boolean)
+                    .join(" · ") || null}
+                </dd>
+              </div>
+              {client.sites.length > 0 ? (
+                <div>
+                  <dt className="text-muted">Bases / sites</dt>
+                  <dd>{client.sites.join(", ")}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </Panel>
+
+          <Panel>
+            <h2 className="mb-3 font-serif text-lg text-navy">Editar cadastro</h2>
+            <ClientEditForm
+              clientId={client.id}
+              defaults={{
+                name: client.name,
+                requester: client.requester,
+                city: client.city,
+                state: client.state,
+                baseName: client.baseName,
+                baseCargo: client.baseCargo,
+                baseEmail: client.baseEmail,
+                basePhone: client.basePhone,
+                sites: client.sites.join("|"),
+              }}
+            />
+          </Panel>
+        </div>
 
         <div className="space-y-4">
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="font-serif text-lg text-navy">
-                Sistemas e equipamentos
+                Sistemas e instrumentos
               </h2>
               <p className="mt-1 text-sm text-muted">
-                Fonte da verdade da planilha — exclusões aqui atualizam o GS Campo
-                após o sync do aparelho.
+                Fonte da verdade da planilha — exclusões aqui atualizam o GS
+                Campo após o sync do aparelho.
               </p>
             </div>
             <p className="text-sm text-navy/50">
@@ -131,9 +166,7 @@ export default async function ClienteDetailPage({
             <Panel>
               <p className="text-sm text-muted">
                 Nenhum sistema neste cliente
-                {client.payloadLight
-                  ? " (resumo incompleto no Drive)."
-                  : "."}
+                {client.payloadLight ? " (resumo incompleto no Drive)." : "."}
               </p>
             </Panel>
           ) : (
@@ -151,6 +184,11 @@ export default async function ClienteDetailPage({
                   ]
                     .filter(Boolean)
                     .join(" · ");
+                  const instruments = instrumentsForSystem(
+                    Array.isArray(client.equipment) ? client.equipment : [],
+                    system.id,
+                    system.instruments,
+                  );
                   return (
                     <article
                       key={system.id}
@@ -168,6 +206,32 @@ export default async function ClienteDetailPage({
                           <p className="mt-1 text-sm leading-6 text-navy/70">
                             {systemMeta(system) || "Sem detalhes cadastrados."}
                           </p>
+                          {instruments.length > 0 ? (
+                            <ul className="mt-3 space-y-1.5 border-t border-navy/8 pt-3 text-sm text-navy/75">
+                              {instruments.map((raw, index) => {
+                                const item =
+                                  raw && typeof raw === "object"
+                                    ? (raw as Record<string, unknown>)
+                                    : {};
+                                const tag = String(
+                                  item.tag || item.equipmentTag || "",
+                                );
+                                const serial = String(
+                                  item.serialNumber || item.serial || "",
+                                );
+                                const kind = String(
+                                  item.kind || item.equipmentType || "",
+                                );
+                                return (
+                                  <li key={`${system.id}-eq-${index}`}>
+                                    {[kind, tag && `TAG ${tag}`, serial && `N/S ${serial}`]
+                                      .filter(Boolean)
+                                      .join(" · ") || "Instrumento"}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : null}
                         </div>
                         <DeleteSystemButton
                           clientId={client.id}

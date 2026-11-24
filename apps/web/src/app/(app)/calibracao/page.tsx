@@ -13,6 +13,14 @@ export default async function CalibracaoPage() {
         eyebrow="Qualidade"
         title="Calibração"
         description="Mesmos trabalhos de calibração gravados pelo GS Campo."
+        action={
+          <Link
+            href="/calibracao/revisao"
+            className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
+          >
+            Revisão de cadastro
+          </Link>
+        }
       />
       <DataTable
         headers={["Nº", "Cliente", "Equipamento", "Tipo", "Atualizado", "Status"]}

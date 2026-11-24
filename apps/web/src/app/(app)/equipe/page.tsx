@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UserDecideActions } from "@/components/equipe/user-decide-actions";
+import { UserAdminControls } from "@/components/equipe/user-admin-controls";
 import { DataTable, PageHeader, StatusPill } from "@/components/ui";
 import { getProfile } from "@/lib/auth";
 import { listCampoUsers } from "@/lib/campo-data";
@@ -12,7 +12,7 @@ export default async function EquipePage() {
     listCampoUsers(),
     getProfile(),
   ]);
-  const canDecide =
+  const canAdmin =
     profile?.role === "admin" || profile?.role === "office";
   const pending = users.filter(
     (u) => u.status.trim().toLowerCase() === "pendente",
@@ -25,7 +25,7 @@ export default async function EquipePage() {
         title="Funcionários e acessos"
         description={
           pending > 0
-            ? `${pending} pendente(s) de aprovação — mesmos usuários do GS Campo.`
+            ? `${pending} pendente(s) — papel, ativo, cargo e permissões como no app.`
             : "Mesmos usuários do GS Campo — aprovação, papel e módulos."
         }
         action={
@@ -39,8 +39,8 @@ export default async function EquipePage() {
       />
       <DataTable
         headers={
-          canDecide
-            ? ["Nome", "Login", "Papel", "Status", "Ativo", "Ação"]
+          canAdmin
+            ? ["Nome", "Login", "Papel", "Status", "Ativo", "Gestão"]
             : ["Nome", "Login", "Papel", "Status", "Ativo"]
         }
         empty="Não foi possível carregar os usuários (token/planilha)."
@@ -49,6 +49,9 @@ export default async function EquipePage() {
             <div key={user.login}>
               <div className="font-medium text-navy">{user.name}</div>
               <div className="text-xs text-muted">{user.email}</div>
+              {user.cargo ? (
+                <div className="text-xs text-navy/45">{user.cargo}</div>
+              ) : null}
             </div>,
             user.login || "—",
             campoRoleLabel(user.role),
@@ -65,14 +68,18 @@ export default async function EquipePage() {
             />,
             user.active ? "Sim" : "Não",
           ];
-          if (!canDecide) return base;
+          if (!canAdmin) return base;
           return [
             ...base,
-            <UserDecideActions
-              key={`${user.login}-act`}
+            <UserAdminControls
+              key={`${user.login}-admin`}
               email={user.email}
               login={user.login}
               status={user.status}
+              role={user.role}
+              active={user.active}
+              permissions={user.permissions}
+              cargo={user.cargo}
             />,
           ];
         })}

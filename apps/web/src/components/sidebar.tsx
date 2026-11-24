@@ -26,6 +26,11 @@ const GROUPS = [
     label: "Qualidade",
     items: [
       { href: "/calibracao", label: "Calibração", icon: Icons.wrench },
+      {
+        href: "/calibracao/revisao",
+        label: "Revisão cadastro",
+        icon: Icons.shield,
+      },
       { href: "/certificados", label: "Certificados", icon: Icons.shield },
       { href: "/padroes", label: "Padrões", icon: Icons.shield },
       { href: "/fluidos", label: "Fluidos", icon: Icons.wrench },

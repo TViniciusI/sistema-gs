@@ -1,3 +1,4 @@
+import { SignDocButton } from "@/components/documentos/sign-doc-button";
 import { DataTable, PageHeader, StatusPill } from "@/components/ui";
 import { getProfile } from "@/lib/auth";
 import { listCampoStaffDocs } from "@/lib/campo-data";
@@ -41,6 +42,7 @@ export default async function DocumentosPage() {
         empty="Nenhum documento encontrado."
         rows={visible.map((doc) => {
           const url = staffDocDriveUrl(doc.path);
+          const canSign = doc.requiresSignature && !doc.signedAt;
           return [
             doc.name,
             doc.staffEmail || "—",
@@ -50,23 +52,25 @@ export default async function DocumentosPage() {
                   timeZone: "America/Sao_Paulo",
                 })
               : "—",
-            <StatusPill
-              key={doc.id}
-              label={
-                doc.signedAt
-                  ? "Assinado"
-                  : doc.requiresSignature
-                    ? "Pendente"
-                    : "—"
-              }
-              tone={
-                doc.signedAt
-                  ? "ok"
-                  : doc.requiresSignature
-                    ? "warn"
-                    : "neutral"
-              }
-            />,
+            <div key={`${doc.id}-sig`} className="flex items-center gap-2">
+              <StatusPill
+                label={
+                  doc.signedAt
+                    ? "Assinado"
+                    : doc.requiresSignature
+                      ? "Pendente"
+                      : "—"
+                }
+                tone={
+                  doc.signedAt
+                    ? "ok"
+                    : doc.requiresSignature
+                      ? "warn"
+                      : "neutral"
+                }
+              />
+              <SignDocButton id={doc.id} disabled={!canSign} />
+            </div>,
             url ? (
               <a
                 key={`${doc.id}-file`}

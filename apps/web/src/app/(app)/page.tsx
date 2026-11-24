@@ -292,6 +292,11 @@ export default async function DashboardPage() {
             {[
               { href: "/clientes", label: "Clientes", icon: Icons.building },
               { href: "/calibracao", label: "Calibração", icon: Icons.wrench },
+              {
+                href: "/calibracao/revisao",
+                label: "Revisão cadastro",
+                icon: Icons.shield,
+              },
               { href: "/arquivos", label: "Drive", icon: Icons.clipboard },
               { href: "/equipe", label: "Equipe", icon: Icons.users },
               { href: "/equipe/horas", label: "Horas de campo", icon: Icons.clock },

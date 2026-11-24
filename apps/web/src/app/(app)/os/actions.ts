@@ -2,7 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
-import { getCampoOrder, parseOsRdos, saveCampoOrder } from "@/lib/campo-data";
+import {
+  getCampoOrder,
+  parseOsRdos,
+  saveCampoOrder,
+  sendCampoOsMail,
+} from "@/lib/campo-data";
 
 const SERVICE_PRESETS: Record<string, string> = {
   manutencao: "Manutenção",
@@ -200,4 +205,98 @@ export async function createCampoOs(
   }
 
   redirect(`/os/${id}`);
+}
+
+export type UpdateOsHeaderState = { error?: string; ok?: boolean };
+
+/** Edita cabeçalho da OS (cliente, local, serviço, base) sem apagar RDOs. */
+export async function updateCampoOsHeader(
+  _prev: UpdateOsHeaderState,
+  formData: FormData,
+): Promise<UpdateOsHeaderState> {
+  const profile = await getProfile();
+  if (!profile) return { error: "Sessão expirada." };
+
+  const osId = String(formData.get("osId") || "").trim();
+  if (!osId) return { error: "OS sem id." };
+  const os = await getCampoOrder(osId);
+  if (!os) return { error: "OS não encontrada." };
+
+  const client = clip(String(formData.get("client") || ""));
+  const site = clip(String(formData.get("site") || ""));
+  const cnpj = String(formData.get("cnpj") || "").trim();
+  const systemType = clip(String(formData.get("systemType") || ""));
+  const service = clip(String(formData.get("service") || ""));
+  const baseName = clip(String(formData.get("baseName") || ""));
+  const baseCargo = clip(String(formData.get("baseCargo") || ""));
+  const baseEmail = String(formData.get("baseEmail") || "").trim();
+  const basePhone = String(formData.get("basePhone") || "").trim();
+  const technicianName = String(formData.get("technicianName") || "").trim();
+  const technicianEmails = String(formData.get("technicianEmails") || "")
+    .trim()
+    .toLowerCase();
+  const startsAtRaw = String(formData.get("startsAt") || "").trim();
+  const startsAt = startsAtRaw
+    ? new Date(`${startsAtRaw}T12:00:00`).toISOString()
+    : os.startsAt;
+
+  if (!client) return { error: "Informe o cliente." };
+  if (!service) return { error: "Informe o serviço." };
+
+  const result = await saveCampoOrder({
+    id: os.id,
+    number: os.number,
+    status: os.status,
+    updatedAt: new Date().toISOString(),
+    startsAt: startsAt || "",
+    technicianEmail: technicianEmails.split(/[,;]/)[0]?.trim() || "",
+    technicianName,
+    technicianEmails,
+    client,
+    site,
+    cnpj,
+    systemType,
+    service,
+    baseName,
+    baseCargo,
+    baseEmail,
+    basePhone,
+  });
+
+  if (!result.ok) {
+    return { error: result.error || "Não foi possível salvar a OS." };
+  }
+  redirect(`/os/${os.id}`);
+}
+
+export async function sendOsMailAction(input: {
+  osId: string;
+  subject: string;
+  body: string;
+  to?: string;
+  cc?: string;
+}): Promise<{ ok: boolean; error?: string; to?: string }> {
+  const profile = await getProfile();
+  if (!profile) return { ok: false, error: "Sessão expirada." };
+  const os = await getCampoOrder(input.osId);
+  if (!os) return { ok: false, error: "OS não encontrada." };
+
+  const to = String(input.to || "")
+    .split(/[,;]/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+  const cc = String(input.cc || "")
+    .split(/[,;]/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  return sendCampoOsMail({
+    osId: os.id,
+    osNumber: os.number,
+    subject: input.subject,
+    body: input.body,
+    to,
+    cc,
+    replyTo: profile.email,
+  });
 }

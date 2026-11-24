@@ -1,4 +1,9 @@
-export { listCampoClients, getCampoClient, deleteCampoClientSystem } from "./clients";
+export {
+  listCampoClients,
+  getCampoClient,
+  deleteCampoClientSystem,
+  updateCampoClientFields,
+} from "./clients";
 export { listCampoOrders, getCampoOrder, saveCampoOrder } from "./orders";
 export {
   isExcludedFromTechLoad,
@@ -34,7 +39,14 @@ export type {
   OsRdoLite,
   OsRdoMeta,
 } from "./os-docs";
-export { decideCampoUser, listCampoUsers } from "./users";
+export {
+  decideCampoUser,
+  listCampoUsers,
+  setCampoUserActive,
+  setCampoUserCargo,
+  setCampoUserPermissions,
+  setCampoUserRole,
+} from "./users";
 export { summarizeCalibrationResults } from "./calib-results";
 export type {
   CalibFlowPointRow,
@@ -56,11 +68,16 @@ export {
 } from "./os-drive";
 export type { CampoOsDriveFile, CampoOsDriveListing } from "./os-drive";
 export {
+  deleteCampoFluid,
+  deleteCampoStandard,
   getCampoCalibration,
   listCampoCalibrations,
-  listCampoStandards,
   listCampoFluids,
   listCampoStaffDocs,
+  listCampoStandards,
+  saveCampoFluid,
+  saveCampoStandard,
+  signCampoStaffDoc,
 } from "./catalog";
 export type {
   CampoClient,
@@ -81,3 +98,6 @@ export {
   parseClockMinutes,
   rdoWorkedMinutes,
 } from "./work-hours";
+export { sendCampoOsMail } from "./mail";
+export { pendingCatalogFromOrders } from "./catalog-review";
+export type { PendingCatalogItem } from "./catalog-review";
