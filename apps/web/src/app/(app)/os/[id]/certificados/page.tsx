@@ -11,6 +11,7 @@ import {
   groupCertificatesByKind,
   listCampoCalibrations,
   listCampoOsDriveFiles,
+  resolveCampoOsNumber,
   stripDevTestPersonNames,
 } from "@/lib/campo-data";
 
@@ -29,12 +30,17 @@ export default async function OsCertificadosPage({
 }) {
   const { id } = await params;
   const { kind: kindFilter } = await searchParams;
-  const [os, calibrations] = await Promise.all([
+  const osNumber = await resolveCampoOsNumber(id);
+  const [os, calibrations, drivePrefetch] = await Promise.all([
     getCampoOrder(id),
     listCampoCalibrations(),
+    osNumber
+      ? listCampoOsDriveFiles(osNumber)
+      : Promise.resolve(null),
   ]);
   if (!os) notFound();
-  const driveListing = await listCampoOsDriveFiles(os.number);
+  const driveListing =
+    drivePrefetch ?? (await listCampoOsDriveFiles(os.number));
 
   const rows = certificatesForOs(os, calibrations);
   const groups = groupCertificatesByKind(rows);

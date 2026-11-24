@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { bumpCampoCache, cachedList, CAMPO_TAGS } from "./cache";
 import { gateGet, gatePost } from "./gate";
 
@@ -94,12 +96,9 @@ export const listCampoCalibrations = cachedList(
   },
 );
 
-/** Lê uma calibração completa (forceFull no gate). Fallback: lista leve. */
-export async function getCampoCalibration(
-  idOrNumber: string,
+async function fetchCampoCalibration(
+  key: string,
 ): Promise<CampoCalibration | null> {
-  const key = text(idOrNumber);
-  if (!key) return null;
   const payload = await gateGet(
     { action: "getcalib", id: key, n: key },
     { withToken: false, timeoutMs: 60_000 },
@@ -109,7 +108,11 @@ export async function getCampoCalibration(
   }
   // Só cai na lista (cacheada) se o gate não negou explicitamente.
   const err = text(payload?.error).toLowerCase();
-  if (err.includes("não encontr") || err.includes("nao encontr") || err.includes("not found")) {
+  if (
+    err.includes("não encontr") ||
+    err.includes("nao encontr") ||
+    err.includes("not found")
+  ) {
     return null;
   }
   const all = await listCampoCalibrations();
@@ -119,6 +122,17 @@ export async function getCampoCalibration(
     null
   );
 }
+
+/** Lê uma calibração completa (forceFull no gate). Fallback: lista leve. */
+export const getCampoCalibration = cache(async (idOrNumber: string) => {
+  const key = text(idOrNumber);
+  if (!key) return null;
+  return unstable_cache(
+    () => fetchCampoCalibration(key),
+    ["getCampoCalibration", key],
+    { revalidate: 45, tags: [CAMPO_TAGS.calibrations] },
+  )();
+});
 
 /** Grava job completo na planilha (mesma action `savecalib` do app). */
 export async function saveCampoCalibration(input: {
@@ -367,6 +381,7 @@ export async function signCampoStaffDoc(input: {
       error: String(payload?.error || "Falha ao assinar documento."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.staffDocs);
   return { ok: true };
 }
 
@@ -391,10 +406,7 @@ function parseStaffDoc(raw: unknown): CampoStaffDoc | null {
   };
 }
 
-export async function listCampoStaffDocs(
-  staffEmail?: string,
-): Promise<CampoStaffDoc[]> {
-  const email = text(staffEmail).toLowerCase();
+async function fetchCampoStaffDocs(email: string): Promise<CampoStaffDoc[]> {
   const params: Record<string, string> = { action: "liststaffdocs" };
   if (email) params.staffEmail = email;
   const payload = await gateGet(params, {
@@ -410,6 +422,15 @@ export async function listCampoStaffDocs(
       (b!.createdAt || "").localeCompare(a!.createdAt || ""),
     ) as CampoStaffDoc[];
 }
+
+export const listCampoStaffDocs = cache(async (staffEmail?: string) => {
+  const email = text(staffEmail).toLowerCase();
+  return unstable_cache(
+    () => fetchCampoStaffDocs(email),
+    ["listCampoStaffDocs", email || "all"],
+    { revalidate: 90, tags: [CAMPO_TAGS.staffDocs] },
+  )();
+});
 
 function guessMime(fileName: string) {
   const n = fileName.toLowerCase();
@@ -460,6 +481,7 @@ export async function saveCampoStaffDoc(input: {
       error: String(payload?.error || "Falha ao enviar documento RH."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.staffDocs);
   return { ok: true, id: text(payload.id) || id };
 }
 
@@ -476,5 +498,6 @@ export async function deleteCampoStaffDoc(
       error: String(payload?.error || "Falha ao apagar documento."),
     };
   }
+  bumpCampoCache(CAMPO_TAGS.staffDocs);
   return { ok: true };
 }

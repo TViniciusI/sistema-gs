@@ -31,15 +31,20 @@ export default async function CertificadoDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const job = await getCampoCalibration(id);
+  const [job, publicCertPrefetch] = await Promise.all([
+    getCampoCalibration(id),
+    getCampoPublicCertificate({ jobId: id }),
+  ]);
   if (!job) notFound();
 
   const osId = String(job.raw.osId || "").trim();
-  const publicCert = await getCampoPublicCertificate({
-    number: job.number,
-    jobId: job.id,
-    osId: osId || undefined,
-  });
+  const publicCert =
+    publicCertPrefetch ||
+    (await getCampoPublicCertificate({
+      number: job.number,
+      jobId: job.id,
+      osId: osId || undefined,
+    }));
 
   const consultUrl = publicCertUrl({
     number: job.number,

@@ -11,6 +11,7 @@ import {
   listCampoCalibrations,
   listCampoOsDriveFiles,
   publicCertUrl,
+  resolveCampoOsNumber,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -21,12 +22,17 @@ export default async function OsLivroPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [os, calibrations] = await Promise.all([
+  const osNumber = await resolveCampoOsNumber(id);
+  const [os, calibrations, drivePrefetch] = await Promise.all([
     getCampoOrder(id),
     listCampoCalibrations(),
+    osNumber
+      ? listCampoOsDriveFiles(osNumber)
+      : Promise.resolve(null),
   ]);
   if (!os) notFound();
-  const driveListing = await listCampoOsDriveFiles(os.number);
+  const driveListing =
+    drivePrefetch ?? (await listCampoOsDriveFiles(os.number));
 
   const rows = certificatesForOs(os, calibrations);
   const groups = groupCertificatesByKind(rows);

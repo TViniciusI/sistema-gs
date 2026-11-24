@@ -1,3 +1,6 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
+import { CAMPO_TAGS } from "./cache";
 import { getKnownOsDriveFolders, osFolderKey } from "./drive-os-folders";
 import { gateGet } from "./gate";
 import {
@@ -49,22 +52,9 @@ function knownFoldersFallback(number: string): CampoOsDriveListing {
   };
 }
 
-export async function listCampoOsDriveFiles(
-  osNumber: string,
+async function fetchCampoOsDriveFiles(
+  number: string,
 ): Promise<CampoOsDriveListing> {
-  const number = text(osNumber);
-  if (!number) {
-    return {
-      ok: false,
-      osNumber: "",
-      folderKey: "",
-      folderUrl: "",
-      files: [],
-      error: "OS sem número",
-      source: "known-folders",
-    };
-  }
-
   const payload = await gateGet(
     { action: "listosdrive", osNumber: number },
     { withToken: true, timeoutMs: 60_000 },
@@ -123,3 +113,24 @@ export async function listCampoOsDriveFiles(
     source: "gate",
   };
 }
+
+/** Listagem Drive da OS — cache curto (navegação OS↔documentos↔certificados). */
+export const listCampoOsDriveFiles = cache(async (osNumber: string) => {
+  const number = text(osNumber);
+  if (!number) {
+    return {
+      ok: false,
+      osNumber: "",
+      folderKey: "",
+      folderUrl: "",
+      files: [],
+      error: "OS sem número",
+      source: "known-folders",
+    } satisfies CampoOsDriveListing;
+  }
+  return unstable_cache(
+    () => fetchCampoOsDriveFiles(number),
+    ["listCampoOsDriveFiles", number],
+    { revalidate: 60, tags: [CAMPO_TAGS.osDrive, CAMPO_TAGS.drive] },
+  )();
+});

@@ -10,6 +10,8 @@ export const CAMPO_TAGS = {
   fluids: "campo-fluids",
   users: "campo-users",
   drive: "campo-drive",
+  osDrive: "campo-os-drive",
+  staffDocs: "campo-staff-docs",
 } as const;
 
 export type CampoCacheTag = (typeof CAMPO_TAGS)[keyof typeof CAMPO_TAGS];
