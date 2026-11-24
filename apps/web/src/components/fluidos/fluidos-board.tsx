@@ -19,6 +19,7 @@ export type FluidoBoardItem = {
   densityRefTemp: string;
   viscosityRefTemp: string;
   updatedAt: string;
+  updatedByName?: string;
 };
 
 const COMMON_FLUIDS = [
@@ -419,6 +420,14 @@ export function FluidosBoard({ items }: { items: FluidoBoardItem[] }) {
                         </dd>
                       </div>
                     </dl>
+                    {item.updatedByName ? (
+                      <p className="mt-3 text-xs text-navy/45">
+                        Última alteração por{" "}
+                        <span className="font-medium text-navy/65">
+                          {item.updatedByName}
+                        </span>
+                      </p>
+                    ) : null}
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button

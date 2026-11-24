@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatCnpj } from "@gs/shared";
 import { PageHeader } from "@/components/ui";
+import { ChangeMeta } from "@/components/ui/change-meta";
 import { getCampoClient } from "@/lib/campo-data";
 import { kindLabel } from "@/lib/campo-data/labels";
 import { AddSystemForm } from "@/components/clientes/add-system-form";
@@ -114,6 +115,7 @@ export default async function ClienteDetailPage({
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
           Resumo
         </p>
+        <ChangeMeta raw={client.raw} className="mt-2" />
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl bg-paper px-4 py-3">
             <p className="text-[10px] uppercase tracking-wide text-navy/45">

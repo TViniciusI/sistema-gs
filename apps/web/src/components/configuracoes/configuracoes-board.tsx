@@ -102,6 +102,12 @@ export function ConfiguracoesBoard({
           </dl>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
+              href="/auditoria"
+              className="rounded-xl border border-navy/12 bg-white px-3.5 py-2 text-xs font-medium text-navy hover:border-brass/40"
+            >
+              Ver auditoria
+            </Link>
+            <Link
               href="/campo"
               className="rounded-xl border border-navy/12 bg-white px-3.5 py-2 text-xs font-medium text-navy hover:border-brass/40"
             >

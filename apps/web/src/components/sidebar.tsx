@@ -40,6 +40,7 @@ const GROUPS = [
   {
     label: "Sistema",
     items: [
+      { href: "/auditoria", label: "Auditoria", icon: Icons.shield },
       { href: "/configuracoes", label: "Configurações", icon: Icons.settings },
       { href: "/campo", label: "App de campo", icon: Icons.phone },
     ],

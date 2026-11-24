@@ -1,4 +1,8 @@
 import {
+  CAMPO_SESSION_COOKIE,
+  decodeCampoSession,
+} from "@/lib/campo-auth";
+import {
   appBuild,
   loginGateToken,
   loginGateUrl,
@@ -10,6 +14,24 @@ export type GateResult<T> = {
   data?: T;
   raw?: Record<string, unknown>;
 };
+
+/** Anexa quem está logado no escritório a toda mutação do gate. */
+async function officeActorFields(): Promise<Record<string, string>> {
+  try {
+    const { cookies } = await import("next/headers");
+    const jar = await cookies();
+    const session = decodeCampoSession(jar.get(CAMPO_SESSION_COOKIE)?.value);
+    if (!session) return {};
+    return {
+      actorLogin: session.login || "",
+      actorName: session.name || "",
+      actorEmail: session.email || "",
+      actorSource: "escritorio",
+    };
+  } catch {
+    return {};
+  }
+}
 
 export async function gateGet(
   params: Record<string, string>,
@@ -56,10 +78,16 @@ export async function gatePost(
 ): Promise<Record<string, unknown> | null> {
   const base = loginGateUrl();
   if (!base) return null;
+  const actor = await officeActorFields();
   const payload = {
+    ...actor,
     ...body,
     token: body.token ?? loginGateToken(),
     appBuild: body.appBuild ?? appBuild(),
+    actorLogin: String(body.actorLogin || actor.actorLogin || ""),
+    actorName: String(body.actorName || actor.actorName || ""),
+    actorEmail: String(body.actorEmail || actor.actorEmail || ""),
+    actorSource: String(body.actorSource || actor.actorSource || "escritorio"),
   };
   const timeoutMs = options?.timeoutMs ?? 90_000;
   const controller = new AbortController();

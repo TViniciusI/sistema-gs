@@ -206,6 +206,10 @@ function handle_(p) {
     if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
     return json_({ ok: true, users: publicUsers_(ss) });
   }
+  if (action === 'listaudit' || action === 'auditoria' || action === 'audit.list') {
+    if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
+    return listAudit_(ss, p);
+  }
   if (action === 'decide') {
     if (!hasToken_(p)) return json_({ ok: false, error: 'Sem permissão' });
     return decide_(ss, p);
@@ -580,6 +584,107 @@ function ensureSheets_(ss) {
   ensureStaffDocsSheet_(ss);
   ensureCalibsSheet_(ss);
   ensureFluidsSheet_(ss);
+  ensureStandardsSheet_(ss);
+  ensureAuditSheet_(ss);
+}
+
+var AUDIT_HEADERS = [
+  'quando',
+  'actor_login',
+  'actor_name',
+  'actor_email',
+  'origem',
+  'acao',
+  'entidade',
+  'entidade_id',
+  'resumo',
+];
+
+function ensureAuditSheet_(ss) {
+  var sheet = ss.getSheetByName('auditoria');
+  if (!sheet) {
+    sheet = ss.insertSheet('auditoria');
+    sheet.appendRow(AUDIT_HEADERS);
+  }
+  return sheet;
+}
+
+function actorFrom_(p) {
+  var login = String(p.actorLogin || p.actor_login || p.login || '')
+    .trim()
+    .toLowerCase();
+  var name = String(p.actorName || p.actor_name || p.technicianName || p.name || '').trim();
+  var email = String(p.actorEmail || p.actor_email || p.ownerEmail || p.email || '')
+    .trim()
+    .toLowerCase();
+  var source = String(p.actorSource || p.actor_source || '').trim();
+  if (!source) {
+    if (p.actorLogin || p.actorName || p.actorEmail) {
+      source = 'escritorio';
+    } else {
+      source = 'campo';
+    }
+  }
+  return { login: login, name: name, email: email, source: source };
+}
+
+function stampActorOnto_(record, p) {
+  var a = actorFrom_(p);
+  if (!a.login && !a.name && !a.email) return record;
+  record.updatedBy = a.login || a.email;
+  record.updatedByName = a.name || a.login || a.email;
+  record.updatedByEmail = a.email;
+  record.updatedBySource = a.source;
+  record.updatedByAt = new Date().toISOString();
+  return record;
+}
+
+function logAudit_(ss, p, action, entity, entityId, summary) {
+  try {
+    var a = actorFrom_(p);
+    var sheet = ensureAuditSheet_(ss);
+    sheet.appendRow([
+      new Date().toISOString(),
+      a.login,
+      a.name,
+      a.email,
+      a.source,
+      String(action || ''),
+      String(entity || ''),
+      String(entityId || ''),
+      String(summary || '').slice(0, 240),
+    ]);
+    var last = sheet.getLastRow();
+    if (last > 2001) {
+      sheet.deleteRows(2, last - 2001);
+    }
+  } catch (error) {}
+}
+
+function listAudit_(ss, p) {
+  var sheet = ensureAuditSheet_(ss);
+  var data = sheet.getDataRange().getValues();
+  var limit = Math.min(Number(p.limit) || 200, 500);
+  var list = [];
+  for (var i = data.length - 1; i >= 1 && list.length < limit; i--) {
+    var row = data[i];
+    var when = row[0];
+    list.push({
+      at:
+        when instanceof Date
+          ? when.toISOString()
+          : String(when || ''),
+      actorLogin: String(row[1] || ''),
+      actorName: String(row[2] || ''),
+      actorEmail: String(row[3] || ''),
+      source: String(row[4] || ''),
+      action: String(row[5] || ''),
+      entity: String(row[6] || ''),
+      entityId: String(row[7] || ''),
+      summary: String(row[8] || ''),
+    });
+  }
+  return json_({ ok: true, entries: list });
 }
 
 function seedUsers_(sheet) {
@@ -1459,6 +1564,18 @@ function setSenha_(ss, p) {
   }
   const updated =
     findUser_(readUsers_(sheet), user.email) || user;
+  logAudit_(
+    ss,
+    Object.assign({}, p, {
+      actorLogin: user.login,
+      actorName: user.name,
+      actorEmail: user.email,
+    }),
+    'salvar',
+    'senha',
+    user.login || user.email,
+    'Troca de senha',
+  );
   return json_({ ok: true, user: publicUser_(updated) });
 }
 
@@ -1530,6 +1647,18 @@ function setPerfil_(ss, p) {
     findUser_(readUsers_(sheet), newEmail) ||
     findUser_(readUsers_(sheet), newLogin) ||
     user;
+  logAudit_(
+    ss,
+    Object.assign({}, p, {
+      actorLogin: newLogin,
+      actorName: name,
+      actorEmail: newEmail,
+    }),
+    'salvar',
+    'perfil',
+    newLogin,
+    name || newLogin,
+  );
   return json_({ ok: true, user: publicUser_(updated) });
 }
 
@@ -2171,8 +2300,21 @@ function saveOs_(ss, p) {
       }
       return incoming;
     })(),
+    updatedBy: String(prev.updatedBy || ''),
+    updatedByName: String(prev.updatedByName || ''),
+    updatedByEmail: String(prev.updatedByEmail || ''),
+    updatedBySource: String(prev.updatedBySource || ''),
   };
+  stampActorOnto_(record, p);
   writeOrder_(found, record);
+  logAudit_(
+    ss,
+    p,
+    'salvar',
+    'os',
+    id,
+    'OS ' + (record.number || id) + ' · ' + status,
+  );
   return json_({ ok: true, id: id, status: status, updatedAt: updatedAt });
 }
 
@@ -2289,8 +2431,10 @@ function deleteOs_(ss, p) {
       }
     } catch (error) {}
     sheet.deleteRow(i + 1);
+    logAudit_(ss, p, 'apagar', 'os', id, 'OS ' + id);
     return json_({ ok: true, id: id });
   }
+  logAudit_(ss, p, 'apagar', 'os', id, 'OS ' + id);
   return json_({ ok: true, id: id });
 }
 
@@ -2678,6 +2822,7 @@ function saveClient_(ss, p) {
     systems: parseJsonArray_(p.systems || extra.systems),
     updatedAt: String(p.updatedAt || extra.updatedAt || new Date().toISOString()),
   });
+  stampActorOnto_(record, p);
   delete record._fileId;
   const sheet = ensureClientSheet_(ss);
   const data = sheet.getDataRange().getValues();
@@ -2739,6 +2884,14 @@ function saveClient_(ss, p) {
       [id, record.name, record.cnpj, cellJson, now],
     ]);
   }
+  logAudit_(
+    ss,
+    p,
+    'salvar',
+    'cliente',
+    id,
+    record.name || id,
+  );
   return json_({ ok: true, id: id, updatedAt: record.updatedAt });
 }
 
@@ -2793,9 +2946,11 @@ function deleteClient_(ss, p) {
         }
       } catch (error) {}
       sheet.deleteRow(i + 1);
+      logAudit_(ss, p, 'apagar', 'cliente', id, id);
       return json_({ ok: true, id: id });
     }
   }
+  logAudit_(ss, p, 'apagar', 'cliente', id, id);
   return json_({ ok: true, id: id });
 }
 
@@ -2825,6 +2980,7 @@ function saveStandard_(ss, p) {
     coverageK: String(p.coverageK || extra.coverageK || ''),
     updatedAt: String(p.updatedAt || extra.updatedAt || new Date().toISOString()),
   });
+  stampActorOnto_(record, p);
   const sheet = ensureStandardsSheet_(ss);
   const data = sheet.getDataRange().getValues();
   var row = -1;
@@ -2843,6 +2999,7 @@ function saveStandard_(ss, p) {
       [id, record.name, record.type, record.serial, json, now],
     ]);
   }
+  logAudit_(ss, p, 'salvar', 'padrao', id, record.name || id);
   return json_({ ok: true, id: id });
 }
 
@@ -2873,9 +3030,11 @@ function deleteStandard_(ss, p) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][0]) === id) {
       sheet.deleteRow(i + 1);
+      logAudit_(ss, p, 'apagar', 'padrao', id, id);
       return json_({ ok: true, id: id });
     }
   }
+  logAudit_(ss, p, 'apagar', 'padrao', id, id);
   return json_({ ok: true, id: id });
 }
 
@@ -2953,6 +3112,7 @@ function saveCalib_(ss, p) {
     clientName: String(p.clientName || extra.clientName || ''),
     updatedAt: String(p.updatedAt || extra.updatedAt || new Date().toISOString()),
   });
+  stampActorOnto_(record, p);
   if (!yes_(p.restore) && readCalibTombstones_(ss).indexOf(id) >= 0) {
     return json_({ ok: true, id: id, skipped: true, reason: 'deleted' });
   }
@@ -3067,6 +3227,14 @@ function saveCalib_(ss, p) {
       [id, record.number, record.kind, record.clientName, json, now],
     ]);
   }
+  logAudit_(
+    ss,
+    p,
+    'salvar',
+    'calibracao',
+    id,
+    (record.number || id) + (record.clientName ? ' · ' + record.clientName : ''),
+  );
   return json_({ ok: true, id: id });
 }
 
@@ -3252,6 +3420,7 @@ function saveFluid_(ss, p) {
     viscosityRefTemp: String(p.viscosityRefTemp || extra.viscosityRefTemp || '40 °C'),
     updatedAt: String(p.updatedAt || extra.updatedAt || new Date().toISOString()),
   });
+  stampActorOnto_(record, p);
   const sheet = ensureFluidsSheet_(ss);
   const data = sheet.getDataRange().getValues();
   var row = -1;
@@ -3272,6 +3441,7 @@ function saveFluid_(ss, p) {
       [id, record.name, dRange, vRange, json, now],
     ]);
   }
+  logAudit_(ss, p, 'salvar', 'fluido', id, record.name || id);
   return json_({ ok: true, id: id });
 }
 
@@ -3302,9 +3472,11 @@ function deleteFluid_(ss, p) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][0]) === id) {
       sheet.deleteRow(i + 1);
+      logAudit_(ss, p, 'apagar', 'fluido', id, id);
       return json_({ ok: true, id: id });
     }
   }
+  logAudit_(ss, p, 'apagar', 'fluido', id, id);
   return json_({ ok: true, id: id });
 }
 

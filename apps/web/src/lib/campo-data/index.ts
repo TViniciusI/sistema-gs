@@ -81,6 +81,14 @@ export {
 } from "./calibration-math";
 export { getCampoDriveStatus } from "./drive";
 export {
+  actionLabel,
+  entityLabel,
+  formatAuditActor,
+  formatChangeMeta,
+  listCampoAudit,
+} from "./audit";
+export type { CampoAuditEntry } from "./audit";
+export {
   CAMPO_DRIVE_ROOT_ID,
   CAMPO_DRIVE_ROOT_URL,
   getKnownOsDriveFolders,

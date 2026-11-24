@@ -46,6 +46,10 @@ export default async function PadroesPage() {
           uncertainty: text(item.raw.uncertainty),
           coverageK: text(item.raw.coverageK) || text(item.raw.coverageFactor),
           updatedAt: item.updatedAt,
+          updatedByName:
+            text(item.raw.updatedByName) ||
+            text(item.raw.updatedBy) ||
+            text(item.raw.updatedByEmail),
         }))}
       />
     </div>

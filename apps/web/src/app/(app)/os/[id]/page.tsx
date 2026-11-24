@@ -4,6 +4,7 @@ import { OsDocActions } from "@/components/os/os-doc-actions";
 import { OsMailForm } from "@/components/os/os-mail-form";
 import { OsStatusActions } from "@/components/os/os-status-actions";
 import { PageHeader, Panel, StatusPill } from "@/components/ui";
+import { ChangeMeta } from "@/components/ui/change-meta";
 import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import {
   campoAppUrl,
@@ -114,6 +115,7 @@ export default async function OsDetailPage({
             <p className="mt-1 text-sm text-navy/55">
               Técnicos: {os.technicianName || "—"}
             </p>
+            <ChangeMeta raw={os.raw} className="mt-2" />
           </div>
           <OsStatusActions
             osId={os.id}

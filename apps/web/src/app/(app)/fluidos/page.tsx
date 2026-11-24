@@ -47,6 +47,10 @@ export default async function FluidosPage() {
             text(item.raw.densityRefTemp) || text(item.temperature) || "20 °C",
           viscosityRefTemp: text(item.raw.viscosityRefTemp) || "40 °C",
           updatedAt: item.updatedAt,
+          updatedByName:
+            text(item.raw.updatedByName) ||
+            text(item.raw.updatedBy) ||
+            text(item.raw.updatedByEmail),
         }))}
       />
     </div>

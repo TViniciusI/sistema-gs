@@ -16,6 +16,7 @@ export type PadraoBoardItem = {
   uncertainty: string;
   coverageK: string;
   updatedAt: string;
+  updatedByName?: string;
 };
 
 const COMMON_TYPES = [
@@ -507,6 +508,14 @@ export function PadroesBoard({ items }: { items: PadraoBoardItem[] }) {
                         </dd>
                       </div>
                     </dl>
+                    {item.updatedByName ? (
+                      <p className="mt-3 text-xs text-navy/45">
+                        Última alteração por{" "}
+                        <span className="font-medium text-navy/65">
+                          {item.updatedByName}
+                        </span>
+                      </p>
+                    ) : null}
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
