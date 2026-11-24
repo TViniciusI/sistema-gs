@@ -31,6 +31,7 @@ const KIND_FILTERS: Array<{ key: "all" | DriveFileKind; label: string }> = [
 ];
 
 const PAGE_SIZE = 12;
+const OS_PAGE_SIZE = 8;
 
 export function ArquivosBrowser({
   driveEmail,
@@ -52,6 +53,7 @@ export function ArquivosBrowser({
   const [kind, setKind] = useState<"all" | DriveFileKind>("all");
   const [showClosed, setShowClosed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [osVisibleCount, setOsVisibleCount] = useState(OS_PAGE_SIZE);
 
   const osList = useMemo(() => {
     const open = bundles.filter((b) => b.open);
@@ -59,7 +61,13 @@ export function ArquivosBrowser({
     return showClosed ? [...open, ...closed] : open.length ? open : bundles;
   }, [bundles, showClosed]);
 
-  const selected = bundles.find((b) => b.osId === osId) || bundles[0] || null;
+  const shownOs = osList.slice(0, osVisibleCount);
+
+  const selected =
+    bundles.find((b) => b.osId === osId) ||
+    shownOs[0] ||
+    bundles[0] ||
+    null;
 
   const kindCounts = useMemo(() => {
     const map: Record<string, number> = { all: selected?.items.length || 0 };
@@ -119,14 +127,17 @@ export function ArquivosBrowser({
             </p>
             <button
               type="button"
-              onClick={() => setShowClosed((v) => !v)}
+              onClick={() => {
+                setShowClosed((v) => !v);
+                setOsVisibleCount(OS_PAGE_SIZE);
+              }}
               className="text-[11px] font-medium text-navy/50 hover:text-navy"
             >
               {showClosed ? "Só abertas" : "Ver encerradas"}
             </button>
           </div>
-          <div className="max-h-[70vh] space-y-1 overflow-y-auto pr-1">
-            {osList.map((bundle) => {
+          <div className="space-y-1">
+            {shownOs.map((bundle) => {
               const active = bundle.osId === selected?.osId;
               return (
                 <button
@@ -168,6 +179,17 @@ export function ArquivosBrowser({
               <p className="px-2 py-6 text-center text-sm text-muted">
                 Nenhuma OS.
               </p>
+            ) : null}
+            {shownOs.length < osList.length ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setOsVisibleCount((n) => n + OS_PAGE_SIZE)
+                }
+                className="mt-2 w-full rounded-xl border border-navy/15 bg-paper px-3 py-2 text-xs font-semibold text-navy hover:border-brass/40"
+              >
+                Mais OS ({osList.length - shownOs.length})
+              </button>
             ) : null}
           </div>
         </aside>
