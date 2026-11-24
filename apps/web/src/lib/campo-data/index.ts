@@ -66,10 +66,13 @@ export type {
   CalibStandardUsed,
 } from "./calib-results";
 export {
+  parseCalibNumber,
   meterFactor,
   volumetricErrorPercent,
+  meanOf,
   repeatabilityPercent,
   linearityPercent,
+  correctedMeterFactor,
   formatCalibNumber,
   formatPercent,
 } from "./calibration-math";
@@ -102,6 +105,8 @@ export {
   listCampoFluids,
   listCampoStaffDocs,
   listCampoStandards,
+  newCalibrationId,
+  saveCampoCalibration,
   saveCampoFluid,
   saveCampoStandard,
   signCampoStaffDoc,

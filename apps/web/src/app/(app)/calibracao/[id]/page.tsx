@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CalibEditor } from "@/components/calibracao/calib-editor";
 import { CalibWorkbenchView } from "@/components/calibracao/calib-workbench";
 import { PageHeader, StatusPill } from "@/components/ui";
 import {
   buildCalibrationWorkbench,
   campoAppUrl,
   getCampoCalibration,
+  listCampoStandards,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +34,10 @@ export default async function CalibracaoDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const job = await getCampoCalibration(id);
+  const [job, standards] = await Promise.all([
+    getCampoCalibration(id),
+    listCampoStandards(),
+  ]);
   if (!job) notFound();
 
   const workbench = buildCalibrationWorkbench(job.raw);
@@ -45,7 +50,8 @@ export default async function CalibracaoDetailPage({
         description={
           [job.clientName || workbench.clientName, job.kind || workbench.kind]
             .filter(Boolean)
-            .join(" · ") || "Job completo via getcalib"
+            .join(" · ") ||
+          "Edite e salve — mesma planilha do GS Campo (savecalib)."
         }
         action={
           <div className="flex flex-wrap items-center gap-2">
@@ -79,14 +85,18 @@ export default async function CalibracaoDetailPage({
         }
       />
 
-      {!workbench.hasAny ? (
-        <p className="rounded-3xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
-          Job encontrado, mas ainda sem pontos/padrões/resultados sincronizados.
-          Preencha no GS Campo e sincronize.
-        </p>
-      ) : (
-        <CalibWorkbenchView data={workbench} />
-      )}
+      <CalibEditor initial={job.raw} catalogStandards={standards} />
+
+      {workbench.hasAny ? (
+        <details className="rounded-3xl border border-navy/10 bg-white open:pb-2">
+          <summary className="cursor-pointer list-none px-5 py-4 font-serif text-lg text-navy md:px-6">
+            Pré-visualização do certificado
+          </summary>
+          <div className="border-t border-navy/10 px-5 py-5 md:px-6">
+            <CalibWorkbenchView data={workbench} />
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

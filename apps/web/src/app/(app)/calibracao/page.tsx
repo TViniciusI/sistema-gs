@@ -13,14 +13,22 @@ export default async function CalibracaoPage() {
       <PageHeader
         eyebrow="Qualidade"
         title="Calibração"
-        description="Pontos, Mf, incerteza, padrões e fluido — mesma planilha do GS Campo (getcalib)."
+        description="Pontos, Mf, incerteza, padrões — edite aqui ou no app; savecalib grava na mesma planilha."
         action={
-          <Link
-            href="/calibracao/revisao"
-            className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
-          >
-            Revisão de cadastro
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/calibracao/nova"
+              className="rounded-xl bg-brass px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brass-2"
+            >
+              Nova calibração
+            </Link>
+            <Link
+              href="/calibracao/revisao"
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Revisão de cadastro
+            </Link>
+          </div>
         }
       />
       <CalibracaoBoard

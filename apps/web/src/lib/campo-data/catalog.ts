@@ -105,6 +105,65 @@ export async function getCampoCalibration(
   );
 }
 
+/** Grava job completo na planilha (mesma action `savecalib` do app). */
+export async function saveCampoCalibration(input: {
+  id?: string;
+  number?: string;
+  kind?: string;
+  clientName?: string;
+  payload: Record<string, unknown>;
+}): Promise<{ ok: boolean; error?: string; id?: string; skipped?: boolean }> {
+  const payload = { ...input.payload };
+  const id = text(input.id) || text(payload.id) || `calib-${Date.now()}`;
+  const number = text(input.number) || text(payload.number);
+  const kind = text(input.kind) || text(payload.kind) || "volumetric";
+  const clientName = text(input.clientName) || text(payload.clientName);
+  const updatedAt = new Date().toISOString();
+
+  payload.id = id;
+  payload.number = number;
+  payload.kind = kind;
+  payload.clientName = clientName;
+  payload.updatedAt = updatedAt;
+  if (!payload.createdAt) payload.createdAt = updatedAt;
+
+  const result = await gatePost(
+    {
+      action: "savecalib",
+      id,
+      number,
+      kind,
+      clientName,
+      payload: JSON.stringify(payload),
+      updatedAt,
+    },
+    { timeoutMs: 90_000 },
+  );
+
+  if (!result || result.ok !== true) {
+    return {
+      ok: false,
+      error: String(result?.error || "Não foi possível salvar a calibração."),
+    };
+  }
+  if (result.skipped === true) {
+    return {
+      ok: false,
+      id,
+      skipped: true,
+      error: String(
+        result.reason ||
+          "Planilha preservou versão mais forte (não sobrescreveu).",
+      ),
+    };
+  }
+  return { ok: true, id };
+}
+
+export function newCalibrationId() {
+  return `calib-${Date.now()}`;
+}
+
 export async function listCampoStandards(): Promise<CampoStandard[]> {
   const payload = await gateGet(
     { action: "liststandards" },
