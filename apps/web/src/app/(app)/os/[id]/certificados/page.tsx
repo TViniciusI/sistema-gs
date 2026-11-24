@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { OsCertificadosBoard } from "@/components/certificados/os-certificados-board";
 import { OsDrivePanel } from "@/components/os/os-drive-panel";
 import { PageHeader } from "@/components/ui";
 import {
@@ -8,12 +9,15 @@ import {
   findDriveCertForNumber,
   getCampoOrder,
   groupCertificatesByKind,
-  kindLabel,
   listCampoCalibrations,
   listCampoOsDriveFiles,
 } from "@/lib/campo-data";
 
 export const dynamic = "force-dynamic";
+
+function text(value: unknown) {
+  return String(value ?? "").trim();
+}
 
 export default async function OsCertificadosPage({
   params,
@@ -33,42 +37,37 @@ export default async function OsCertificadosPage({
 
   const rows = certificatesForOs(os, calibrations);
   const groups = groupCertificatesByKind(rows);
-  const activeKind = kindFilter?.trim() || "";
-  const activeGroup = activeKind
-    ? groups.find((g) => g.kind === activeKind)
-    : null;
+  const withCalib = rows.filter((r) => r.hasCalibration).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Calibração"
-        title={
-          activeGroup
-            ? `${activeGroup.label} · OS GS ${os.number}`
-            : `Tipo · OS GS ${os.number}`
-        }
+        title={`Certificados · OS GS ${os.number}`}
         description={
-          activeGroup
-            ? activeGroup.stats
-            : "Certificados da OS lidos do GS Campo (volumétrica, temperatura, densidade e demais tipos)."
+          [
+            os.clientName,
+            `${rows.length} certificado(s)`,
+            withCalib ? `${withCalib} com calibração` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") ||
+          "Slots da OS — volumétrica, temperatura, densidade e demais tipos."
         }
         action={
           <div className="flex flex-wrap gap-2">
-            {activeGroup ? (
-              <Link
-                href={`/os/${os.id}/certificados`}
-                className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
-              >
-                ← Tipos
-              </Link>
-            ) : (
-              <Link
-                href={`/os/${os.id}/documentos`}
-                className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
-              >
-                Documentos
-              </Link>
-            )}
+            <Link
+              href={`/os/${os.id}`}
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Voltar à OS
+            </Link>
+            <Link
+              href={`/os/${os.id}/livro`}
+              className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+            >
+              Livro
+            </Link>
             <a
               href={campoAppUrl()}
               target="_blank"
@@ -81,102 +80,60 @@ export default async function OsCertificadosPage({
         }
       />
 
-      <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+      <section className="rounded-3xl border border-navy/10 bg-gradient-to-br from-white via-white to-paper p-5 md:p-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-          {os.clientName || "Cliente"}
+          Organização
         </p>
-        <p className="mt-1 text-sm text-navy/55">
-          {rows.length} certificado(s) na OS
-          {rows.filter((r) => r.hasCalibration).length > 0
-            ? ` · ${rows.filter((r) => r.hasCalibration).length} com calibração na planilha`
-            : ""}
-        </p>
-        <p className="mt-3 text-sm leading-6 text-navy/60">
-          O PDF oficial (layout Flutter) é gerado no GS Campo e fica no Drive.
-          Aqui você vê todos os números da OS e abre os PDFs já emitidos.
+        <h2 className="mt-1 font-serif text-xl text-navy">
+          Por tipo · status · PDF
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-navy/60">
+          Use os chips de tipo para focar (vazão, temperatura, densidade…). O PDF
+          oficial continua sendo o gerado no GS Campo e salvo no Drive; aqui
+          você acompanha número, instrumento, datas e abre a bancada.
         </p>
       </section>
 
       <OsDrivePanel listing={driveListing} focus="certificates" />
 
-      {rows.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-navy/15 bg-white px-4 py-12 text-center text-sm text-muted">
-          Nenhum certificado nesta OS. Crie os slots no GS Campo (volumétrica,
-          temperatura, densidade…).
-        </p>
-      ) : activeGroup ? (
-        <div className="space-y-2">
-          {activeGroup.items.map((row) => {
+      <OsCertificadosBoard
+        osId={os.id}
+        initialKind={kindFilter?.trim() || ""}
+        groups={groups.map((group) => ({
+          kind: group.kind,
+          label: group.label,
+          stats: group.stats,
+          items: group.items.map((row) => {
             const slot = row.slot;
-            const href = `/os/${os.id}/certificados/${encodeURIComponent(slot.id)}`;
+            const job = row.job;
             const pdf = findDriveCertForNumber(
               driveListing.files,
-              slot.certificateNumber || row.job?.number || "",
+              slot.certificateNumber || job?.number || "",
             );
-            return (
-              <div
-                key={slot.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-navy/10 bg-white px-4 py-4"
-              >
-                <Link href={href} className="min-w-0 flex-1 hover:opacity-90">
-                  <p className="font-serif text-xl text-navy">
-                    {slot.certificateNumber || "Sem número"}
-                  </p>
-                  <p className="mt-1 truncate text-sm text-navy/55">
-                    {[
-                      slot.equipmentTag && `TAG ${slot.equipmentTag}`,
-                      slot.serialNumber && `N/S ${slot.serialNumber}`,
-                      row.job?.status,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || kindLabel(slot.kind)}
-                  </p>
-                </Link>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  {pdf ? (
-                    <a
-                      href={pdf.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-lg bg-navy px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-brass hover:bg-navy-2"
-                    >
-                      PDF Drive
-                    </a>
-                  ) : null}
-                  <span
-                    className={[
-                      "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
-                      row.hasCalibration
-                        ? "bg-ok/15 text-ok"
-                        : "bg-warn/15 text-warn",
-                    ].join(" ")}
-                  >
-                    {row.hasCalibration ? "Com calibração" : "Sem calibração"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {groups.map((group) => (
-            <Link
-              key={group.kind}
-              href={`/os/${os.id}/certificados?kind=${encodeURIComponent(group.kind)}`}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-navy/10 bg-white px-4 py-4 transition hover:border-brass/40"
-            >
-              <div>
-                <p className="font-semibold text-navy">{group.label}</p>
-                <p className="mt-1 text-sm text-navy/55">{group.stats}</p>
-              </div>
-              <span aria-hidden className="text-navy/35">
-                →
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
+            const raw = (job?.raw || {}) as Record<string, unknown>;
+            return {
+              slotId: slot.id,
+              kind: slot.kind || group.kind,
+              certificateNumber: slot.certificateNumber || job?.number || "",
+              equipmentTag: slot.equipmentTag || job?.equipmentTag || "",
+              equipmentType: slot.equipmentType || job?.equipmentType || "",
+              serialNumber: slot.serialNumber || text(raw.serialNumber),
+              manufacturer: slot.manufacturer || text(raw.manufacturer),
+              model: slot.model || text(raw.model),
+              installLocation: slot.installLocation || text(raw.site),
+              jobStatus: job?.status || "",
+              hasCalibration: row.hasCalibration,
+              hasPdf: Boolean(pdf),
+              pdfUrl: pdf?.url || "",
+              calibrationDate: text(raw.calibrationDate),
+              nextCalibrationDate: text(raw.nextCalibrationDate),
+              technicianName:
+                text(raw.technicianName) || text(raw.fieldTechnicianName),
+              jobId: job?.id || "",
+            };
+          }),
+        }))}
+      />
     </div>
   );
 }

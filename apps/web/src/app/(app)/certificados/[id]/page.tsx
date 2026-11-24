@@ -78,6 +78,12 @@ export default async function CertificadoDetailPage({
               >
                 Voltar
               </Link>
+              <Link
+                href={`/calibracao/${encodeURIComponent(job.id)}`}
+                className="rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm font-medium text-navy hover:bg-paper"
+              >
+                Calibração
+              </Link>
               {osId ? (
                 <Link
                   href={`/os/${osId}/certificados`}
