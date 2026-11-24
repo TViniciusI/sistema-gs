@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { bumpCampoCache, cachedList, CAMPO_TAGS } from "./cache";
 import { gateGet, gatePost } from "./gate";
 import { isOfficeHiddenOrder } from "./office-filters";
@@ -20,10 +22,10 @@ export const listCampoOrders = cachedList(
   },
 );
 
-export async function getCampoOrder(id: string): Promise<CampoOrder | null> {
+async function fetchCampoOrder(id: string): Promise<CampoOrder | null> {
   const payload = await gateGet(
     { action: "getos", id },
-    { withToken: false, timeoutMs: 90_000 },
+    { withToken: false, timeoutMs: 60_000 },
   );
   if (!payload || payload.ok !== true) return null;
   const raw =
@@ -32,6 +34,17 @@ export async function getCampoOrder(id: string): Promise<CampoOrder | null> {
   if (!os || isOfficeHiddenOrder(os)) return null;
   return os;
 }
+
+/** Detalhe da OS com cache curto + dedupe no request. */
+export const getCampoOrder = cache(async (id: string) => {
+  const key = String(id || "").trim();
+  if (!key) return null;
+  return unstable_cache(
+    () => fetchCampoOrder(key),
+    ["getCampoOrder", key],
+    { revalidate: 45, tags: [CAMPO_TAGS.orders] },
+  )();
+});
 
 /** Mesmo contrato do app: `action=saveos` com campos flat. */
 export async function saveCampoOrder(

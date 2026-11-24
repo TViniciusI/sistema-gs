@@ -45,14 +45,13 @@ export default async function ArquivosPage() {
 
   const open = ranked.filter((os) => isOpenStatus(os.status));
   const closed = ranked.filter((os) => !isOpenStatus(os.status));
-  // Até 10 abertas + 4 encerradas recentes com pasta conhecida.
+  // Até 8 abertas + 3 encerradas — menos pressão no Apps Script.
   const sample = [
-    ...open.slice(0, 10),
+    ...open.slice(0, 8),
     ...closed
       .filter((os) => getKnownOsDriveFolders(os.number))
-      .slice(0, 4),
+      .slice(0, 3),
   ];
-  // Garante ids únicos se overlap.
   const seen = new Set<string>();
   const toFetch = sample.filter((os) => {
     if (seen.has(os.id)) return false;
@@ -60,12 +59,20 @@ export default async function ArquivosPage() {
     return true;
   });
 
-  const listings = await Promise.all(
-    toFetch.map(async (os) => ({
-      os,
-      listing: await listCampoOsDriveFiles(os.number),
-    })),
-  );
+  // Lotes de 4: o gate engasga se disparar tudo junto.
+  const listings: { os: (typeof toFetch)[number]; listing: Awaited<
+    ReturnType<typeof listCampoOsDriveFiles>
+  > }[] = [];
+  for (let i = 0; i < toFetch.length; i += 4) {
+    const batch = toFetch.slice(i, i + 4);
+    const chunk = await Promise.all(
+      batch.map(async (os) => ({
+        os,
+        listing: await listCampoOsDriveFiles(os.number),
+      })),
+    );
+    listings.push(...chunk);
+  }
 
   const bundles: ArquivoOsBundle[] = listings.map(({ os, listing }) => {
     const known = getKnownOsDriveFolders(os.number);

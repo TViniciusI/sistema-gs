@@ -107,6 +107,11 @@ export async function getCampoCalibration(
   if (payload?.ok === true && payload.calibration) {
     return parseCalibration(payload.calibration);
   }
+  // Só cai na lista (cacheada) se o gate não negou explicitamente.
+  const err = text(payload?.error).toLowerCase();
+  if (err.includes("não encontr") || err.includes("nao encontr") || err.includes("not found")) {
+    return null;
+  }
   const all = await listCampoCalibrations();
   return (
     all.find((item) => item.id === key) ||
