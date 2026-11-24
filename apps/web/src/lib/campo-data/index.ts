@@ -63,6 +63,7 @@ export {
 export type {
   CalibFlowPointRow,
   CalibGenericPointRow,
+  CalibTelemetryChannelRow,
   CalibResultsSummary,
   CalibWorkbench,
   CalibFlowPointDetail,
@@ -79,6 +80,20 @@ export {
   formatCalibNumber,
   formatPercent,
 } from "./calibration-math";
+export {
+  CALIBRATION_KINDS,
+  defaultMeasurementUnit,
+  defaultWorkingPrinciple,
+  isGenericKind,
+  isTelemetryKind,
+  isTemperatureFamily,
+  isVolumetricKind,
+  normalizeCalibrationKind,
+  pointsSectionHint,
+  pointsSectionTitle,
+  suggestedMeasurementUnits,
+} from "./calibration-kinds";
+export type { CalibrationKindValue } from "./calibration-kinds";
 export { getCampoDriveStatus } from "./drive";
 export {
   actionLabel,

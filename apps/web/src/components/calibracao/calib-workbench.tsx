@@ -26,6 +26,7 @@ export function CalibWorkbenchView({ data }: { data: CalibWorkbench }) {
           <Field label="Cliente" value={data.clientName} />
           <Field label="TAG" value={data.equipmentTag} />
           <Field label="Tipo" value={data.equipmentType || data.kind} />
+          <Field label="Princípio" value={data.workingPrinciple} />
           <Field
             label="Fabricante / modelo"
             value={[data.manufacturer, data.model].filter(Boolean).join(" · ")}
@@ -34,6 +35,7 @@ export function CalibWorkbenchView({ data }: { data: CalibWorkbench }) {
           <Field label="Técnico" value={data.technicianName} />
           <Field label="Local" value={data.site} />
           <Field label="Procedimento" value={data.procedure} />
+          <Field label="Unidade" value={data.measurementUnit} />
           <Field label="Calibrado em" value={data.calibrationDate} />
           <Field label="Próxima" value={data.nextCalibrationDate} />
           <Field
@@ -271,7 +273,7 @@ export function CalibWorkbenchView({ data }: { data: CalibWorkbench }) {
       {data.genericPoints.length > 0 ? (
         <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
-            Pontos genéricos
+            Pontos / ciclos
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[480px] text-left text-sm">
@@ -280,7 +282,8 @@ export function CalibWorkbenchView({ data }: { data: CalibWorkbench }) {
                   <th className="py-2 pr-3 font-medium">Ponto</th>
                   <th className="py-2 pr-3 font-medium">Fator antigo</th>
                   <th className="py-2 pr-3 font-medium">Novo valor</th>
-                  <th className="py-2 font-medium">Ciclos</th>
+                  <th className="py-2 pr-3 font-medium">Leituras</th>
+                  <th className="py-2 font-medium">Tipo</th>
                 </tr>
               </thead>
               <tbody>
@@ -289,8 +292,45 @@ export function CalibWorkbenchView({ data }: { data: CalibWorkbench }) {
                     <td className="py-2.5 pr-3 font-medium">{row.label}</td>
                     <td className="py-2.5 pr-3">{row.oldFactor}</td>
                     <td className="py-2.5 pr-3">{row.newValue}</td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 pr-3">
                       {row.cyclesFilled}/{row.cyclesTotal}
+                    </td>
+                    <td className="py-2.5">
+                      {row.isConference ? "Conferência" : "Verificação"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {data.telemetryChannels.length > 0 ? (
+        <section className="rounded-3xl border border-navy/10 bg-white p-5 md:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass">
+            Canais de telemetria
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[480px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-navy/10 text-[11px] uppercase tracking-wide text-navy/45">
+                  <th className="py-2 pr-3 font-medium">Canal</th>
+                  <th className="py-2 pr-3 font-medium">Unidade</th>
+                  <th className="py-2 pr-3 font-medium">Encontrado</th>
+                  <th className="py-2 font-medium">Deixado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.telemetryChannels.map((row) => (
+                  <tr key={row.id} className="border-b border-navy/5 text-navy">
+                    <td className="py-2.5 pr-3 font-medium">{row.label}</td>
+                    <td className="py-2.5 pr-3">{row.unit || "—"}</td>
+                    <td className="py-2.5 pr-3">
+                      {row.foundFilled}/{row.foundTotal}
+                    </td>
+                    <td className="py-2.5">
+                      {row.leftFilled}/{row.leftTotal}
                     </td>
                   </tr>
                 ))}

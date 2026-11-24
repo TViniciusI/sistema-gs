@@ -41,6 +41,18 @@ export type CalibGenericPointRow = {
   newValue: string;
   cyclesFilled: number;
   cyclesTotal: number;
+  isConference: boolean;
+};
+
+export type CalibTelemetryChannelRow = {
+  id: string;
+  key: string;
+  label: string;
+  unit: string;
+  foundFilled: number;
+  foundTotal: number;
+  leftFilled: number;
+  leftTotal: number;
 };
 
 export type CalibResultsSummary = {
@@ -50,6 +62,7 @@ export type CalibResultsSummary = {
   coverageFactor: string;
   flowPoints: CalibFlowPointRow[];
   genericPoints: CalibGenericPointRow[];
+  telemetryChannels: CalibTelemetryChannelRow[];
   hasAny: boolean;
 };
 
@@ -123,6 +136,9 @@ export type CalibWorkbench = {
   standards: CalibStandardUsed[];
   flowDetails: CalibFlowPointDetail[];
   genericPoints: CalibGenericPointRow[];
+  telemetryChannels: CalibTelemetryChannelRow[];
+  measurementUnit: string;
+  workingPrinciple: string;
   linearityPct: number | null;
   hasAny: boolean;
 };
@@ -238,6 +254,28 @@ export function summarizeCalibrationResults(
       newValue: formatCalibNumber(num(p.newValue), 6),
       cyclesFilled: filled,
       cyclesTotal: cycles.length,
+      isConference: p.isConference === true,
+    });
+  }
+
+  const telemetryChannels: CalibTelemetryChannelRow[] = [];
+  const channels = Array.isArray(data.telemetryChannels)
+    ? data.telemetryChannels
+    : [];
+  for (const [index, item] of channels.entries()) {
+    if (!item || typeof item !== "object") continue;
+    const c = item as Record<string, unknown>;
+    const found = Array.isArray(c.found) ? c.found : [];
+    const left = Array.isArray(c.left) ? c.left : [];
+    telemetryChannels.push({
+      id: text(c.id) || `tel-${index}`,
+      key: text(c.key),
+      label: text(c.label) || text(c.key) || `Canal ${index + 1}`,
+      unit: text(c.unit),
+      foundFilled: countFilledRuns(found),
+      foundTotal: found.length,
+      leftFilled: countFilledRuns(left),
+      leftTotal: left.length,
     });
   }
 
@@ -254,9 +292,11 @@ export function summarizeCalibrationResults(
     coverageFactor,
     flowPoints,
     genericPoints,
+    telemetryChannels,
     hasAny:
       flowPoints.length > 0 ||
       genericPoints.length > 0 ||
+      telemetryChannels.length > 0 ||
       Boolean(kFactorFound || kFactorLeft || uncertainty),
   };
 }
@@ -350,6 +390,9 @@ export function buildCalibrationWorkbench(
     standards: parseStandards(data.standards),
     flowDetails,
     genericPoints: summary.genericPoints,
+    telemetryChannels: summary.telemetryChannels,
+    measurementUnit: text(data.measurementUnit),
+    workingPrinciple: text(data.workingPrinciple),
     linearityPct:
       meanFactors.length >= 2
         ? (() => {
