@@ -23,9 +23,18 @@ SavedClient rebaseClientEdit({
 
   String key(ClientSystem system) => jsonEncode(system.toJson());
 
+  final draftIds = {for (final s in draft.resolvedSystems) s.id};
+  final gone = <String>{
+    ...draft.deletedSystemIds,
+    ...base.deletedSystemIds,
+    ...cloud.deletedSystemIds,
+    ..._removedSystemIds(base, draft),
+  }..removeWhere(draftIds.contains);
+  final cloudNow = _dropDeletedSystems(cloud, gone);
+
   final baseById = {for (final s in base.resolvedSystems) s.id: s};
   final draftById = {for (final s in draft.resolvedSystems) s.id: s};
-  final cloudById = {for (final s in cloud.resolvedSystems) s.id: s};
+  final cloudById = {for (final s in cloudNow.resolvedSystems) s.id: s};
   final systems = <ClientSystem>[];
   for (final mine in draft.resolvedSystems) {
     final before = baseById[mine.id];
@@ -37,7 +46,7 @@ SavedClient rebaseClientEdit({
     }
     systems.add(mine);
   }
-  for (final theirs in cloud.resolvedSystems) {
+  for (final theirs in cloudNow.resolvedSystems) {
     if (draftById.containsKey(theirs.id)) continue;
     // Apagada nesta tela: continua apagada.
     if (baseById.containsKey(theirs.id)) continue;
@@ -53,6 +62,7 @@ SavedClient rebaseClientEdit({
       jsonEncode([for (final e in draft.storedEquipment) e.toJson()]);
 
   return draft.copyWith(
+    deletedSystemIds: gone.toList(),
     name: pick(draft.name, base.name, cloud.name),
     requester: pick(draft.requester, base.requester, cloud.requester),
     cnpj: pick(draft.cnpj, base.cnpj, cloud.cnpj),
@@ -76,10 +86,34 @@ SavedClient rebaseClientEdit({
     systems: systems,
     // Com ilhas, a lista plana só completa detalhes: une as duas.
     equipment: sameStored
-        ? cloud.storedEquipment
+        ? cloudNow.storedEquipment
         : (draft.systems.isNotEmpty
-              ? mergeEquipment(cloud.storedEquipment, draft.storedEquipment)
+              ? mergeEquipment(cloudNow.storedEquipment, draft.storedEquipment)
               : draft.storedEquipment),
+  );
+}
+
+/// Ids de sistemas que estavam em [base] e sumiram em [draft].
+Set<String> _removedSystemIds(SavedClient base, SavedClient draft) {
+  final draftIds = {for (final s in draft.resolvedSystems) s.id};
+  return {
+    for (final s in base.resolvedSystems)
+      if (!draftIds.contains(s.id)) s.id,
+  };
+}
+
+/// Tira de [client] os sistemas apagados em [gone] e as linhas planas deles.
+SavedClient _dropDeletedSystems(SavedClient client, Set<String> gone) {
+  if (gone.isEmpty) return client;
+  return client.copyWith(
+    systems: [
+      for (final system in client.resolvedSystems)
+        if (!gone.contains(system.id)) system,
+    ],
+    equipment: [
+      for (final item in client.storedEquipment)
+        if (!gone.contains(item.systemId)) item,
+    ],
   );
 }
 
@@ -250,6 +284,15 @@ class ClientStore extends ChangeNotifier {
 
   /// Une nuvem + aparelho sem apagar ilhas/instrumentos que só existem aqui.
   SavedClient _absorbRemote(SavedClient local, SavedClient remote) {
+    final gone = {...local.deletedSystemIds, ...remote.deletedSystemIds};
+    final merged = _absorbCatalog(
+      _dropDeletedSystems(local, gone),
+      _dropDeletedSystems(remote, gone),
+    );
+    return merged.copyWith(deletedSystemIds: gone.toList());
+  }
+
+  SavedClient _absorbCatalog(SavedClient local, SavedClient remote) {
     if (_dirtyIds.contains(local.id)) return _mergeRemoteClient(local, remote);
     if (!_hasCatalog(remote) && _hasCatalog(local)) {
       // Nuvem sem instrumentos não apaga o cadastro deste aparelho.
@@ -310,12 +353,13 @@ class ClientStore extends ChangeNotifier {
   Future<SavedClient> saveEdited(SavedClient draft, {SavedClient? base}) async {
     var record = draft;
     if (base != null && draft.id == base.id) {
+      record = _recordRemovedSystems(draft, base);
       try {
         // Sempre une: a data de [base] pode estar inflada em aparelho antigo.
         final cloud = await _fetchCloud(base.id);
         if (cloud != null) {
           record = rebaseClientEdit(
-            draft: draft,
+            draft: record,
             base: base,
             cloud: cloud.client,
           );
@@ -325,6 +369,17 @@ class ClientStore extends ChangeNotifier {
       }
     }
     return save(record);
+  }
+
+  static SavedClient _recordRemovedSystems(
+    SavedClient draft,
+    SavedClient base,
+  ) {
+    final removed = _removedSystemIds(base, draft);
+    if (removed.isEmpty) return draft;
+    return draft.copyWith(
+      deletedSystemIds: {...draft.deletedSystemIds, ...removed}.toList(),
+    );
   }
 
   SavedClient? byId(String id) {
@@ -415,6 +470,7 @@ class ClientStore extends ChangeNotifier {
           if (item.title.trim().isNotEmpty) item,
       ],
       systems: client.resolvedSystems,
+      deletedSystemIds: client.deletedSystemIds,
       updatedAt: DateTime.now(),
     );
     _deletedIds.remove(record.id);
@@ -602,6 +658,8 @@ class ClientStore extends ChangeNotifier {
             merged.updatedAt != existing.updatedAt ||
             merged.equipment.length != existing.equipment.length ||
             merged.resolvedSystems.length != existing.resolvedSystems.length ||
+            merged.deletedSystemIds.length !=
+                existing.deletedSystemIds.length ||
             merged.name != existing.name ||
             merged.cnpj != existing.cnpj) {
           _all = [

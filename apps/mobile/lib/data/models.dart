@@ -3240,6 +3240,7 @@ class SavedClient {
     this.basePhone = '',
     this.baseContacts = const [],
     this.systems = const [],
+    this.deletedSystemIds = const [],
     List<ClientEquipment> equipment = const [],
     required this.updatedAt,
   }) : _storedEquipment = equipment;
@@ -3266,6 +3267,10 @@ class SavedClient {
   /// Até 3 pessoas que podem assinar o RDO pela base.
   final List<ClientBaseContact> baseContacts;
   final List<ClientSystem> systems;
+
+  /// Sistemas apagados deste cadastro. Cópias antigas (nuvem ou outro
+  /// aparelho) ainda os têm; sem isso eles voltariam a cada sincronização.
+  final List<String> deletedSystemIds;
   final List<ClientEquipment> _storedEquipment;
   final DateTime updatedAt;
 
@@ -3347,6 +3352,7 @@ class SavedClient {
     String? basePhone,
     List<ClientBaseContact>? baseContacts,
     List<ClientSystem>? systems,
+    List<String>? deletedSystemIds,
     List<ClientEquipment>? equipment,
     DateTime? updatedAt,
   }) {
@@ -3380,6 +3386,7 @@ class SavedClient {
       basePhone: primary?.phone ?? (basePhone ?? this.basePhone),
       baseContacts: resolved,
       systems: systems ?? this.systems,
+      deletedSystemIds: deletedSystemIds ?? this.deletedSystemIds,
       equipment: equipment ?? _storedEquipment,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -3414,6 +3421,7 @@ class SavedClient {
       if (contacts.isNotEmpty)
         'baseContacts': [for (final item in contacts) item.toJson()],
       'systems': [for (final item in systems) item.toJson()],
+      'deletedSystemIds': deletedSystemIds,
       // A lista plana repete cada instrumento que já está no sistema.
       // No navegador isso estoura a cota do localStorage na importação.
       if (!slim || !systemsHaveGear)
@@ -3456,6 +3464,7 @@ class SavedClient {
       basePhone: primary?.phone ?? (json['basePhone'] as String? ?? ''),
       baseContacts: contacts,
       systems: _readSystems(json['systems']),
+      deletedSystemIds: _readStringList(json['deletedSystemIds']),
       equipment: _readEquipment(
         json['equipment'] ?? json['equipments'] ?? json['instrumentos'],
       ),
