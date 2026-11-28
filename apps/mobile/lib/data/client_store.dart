@@ -181,11 +181,32 @@ class ClientStore extends ChangeNotifier {
           SavedClient.fromJson(Map<String, dynamic>.from(item as Map)),
       ];
     }
+    await _purgeLeakedTestClients();
     if (remoteClients != null || !CloudSyncGate.isFresh) {
       await _pullRemote(seed: remoteClients);
     }
     _sort();
     notifyListeners();
+  }
+
+  /// Cliente de teste gravado por engano na planilha real com o CNPJ do
+  /// BABET. Os aparelhos o uniram ao cadastro verdadeiro (34 ilhas viraram
+  /// 1 medidor); sai do aparelho e da nuvem para o real ser baixado de novo.
+  static const _leakedTestClientIds = {'babet'};
+
+  Future<void> _purgeLeakedTestClients() async {
+    final hasLeak = _all.any((c) => _leakedTestClientIds.contains(c.id));
+    if (!hasLeak && _deletedIds.containsAll(_leakedTestClientIds)) return;
+    _deletedIds.addAll(_leakedTestClientIds);
+    _dirtyIds.removeAll(_leakedTestClientIds);
+    _staleIds.removeAll(_leakedTestClientIds);
+    _cloudStamp.removeWhere((id, _) => _leakedTestClientIds.contains(id));
+    _all = [
+      for (final client in _all)
+        if (!_leakedTestClientIds.contains(client.id)) client,
+    ];
+    await _persist();
+    await _saveMeta();
   }
 
   Future<ClientSyncResult> sync() async {
@@ -365,6 +386,15 @@ class ClientStore extends ChangeNotifier {
       value = value.replaceAll(from[i], to[i]);
     }
     return value.replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+  }
+
+  /// CNPJ/nome iguais só unem com cadastro que ainda não está na nuvem
+  /// (criado offline aqui). Dois cadastros da nuvem nunca viram um só: a
+  /// cópia remota vence inteira, com o id dela, e o outro sumia do aparelho.
+  SavedClient? _unlinkedMatch(SavedClient incoming, Set<String> cloudIds) {
+    final match = findMatch(cnpj: incoming.cnpj, name: incoming.name);
+    if (match == null || cloudIds.contains(match.id)) return null;
+    return match;
   }
 
   SavedClient? findMatch({String cnpj = '', String name = ''}) {
@@ -589,11 +619,17 @@ class ClientStore extends ChangeNotifier {
         if (!result.ok) return;
         rows = result.clients;
       }
+      final cloudIds = {for (final item in rows) '${item['id'] ?? ''}'.trim()}
+        ..remove('');
       var changed = false;
       for (final item in rows) {
         final incoming = SavedClient.fromJson(item);
         if (incoming.id.isEmpty) continue;
         _remoteIds.add(incoming.id);
+        if (_leakedTestClientIds.contains(incoming.id)) {
+          unawaited(AccountApi.instance.deleteClient(incoming.id));
+          continue;
+        }
         if (_deletedIds.contains(incoming.id)) continue;
         final lightStub =
             item['_payloadLight'] == true ||
@@ -602,12 +638,15 @@ class ClientStore extends ChangeNotifier {
                 incoming.systems.isEmpty);
         final stamp = _stampOf(item);
         final existing =
-            byId(incoming.id) ??
-            findMatch(cnpj: incoming.cnpj, name: incoming.name);
+            byId(incoming.id) ?? _unlinkedMatch(incoming, cloudIds);
         // Resumo da lista: o completo é baixado em seguida se esta versão
         // da nuvem ainda não chegou aqui. O resumo nunca apaga instrumentos.
         if (lightStub) {
-          if (_cloudStamp[incoming.id] != stamp) _staleIds.add(incoming.id);
+          if (_cloudStamp[incoming.id] != stamp ||
+              existing == null ||
+              !_hasCatalog(existing)) {
+            _staleIds.add(incoming.id);
+          }
           if (existing == null) {
             _all = [incoming, ..._all];
             changed = true;
@@ -620,11 +659,7 @@ class ClientStore extends ChangeNotifier {
           changed = true;
           continue;
         }
-        final merged = _absorbRemote(
-          existing,
-          incoming,
-          remoteStamp: stamp,
-        );
+        final merged = _absorbRemote(existing, incoming, remoteStamp: stamp);
         _cloudStamp[incoming.id] = stamp;
         if (merged.id != existing.id ||
             merged.updatedAt != existing.updatedAt ||
